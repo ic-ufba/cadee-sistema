@@ -1,6 +1,7 @@
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
+import { SigaaAccountButton } from '@/components/sigaa/SigaaAccount';
 
 export function MobileHeader() {
   const { theme, setTheme } = useTheme();
@@ -26,6 +27,8 @@ export function MobileHeader() {
           <span className="font-semibold text-foreground">CADEE</span>
         </div>
         
+        <div className="flex items-center gap-1">
+        <SigaaAccountButton variant="icon" />
         <button
           onClick={toggleTheme}
           className="p-2 rounded-lg hover:bg-muted transition-colors"
@@ -37,6 +40,7 @@ export function MobileHeader() {
             <Moon className="w-5 h-5 text-foreground" />
           )}
         </button>
+        </div>
       </div>
     </header>
   );

@@ -130,6 +130,63 @@ O sistema utiliza a API estática do SIGAA (Sistema Integrado de Gestão de Ativ
 - Pré-requisitos e equivalências
 - Vagas e disponibilidade
 
+## 🔐 Integração com a {sigaa} api (opcional)
+
+Além da API estática, o CADEE pode usar a [{sigaa} api](https://github.com/ic-ufba/sigaa-ufba-api), que lê o SIGAA ao vivo. É o fork mantido pelo IC, com as adequações para a Rede IC; o projeto original é de [Caio Alcarria](https://github.com/caioalcarria/sigaa-ufba-api). Tudo é opcional: sem configurar, o sistema funciona exatamente como antes.
+
+**Sem login (rotas públicas)**
+- Ementa, carga horária e pré/co-requisitos atualizados direto do SIGAA no detalhe da disciplina (selo "SIGAA ao vivo")
+- Programa da disciplina (objetivos, conteúdo, metodologia, referências)
+
+**Com login do SIGAA (botão "Entrar com SIGAA")**
+- Importação automática do histórico, no mesmo formato da importação por PDF (disciplinas cursadas, carga horária, semestres)
+- Desfecho do semestre em planejamento aplicado sozinho (resolve a transição de semestre)
+- CR, IAP, evolução do CR, % integralizado, obrigatórias pendentes, horas de extensão e dicas
+- No Planejador: validar a grade com as regras oficiais, sugestão automática de grade e previsão de oferta
+- Grade horária em `.ics` para o Google Agenda
+
+A senha vai direto para a API e nunca é gravada no CADEE; o navegador guarda só o token da sessão (fora do backup de configurações).
+
+### Configuração
+
+```bash
+cp .env.example .env.local
+```
+
+- **Desenvolvimento:** suba a API (`git clone https://github.com/ic-ufba/sigaa-ufba-api` e `docker compose up -d` dentro dela) e use `VITE_SIGAA_API_URL=/sigaa-api`. O Vite encaminha para `http://localhost:8000` (mude com `SIGAA_API_PROXY_TARGET`).
+- **Produção:** a API roda no servidor de aplicações da Rede IC (Dokku), em `https://cadee-api.app.ic.ufba.br`; o passo a passo está em `docs/deploy-rede-ic.md` no [fork do IC](https://github.com/ic-ufba/sigaa-ufba-api). No Netlify, crie a variável `VITE_SIGAA_API_URL=https://cadee-api.app.ic.ufba.br` e refaça o deploy (ela entra no build). No servidor da API, a origem `https://cadee.netlify.app` precisa estar em `SIGAA_API_CORS`.
+- **Segurança do site:** o `netlify.toml` define os cabeçalhos de segurança e uma CSP em modo Report-Only. Depois de alguns dias sem violações no console, troque `Content-Security-Policy-Report-Only` por `Content-Security-Policy`. Se o endereço da API mudar, atualize o `connect-src`.
+
+Arquivos principais: `src/services/sigaaApi.ts` (cliente), `src/hooks/useSigaa.ts` (login, sincronização, consultas), `src/lib/sigaaSync.ts` (conversão para o formato do CADEE) e `src/components/sigaa/`.
+
+## 🏠 Hospedar o site na Rede IC (opcional, substitui o Netlify)
+
+O site também pode rodar no Dokku da Rede IC, em `https://cadee.app.ic.ufba.br`, ao lado da API. Os arquivos já estão no repositório:
+
+| arquivo | pra quê |
+|---|---|
+| `Dockerfile` | compila o app (Node 22) e serve só o `dist/` com nginx sem root, na porta 8080 |
+| `deploy/nginx/default.conf` | rotas do React Router caem no `index.html`; cache longo só em `/assets/` |
+| `deploy/nginx/security-headers.conf` | os mesmos cabeçalhos de segurança do `netlify.toml` (a CSP recebe o endereço da API no build) |
+| `app.json` | healthcheck do Dokku em `/` |
+| `.github/workflows/deploy-rede-ic.yml` | build a cada push e, quando ligado, `git push` automático pro Dokku |
+
+**Passo a passo**
+
+1. No chamado ao suporte do IC, peça também a aplicação **`cadee`**: build por Dockerfile e portas `http:80:8080 https:443:8080`.
+2. Na API, libere a nova origem (as duas durante a migração): `SIGAA_API_CORS=https://cadee.netlify.app,https://cadee.app.ic.ufba.br`.
+3. Crie uma chave só para o deploy automático e mande a pública ao suporte:
+   ```bash
+   ssh-keygen -t rsa -b 4096 -f cadee-deploy -N "" -C cadee-github
+   ssh-keyscan -p 9999 app.ic.ufba.br > known_hosts_ic
+   ```
+4. No GitHub (*Settings → Environments*), crie o environment `rede-ic` com os segredos `DOKKU_SSH_KEY` (conteúdo de `cadee-deploy`) e `DOKKU_KNOWN_HOSTS` (conteúdo de `known_hosts_ic`). Depois apague os dois arquivos do computador.
+5. Em *Settings → Secrets and variables → Actions → Variables*, crie `DEPLOY_REDE_IC = true`. A partir daí, cada push na branch principal publica o site; também dá para rodar à mão em *Actions → deploy-rede-ic → Run workflow*.
+
+Deploy manual, sem a Action: `git remote add dokku dokku@app.ic.ufba.br:cadee` e `git push dokku HEAD:master` (com o `~/.ssh/config` do guia do IC).
+
+**Antes de desligar o Netlify:** o progresso de cada aluno fica no `localStorage` do navegador, que é separado por endereço. Quem usa `cadee.netlify.app` não vê os dados em `cadee.app.ic.ufba.br`. Avise com antecedência para exportarem em *Ajustes → Backup* e importarem no endereço novo (quem conectar o SIGAA recupera o histórico sozinho). Só depois troque o site do Netlify por um redirecionamento para o endereço novo.
+
 ## 🎯 Modos de Experiência
 
 ### Modo Simplificado

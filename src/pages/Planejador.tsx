@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, memo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ScheduleGrid } from '@/components/planner/ScheduleGrid';
+import { SigaaPlannerPanel } from '@/components/sigaa/SigaaPlannerPanel';
 import { SkeletonCard } from '@/components/ui/skeleton-card';
 import { useApp } from '@/contexts/AppContext';
 import { Course, Section } from '@/services/api';
@@ -1211,6 +1212,7 @@ const Planejador = () => {
           {/* Coluna da direita - Grade Horária */}
           <div className="lg:col-span-2">
             <div className="space-y-4 md:space-y-6">
+              <SigaaPlannerPanel />
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <h2 className="text-xl md:text-2xl font-bold text-foreground mb-1">Grade Atual</h2>

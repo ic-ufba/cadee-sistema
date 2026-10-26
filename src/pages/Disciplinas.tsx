@@ -519,8 +519,9 @@ const Disciplinas = () => {
 
   // Carrega progressData salvo (para manter sincronizado com tela de Progresso)
   useEffect(() => {
-    const savedData = localStorage.getItem('progressData');
-    if (savedData) {
+    const load = () => {
+      const savedData = localStorage.getItem('progressData');
+      if (!savedData) return;
       try {
         const parsed = JSON.parse(savedData);
         setParsedCodes(parsed.codes || []);
@@ -530,7 +531,11 @@ const Disciplinas = () => {
       } catch (error) {
         console.error('Erro ao carregar progressData:', error);
       }
-    }
+    };
+    load();
+    // recarrega quando o histórico é sincronizado pelo SIGAA
+    window.addEventListener('progressDataUpdated', load);
+    return () => window.removeEventListener('progressDataUpdated', load);
   }, []);
 
   const handleParseImport = (text: string) => {

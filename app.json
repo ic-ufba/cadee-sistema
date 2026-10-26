@@ -1,0 +1,12 @@
+{
+  "name": "cadee",
+  "description": "Site estático do CADEE servido por nginx. Lido pelo Dokku da Rede IC no deploy.",
+  "formation": {
+    "web": { "quantity": 1 }
+  },
+  "healthchecks": {
+    "web": [
+      { "type": "startup", "name": "site respondendo", "path": "/", "attempts": 5, "timeout": 5, "wait": 2 }
+    ]
+  }
+}

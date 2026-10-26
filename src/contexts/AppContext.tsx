@@ -175,7 +175,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const settings: Record<string, string> = {};
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key) {
+      // o token do SIGAA nunca vai para o backup
+      if (key && key !== 'sigaaSession') {
         settings[key] = localStorage.getItem(key) || '';
       }
     }

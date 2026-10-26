@@ -1,0 +1,11 @@
+# só o necessário pro build: nada de segredos, dependências locais ou builds antigos
+node_modules
+dist
+dist-ssr
+.git
+.github
+.env
+.env.*
+*.local
+*.log
+cadee-sistema-main

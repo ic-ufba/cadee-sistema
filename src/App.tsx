@@ -14,6 +14,7 @@ import Planejador from "./pages/Planejador";
 import Configuracoes from "./pages/Configuracoes";
 import NotFound from "./pages/NotFound";
 import NoCourseSelected from "./pages/NoCourseSelected";
+import { SigaaRoot } from "./components/sigaa/SigaaAccount";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -68,6 +69,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <SigaaRoot />
           <AppContent />
         </TooltipProvider>
       </AppProvider>

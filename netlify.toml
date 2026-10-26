@@ -8,8 +8,15 @@
   status = 200
   force = false
 
+# Cabeçalhos de segurança. A CSP começa em Report-Only (só avisa no console do navegador): depois de alguns
+# dias sem violações, troque o nome para Content-Security-Policy. connect-src = APIs que o site chama
+# (estática do sigaa-static + a {sigaa} api na Rede IC); se mudar VITE_SIGAA_API_URL, mude aqui também.
 [[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Strict-Transport-Security = "max-age=31536000"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Content-Security-Policy-Report-Only = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://formigteen.github.io https://cadee-api.app.ic.ufba.br; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
