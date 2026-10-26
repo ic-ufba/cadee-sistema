@@ -10,6 +10,7 @@ import { useOverallProgress } from '@/hooks/useOverallProgress';
 import { Calendar, BookOpen, BarChart3, X, Sparkles, GraduationCap, Clock, AlertTriangle, Plus, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProgressView } from '@/components/progress/ProgressView';
+import { SigaaInsights } from '@/components/sigaa/SigaaInsights';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMode } from '@/hooks/useMode';
 import { usePlannedDisciplineCategories } from '@/hooks/usePlannedDisciplineCategories';
@@ -36,13 +37,20 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
-    const savedData = localStorage.getItem('progressData');
-    setHasImportedHistory(!!savedData);
+    const check = () => setHasImportedHistory(!!localStorage.getItem('progressData'));
+    check();
+    window.addEventListener('progressDataUpdated', check);
+    return () => window.removeEventListener('progressDataUpdated', check);
   }, []);
 
   const renderTabContent = () => {
     if (activeTab === 'progress') {
-      return <ProgressView />;
+      return (
+        <>
+          <SigaaInsights />
+          <ProgressView />
+        </>
+      );
     }
     return <ScheduleSummary />;
   };

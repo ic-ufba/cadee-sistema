@@ -2,6 +2,7 @@ import { Home, BookOpen, Calendar, SlidersHorizontal, Sun, Moon, Github, Layers,
 import { NavLink } from '@/components/NavLink';
 import { useApp } from '@/contexts/AppContext';
 import { cn } from '@/lib/utils';
+import { SigaaAccountButton } from '@/components/sigaa/SigaaAccount';
 
 const menuItems = [
   { title: 'Início', url: '/', icon: Home },
@@ -65,6 +66,7 @@ export function AppSidebar({ isCollapsed = false, toggleCollapse }: AppSidebarPr
 
         {/* Footer */}
         <div className="p-4 border-t border-sidebar-border flex flex-col gap-2">
+          <SigaaAccountButton collapsed={isCollapsed} />
           <div className={cn("flex items-center", isCollapsed ? "flex-col justify-center gap-4" : "justify-between")}>
             <button
               onClick={toggleTheme}

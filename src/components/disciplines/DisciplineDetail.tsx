@@ -18,6 +18,7 @@ import { FavoriteButton } from '@/components/common/FavoriteButton';
 import { AnimatePresence } from 'framer-motion';
 import { fetchCourseByCode } from '@/services/api';
 import { useQueries } from '@tanstack/react-query';
+import { ComponentProgram, LiveDataBadge } from '@/components/sigaa/ComponentProgram';
 // Extracted component to keep identity stable across renders
 function CompletedButton({
   completed,
@@ -110,7 +111,7 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
 
   const { data: sections = [], isLoading } = useCourseSections(currentCode);
   const { data: allSections = [] } = useSections();
-  const { data: currentDetail } = useCourseByCode(detailCode);
+  const { data: currentDetail, isLive } = useCourseByCode(detailCode);
   const { data: allCourses = [] } = useCourses();
   const currentName = currentDetail?.name ?? discipline.name;
 
@@ -435,12 +436,17 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
           <div className="space-y-6 mt-6">
             {currentDetail?.description && (
               <div>
-                <h3 className="font-semibold text-card-foreground mb-2">Ementa</h3>
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="font-semibold text-card-foreground">Ementa</h3>
+                  {isLive && <LiveDataBadge />}
+                </div>
                 <p className="text-muted-foreground text-sm leading-relaxed">
                   {currentDetail.description}
                 </p>
               </div>
             )}
+
+            <ComponentProgram code={detailCode} />
 
             {/* Turmas Disponíveis com collapse */}
             <div className="space-y-3">

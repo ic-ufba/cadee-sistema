@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# variáveis locais (nunca no git; o modelo é o .env.example)
+.env
+.env.*
+!.env.example

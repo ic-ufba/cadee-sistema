@@ -18,6 +18,7 @@ import {
   Save,
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { SigaaSettingsCard } from '@/components/sigaa/SigaaSettingsCard';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -458,6 +459,8 @@ const Configuracoes = () => {
 
           {/* Coluna 2 */}
           <div className="space-y-6">
+            <SigaaSettingsCard />
+
             {/* Export/Import */}
             <div className="bg-card rounded-xl border border-border p-5 space-y-4">
               <div>

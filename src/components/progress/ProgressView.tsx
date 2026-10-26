@@ -69,10 +69,11 @@ export function ProgressView() {
     }
   }, [courses, coursesLoading, courseLevelsLoaded]);
 
-  // Carregar dados salvos do localStorage ao iniciar
+  // Carregar dados salvos do localStorage ao iniciar (e de novo quando o histórico é sincronizado pelo SIGAA)
   useEffect(() => {
-    const savedData = localStorage.getItem('progressData');
-    if (savedData) {
+    const load = () => {
+      const savedData = localStorage.getItem('progressData');
+      if (!savedData) return;
       try {
         const parsed = JSON.parse(savedData);
         setParsedCodes(parsed.codes || []);
@@ -82,7 +83,10 @@ export function ProgressView() {
       } catch (error) {
         console.error('Erro ao carregar dados do localStorage:', error);
       }
-    }
+    };
+    load();
+    window.addEventListener('progressDataUpdated', load);
+    return () => window.removeEventListener('progressDataUpdated', load);
   }, []);
 
   // Função para salvar dados no localStorage
