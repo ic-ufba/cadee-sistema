@@ -20,12 +20,12 @@ function fmt(n: number | null | undefined, digits = 2) {
 
 function StatTile({ label, value, hint, loading }: { label: string; value: string; hint?: string; loading?: boolean }) {
   return (
-    <div className="rounded-lg border border-border bg-background/60 p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
+    <div className="rounded-[18px] bg-nevoa p-4">
+      <p className="rotulo">{label}</p>
       {loading ? (
-        <div className="mt-1 h-7 w-16 animate-pulse rounded bg-muted" />
+        <div className="mt-1 h-7 w-16 animate-pulse rounded-full bg-trilho" />
       ) : (
-        <p className="mt-0.5 text-2xl font-bold tabular-nums text-foreground">{value}</p>
+        <p className="mt-1 text-[26px] font-black tabular-nums tracking-[-0.04em] text-foreground">{value}</p>
       )}
       {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
     </div>
@@ -54,19 +54,19 @@ function ConnectCta() {
   };
 
   return (
-    <div className="mb-6 flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center">
-      <Link2 className="hidden h-8 w-8 shrink-0 text-primary sm:block" />
+    <div className="mb-6 flex flex-col gap-3 rounded-[18px] bg-mar-claro p-4 sm:flex-row sm:items-center">
+      <Link2 className="hidden h-8 w-8 shrink-0 text-mar sm:block" />
       <div className="flex-1 text-sm">
-        <p className="font-semibold text-foreground">Conecte sua conta do SIGAA</p>
+        <p className="font-extrabold text-mar-ink">Conecte sua conta do SIGAA</p>
         <p className="text-muted-foreground">
           Importa o histórico sozinho e mostra CR, IAP, integralização e o que falta para se formar. É opcional.
         </p>
       </div>
       <div className="flex gap-2">
-        <button onClick={openLogin} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+        <button onClick={openLogin} className="h-11 rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground hover:bg-primary/90">
           Conectar
         </button>
-        <button onClick={dismiss} className="rounded-lg p-2 text-muted-foreground hover:bg-muted" aria-label="Dispensar">
+        <button onClick={dismiss} className="flex h-11 w-11 items-center justify-center rounded-full bg-background/70 text-foreground-2 hover:text-foreground" aria-label="Dispensar">
           <X className="h-4 w-4" />
         </button>
       </div>
@@ -94,16 +94,16 @@ export function SigaaInsights() {
   const error = indices.error || integralizacao.error;
 
   return (
-    <section className="mb-6 rounded-xl border border-border bg-card p-4 sm:p-5">
+    <section className="mb-8 border-t-2 border-foreground pt-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <h2 className="font-semibold text-card-foreground">Dados oficiais do SIGAA</h2>
+          <h2 className="text-[22px] font-black tracking-[-0.03em] text-foreground sm:text-[24px]">Dados oficiais do SIGAA</h2>
           <LiveDataBadge />
         </div>
         <button
           onClick={() => sync.mutate()}
           disabled={sync.isPending}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-60"
+          className="inline-flex h-9 items-center gap-1.5 rounded-full border-[1.5px] border-foreground/20 px-4 text-xs font-bold text-foreground hover:bg-nevoa disabled:opacity-60"
         >
           {sync.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
           Sincronizar histórico
@@ -111,12 +111,12 @@ export function SigaaInsights() {
       </div>
 
       {error && (
-        <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p className="mb-4 rounded-[14px] bg-pitanga-tint px-4 py-2.5 text-sm font-semibold text-pitanga-ink">
           {error.message}
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         <StatTile label="CR" value={fmt(indices.data?.oficiais.cr)} loading={indices.isLoading} hint="Coeficiente de rendimento" />
         <StatTile label="IAP" value={fmt(indices.data?.oficiais.iap)} loading={indices.isLoading} hint="Índice de aproveitamento" />
         <StatTile
@@ -135,7 +135,7 @@ export function SigaaInsights() {
 
       {evolucao.length > 1 && (
         <div className="mt-5">
-          <h3 className="mb-2 text-sm font-medium text-foreground">Evolução do CR</h3>
+          <h3 className="rotulo mb-2">Evolução do CR</h3>
           <div className="h-48 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={evolucao} margin={{ top: 8, right: 12, bottom: 0, left: -16 }}>
@@ -144,11 +144,11 @@ export function SigaaInsights() {
                 <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} className="fill-muted-foreground" tickLine={false} axisLine={false} width={40} />
                 <Tooltip
                   formatter={(value: number, name: string) => [fmt(value), name === 'cr_acumulado' ? 'CR acumulado' : 'CR do semestre']}
-                  contentStyle={{ fontSize: 12, borderRadius: 8, background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))' }}
+                  contentStyle={{ fontSize: 12, borderRadius: 14, background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))' }}
                   labelStyle={{ color: 'hsl(var(--foreground))' }}
                 />
                 <Line type="monotone" dataKey="cr_periodo" stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" strokeWidth={1.5} dot={false} connectNulls />
-                <Line type="monotone" dataKey="cr_acumulado" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ r: 3 }} connectNulls />
+                <Line type="monotone" dataKey="cr_acumulado" stroke="hsl(var(--mar))" strokeWidth={2.5} dot={{ r: 3 }} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -160,21 +160,21 @@ export function SigaaInsights() {
         <div className="mt-5 grid gap-5 lg:grid-cols-2">
           {categorias.length > 0 && (
             <div>
-              <h3 className="mb-2 text-sm font-medium text-foreground">Carga horária</h3>
+              <h3 className="rotulo mb-2">Carga horária</h3>
               <ul className="space-y-2">
                 {categorias.map((c) => {
                   const pct = c.exigido ? Math.min(100, ((c.integralizado ?? 0) / c.exigido) * 100) : 0;
                   return (
                     <li key={c.categoria} className="text-xs">
                       <div className="mb-1 flex justify-between gap-2">
-                        <span className="text-foreground">{c.categoria}</span>
-                        <span className="tabular-nums text-muted-foreground">
+                        <span className="font-bold text-foreground">{c.categoria}</span>
+                        <span className="font-mono tabular-nums text-muted-foreground">
                           {c.integralizado ?? 0}h / {c.exigido}h
                           {c.pendente ? ` · faltam ${c.pendente}h` : ''}
                         </span>
                       </div>
-                      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                        <div className={cn('h-full rounded-full', pct >= 100 ? 'bg-success' : 'bg-primary')} style={{ width: `${pct}%` }} />
+                      <div className="h-2 overflow-hidden rounded-full bg-trilho">
+                        <div className={cn('h-full rounded-full', pct >= 100 ? 'bg-mar' : 'bg-foreground')} style={{ width: `${pct}%` }} />
                       </div>
                     </li>
                   );
@@ -184,7 +184,7 @@ export function SigaaInsights() {
           )}
           {pendentes.length > 0 && (
             <div>
-              <h3 className="mb-2 text-sm font-medium text-foreground">
+              <h3 className="rotulo mb-2">
                 Obrigatórias pendentes <span className="text-muted-foreground">({pendentes.length})</span>
               </h3>
               <div className="flex flex-wrap gap-1.5">
@@ -193,8 +193,8 @@ export function SigaaInsights() {
                     key={p.codigo}
                     title={`${p.nome}${p.carga_horaria ? ` · ${p.carga_horaria}h` : ''}`}
                     className={cn(
-                      'rounded-full border px-2 py-0.5 text-[11px]',
-                      p.matriculado ? 'border-primary/30 bg-primary/10 text-primary' : 'border-border bg-muted text-muted-foreground',
+                      'rounded-full px-2.5 py-1 font-mono text-[11px] font-bold',
+                      p.matriculado ? 'bg-mar-claro text-mar-ink' : 'bg-nevoa text-foreground-2',
                     )}
                   >
                     {p.codigo}
@@ -202,7 +202,7 @@ export function SigaaInsights() {
                   </span>
                 ))}
                 {pendentes.length > 12 && (
-                  <button onClick={() => setShowAllPendentes((v) => !v)} className="text-[11px] font-medium text-primary hover:underline">
+                  <button onClick={() => setShowAllPendentes((v) => !v)} className="text-[12px] font-bold text-mar hover:underline">
                     {showAllPendentes ? 'mostrar menos' : `+${pendentes.length - 12}`}
                   </button>
                 )}
@@ -213,10 +213,10 @@ export function SigaaInsights() {
       )}
 
       {(horas.data?.dicas?.length ?? 0) > 0 && (
-        <ul className="mt-5 space-y-1.5 rounded-lg bg-muted/50 p-3">
+        <ul className="mt-5 space-y-1.5 rounded-[18px] bg-nevoa p-4">
           {horas.data!.dicas.map((dica) => (
             <li key={dica} className="flex gap-2 text-xs text-muted-foreground">
-              <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+              <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-mar" />
               {dica}
             </li>
           ))}

@@ -125,31 +125,31 @@ export function LargeDisciplineCard({
     return (
       <div
         className={cn(
-          'group relative bg-card rounded-xl border border-border px-5 py-4',
+          'group relative rounded-[18px] border-[1.5px] border-dashed border-tracejado bg-nevoa px-5 py-4',
           'flex flex-col gap-2 opacity-90',
         )}
       >
         <div className="flex items-center justify-between">
-          <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-muted text-muted-foreground">{code}</span>
+          <span className="font-mono text-[13px] font-bold text-foreground-2">{code}</span>
           {shouldShowCompletedButton && (
             <button
               onClick={handleCompletedClick}
               className={cn(
-                'p-2 rounded-lg transition-colors',
-                isCompleted ? 'text-success bg-success/10' : 'text-muted-foreground hover:bg-muted',
+                'flex h-[26px] w-[26px] items-center justify-center rounded-full transition-colors',
+                isCompleted ? 'bg-mar text-white' : 'text-foreground/30 hover:text-foreground/60',
               )}
               aria-label={isCompleted ? 'Desmarcar como cursada' : 'Marcar como cursada'}
             >
               {isCompleted ? (
-                <Check className="w-4 h-4" />
+                <Check className="h-3.5 w-3.5" strokeWidth={2.4} />
               ) : (
-                <span className="block w-4 h-4 rounded-full border border-current" />
+                <span className="block h-[22px] w-[22px] rounded-full border-[1.5px] border-current" />
               )}
             </button>
           )}
         </div>
 
-        <h3 className="font-semibold text-card-foreground text-sm">Não Disponível</h3>
+        <h3 className="text-sm font-extrabold uppercase text-foreground">Não disponível</h3>
         <p className="text-xs text-muted-foreground">Essa disciplina ainda não está sincronizada.</p>
       </div>
     );
@@ -158,46 +158,46 @@ export function LargeDisciplineCard({
   return (
     <div
       className={cn(
-        'group relative bg-card rounded-xl border border-border px-5 py-4 cursor-pointer',
-        'flex h-full flex-col transition-all duration-200 hover:shadow-card-hover hover:scale-[1.01]',
-        isCompleted && 'border-success/50 bg-success/5',
+        'group relative cursor-pointer rounded-[18px] border-[1.5px] border-foreground/10 bg-background px-5 py-4',
+        'flex h-full flex-col transition-all duration-200 hover:bg-nevoa',
+        isCompleted && 'border-transparent bg-mar-claro hover:bg-mar-claro',
       )}
       onClick={onClick}
     >
       <div className="flex items-center justify-between mb-1">
         <span className={cn(
-          "px-2.5 py-1 rounded-lg text-xs font-semibold",
-          isCompleted ? "bg-success/10 text-success" :
-          "bg-muted text-muted-foreground"
+          "font-mono text-[13px] font-bold",
+          isCompleted ? "text-mar-ink" :
+          "text-mar"
         )}>{code}</span>
         <div className="flex items-center gap-1">
           {!isEquivalent && <FavoriteButton active={favorite} onToggle={() => toggleFavorite(code)} />}
           {shouldShowCompletedButton && (
             <button
               onClick={handleCompletedClick}
-              className={cn('p-2 rounded-lg transition-colors', isCompleted ? 'text-success bg-success/10' : 'text-muted-foreground hover:bg-muted')}
+              className={cn('flex h-[26px] w-[26px] items-center justify-center rounded-full transition-colors', isCompleted ? 'bg-mar text-white' : 'text-foreground/30 hover:text-foreground/60')}
               aria-label={isCompleted ? 'Desmarcar como cursada' : 'Marcar como cursada'}
             >
-              {isCompleted ? <Check className="w-4 h-4" /> : <span className="block w-4 h-4 rounded-full border border-current" />}
+              {isCompleted ? <Check className="h-3.5 w-3.5" strokeWidth={2.4} /> : <span className="block h-[22px] w-[22px] rounded-full border-[1.5px] border-current" />}
             </button>
           )}
         </div>
       </div>
 
       <div className="flex-1">
-        <h3 className="font-semibold text-card-foreground mb-2 text-sm md:text-base line-clamp-2">{name ?? code}</h3>
+        <h3 className="mb-2 line-clamp-2 text-sm font-extrabold uppercase leading-snug text-foreground">{name ?? code}</h3>
         {typeof (summary as any)?.workload === 'number' && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Clock className="w-4 h-4" />
+          <div className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
+            <Clock className="h-3.5 w-3.5" />
             <span>{(summary as any).workload}h</span>
           </div>
         )}
       </div>
 
-      <div className="mt-2 pt-1 border-t border-border">
+      <div className="mt-2 border-t border-foreground/10 pt-2">
         <div className="flex items-center justify-between">
           {isCompleted && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-success/10 text-success text-[10px] sm:text-xs font-medium">Cursada</span>
+            <span className="inline-flex items-center rounded-full bg-mar px-2.5 py-0.5 text-[10px] font-bold text-white sm:text-[11px]">Cursada</span>
           )}
           <div className="flex-1" />
           <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">

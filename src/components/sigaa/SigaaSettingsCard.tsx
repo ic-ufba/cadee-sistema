@@ -23,21 +23,21 @@ export function SigaaSettingsCard() {
   const statusOk = !statusLoading && !statusError && sigaaNoAr !== false;
 
   return (
-    <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+    <div className="space-y-4 border-t-2 border-foreground pt-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <Link2 className="w-5 h-5 text-primary" />
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-nevoa">
+            <Link2 className="h-5 w-5 text-foreground" />
           </div>
           <div>
-            <h3 className="font-semibold text-card-foreground">Conta do SIGAA</h3>
+            <h3 className="text-[22px] font-black tracking-[-0.03em] text-foreground">Conta do SIGAA</h3>
             <p className="text-xs text-muted-foreground">Opcional — importa histórico, CR e pendências automaticamente.</p>
           </div>
         </div>
         <span
           className={cn(
-            'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium border',
-            statusOk ? 'border-success/30 bg-success/10 text-success' : 'border-border bg-muted text-muted-foreground',
+            'shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold',
+            statusOk ? 'bg-mar-claro text-mar-ink' : 'bg-nevoa text-foreground-2',
           )}
         >
           {statusLabel}
@@ -46,8 +46,8 @@ export function SigaaSettingsCard() {
 
       {isLoggedIn ? (
         <>
-          <div className="rounded-lg bg-muted/50 border border-border p-3 text-sm">
-            <p className="font-medium text-foreground">{session?.nome ?? session?.usuario}</p>
+          <div className="rounded-[18px] bg-nevoa p-4 text-sm">
+            <p className="font-extrabold text-foreground">{session?.nome ?? session?.usuario}</p>
             {session?.curso && <p className="text-xs text-muted-foreground">{session.curso}</p>}
             <p className="mt-1 text-xs text-muted-foreground">
               {session?.sincronizadoEm
@@ -62,14 +62,14 @@ export function SigaaSettingsCard() {
             <button
               onClick={() => sync.mutate()}
               disabled={sync.isPending}
-              className="flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60"
+              className="flex h-11 items-center justify-center gap-2 rounded-full bg-primary text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
             >
               {sync.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               Sincronizar histórico
             </button>
             <button
               onClick={() => void baixarGradeIcs()}
-              className="flex items-center justify-center gap-2 py-2.5 rounded-lg border border-border text-foreground hover:bg-muted transition-colors"
+              className="flex h-11 items-center justify-center gap-2 rounded-full border-[1.5px] border-foreground/20 text-sm font-bold text-foreground transition-colors hover:bg-nevoa"
             >
               <CalendarArrowDown className="w-4 h-4" />
               Grade no calendário
@@ -77,7 +77,7 @@ export function SigaaSettingsCard() {
           </div>
           <button
             onClick={() => void logout()}
-            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-pitanga-tint text-sm font-bold text-pitanga-ink transition-colors hover:bg-pitanga hover:text-white"
           >
             <LogOut className="w-4 h-4" />
             Sair do SIGAA
@@ -89,7 +89,7 @@ export function SigaaSettingsCard() {
       ) : (
         <button
           onClick={openLogin}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
         >
           <LogIn className="w-4 h-4" />
           Entrar com o SIGAA

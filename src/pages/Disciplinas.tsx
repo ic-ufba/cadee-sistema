@@ -875,19 +875,19 @@ const Disciplinas = () => {
 
   return (
     <MainLayout>
-      <div className="p-6 max-w-6xl mx-auto animate-fade-in">
-        <div className="mb-6">
+      <div className="px-5 pt-4 sm:px-[clamp(20px,4vw,56px)] sm:pt-8 animate-fade-in">
+        <div className="mb-7">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <h1 className="text-2xl font-bold text-foreground">Catálogo de Disciplinas</h1>
+            <h1 className="text-[30px] font-black leading-[1.05] tracking-[-0.04em] text-foreground sm:text-[clamp(30px,2.8vw,40px)]">Catálogo de disciplinas</h1>
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-2">
+          <div className="mt-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
             {myPrograms.length > 0 ? (
               <div className="flex flex-wrap gap-2 items-center justify-between w-full">
                 <div className="flex flex-wrap gap-2 items-center">
                   {myPrograms.map((p) => (
                     <span
                       key={p.id_ref}
-                      className="inline-flex items-center px-3 py-1.5 rounded-full bg-muted text-muted-foreground border border-border text-xs font-medium"
+                      className="rotulo inline-flex items-center"
                     >
                       {p.title}
                     </span>
@@ -895,9 +895,9 @@ const Disciplinas = () => {
                 </div>
                 <button
                   onClick={() => setShowImportModal(true)}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-medium hover:bg-muted"
+                  className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-extrabold text-primary-foreground hover:bg-primary/85"
                 >
-                  <Upload className="w-3.5 h-3.5" />
+                  <Upload className="h-4 w-4" />
                   Importar histórico
                 </button>
               </div>
@@ -911,9 +911,9 @@ const Disciplinas = () => {
                 </div>
                 <button
                   onClick={() => setShowImportModal(true)}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-medium hover:bg-muted"
+                  className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-extrabold text-primary-foreground hover:bg-primary/85"
                 >
-                  <Upload className="w-3.5 h-3.5" />
+                  <Upload className="h-4 w-4" />
                   Importar histórico
                 </button>
               </div>
@@ -921,14 +921,14 @@ const Disciplinas = () => {
           </div>
         </div>
 
-        <div className="relative mb-6">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+        <div className="relative mb-3">
+          <Search className="absolute left-[18px] top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-foreground-2" />
           <input
             type="text"
             placeholder="Pesquise por nome ou código..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 rounded-xl bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+            className="h-[52px] w-full rounded-full border-0 bg-nevoa pl-12 pr-5 text-sm font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-mar transition-all"
           />
         </div>
 
@@ -937,7 +937,7 @@ const Disciplinas = () => {
             {/* Filtros button */}
             <Collapsible defaultOpen={false}>
               <CollapsibleTrigger className={cn(
-                'inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-card hover:bg-accent text-sm font-medium'
+                'inline-flex h-11 items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-transparent px-4 text-[13px] font-bold hover:bg-nevoa'
               )}>
                 <span>Filtros</span>
                 <Badge variant={isAll ? 'outline' : 'secondary'}>
@@ -952,10 +952,10 @@ const Disciplinas = () => {
                       type="button"
                       onClick={() => toggle(f.id)}
                       className={cn(
-                        "px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all",
+                        "h-10 rounded-full px-4 text-[13px] font-bold transition-all",
                         isActive(f.id)
-                          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
-                          : "bg-muted text-muted-foreground hover:bg-accent"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-nevoa text-foreground-2 hover:bg-trilho hover:text-foreground"
                       )}
                     >
                       {f.label}
@@ -967,7 +967,7 @@ const Disciplinas = () => {
             
             {/* Ordem button */}
             <Select value={orderBy} onValueChange={(v: 'name' | 'sections') => setOrderBy(v)}>
-              <SelectTrigger className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-card hover:bg-accent text-sm font-medium h-auto w-auto">
+              <SelectTrigger className="inline-flex h-11 w-auto items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-transparent px-4 text-[13px] font-bold hover:bg-nevoa">
                 <span>Ordem</span>
               </SelectTrigger>
               <SelectContent>
@@ -978,7 +978,7 @@ const Disciplinas = () => {
             
             {/* Visualização button */}
             <Select value={viewMode} onValueChange={(v: 'all' | 'semester' | 'electives') => setViewMode(v)}>
-              <SelectTrigger className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-card hover:bg-accent text-sm font-medium h-auto w-auto">
+              <SelectTrigger className="inline-flex h-11 w-auto items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-transparent px-4 text-[13px] font-bold hover:bg-nevoa">
                 <span>Visualização</span>
               </SelectTrigger>
               <SelectContent>
@@ -1013,13 +1013,13 @@ const Disciplinas = () => {
                   const currentIndex = orderedLevels.indexOf(selectedSemester);
                   return currentIndex <= 0;
                 })()}
-                className="p-2 rounded-lg border border-border bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-nevoa hover:bg-trilho disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               
               <Select value={selectedSemester} onValueChange={setSelectedSemester}>
-                <SelectTrigger className="h-9 w-auto min-w-[12rem] rounded-xl border border-border bg-card hover:bg-accent text-sm font-medium px-3">
+                <SelectTrigger className="h-11 w-auto min-w-[12rem] rounded-full border-0 bg-nevoa px-4 text-sm font-bold hover:bg-trilho">
                   <SelectValue placeholder="Selecione um semestre" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1056,7 +1056,7 @@ const Disciplinas = () => {
                   const currentIndex = orderedLevels.indexOf(selectedSemester);
                   return currentIndex >= orderedLevels.length - 1;
                 })()}
-                className="p-2 rounded-lg border border-border bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-nevoa hover:bg-trilho disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -1065,37 +1065,37 @@ const Disciplinas = () => {
         )}
 
         {!isSimplified && (
-          <div className="flex flex-wrap gap-4 mb-6">
+          <div className="mb-6 flex flex-wrap gap-x-4 gap-y-2.5 text-xs font-bold">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-success" />
-              <span className="text-sm text-muted-foreground">Cursada</span>
+              <div className="h-4 w-4 rounded-[5px] border-[1.5px] border-mar bg-mar-claro" />
+              <span className="text-foreground-2">Cursada</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-warning" />
-              <span className="text-sm text-muted-foreground">Disponível</span>
+              <div className="h-4 w-4 rounded-[5px] border-[1.5px] border-dende bg-dende-claro" />
+              <span className="text-foreground-2">Disponível</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-muted" />
-              <span className="text-sm text-muted-foreground">Bloqueada</span>
+              <div className="h-4 w-4 rounded-[5px] border-[1.5px] border-dashed border-tracejado bg-nevoa" />
+              <span className="text-foreground-2">Bloqueada</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-primary/50 border border-primary" />
-              <span className="text-sm text-muted-foreground">Selecionada nesse semestre</span>
+              <div className="h-4 w-4 rounded-[5px] border-2 border-foreground bg-background" />
+              <span className="text-foreground-2">Selecionada nesse semestre</span>
             </div>
           </div>
         )}
 
         {(isPrereqsLoading || showLoadComplete) && (
-          <div className="fixed top-20 right-4 z-50 flex items-center gap-2 px-4 py-3 bg-card border border-border rounded-lg shadow-lg">
+          <div className="fixed right-4 top-20 z-50 flex items-center gap-2.5 rounded-full bg-primary px-5 py-3 text-primary-foreground shadow-lg">
             {isPrereqsLoading ? (
               <>
-                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm text-muted-foreground">Carregando pré-requisitos...</span>
+                <div className="h-4 w-4 animate-gira rounded-full border-2 border-primary-foreground border-t-transparent" />
+                <span className="text-[13px] font-bold">Carregando pré-requisitos...</span>
               </>
             ) : (
               <>
-                <div className="w-4 h-4 rounded-full bg-success" />
-                <span className="text-sm text-success font-medium">Carregamento completo</span>
+                <div className="h-4 w-4 rounded-full bg-mar" />
+                <span className="text-[13px] font-bold">Carregamento completo</span>
               </>
             )}
           </div>
@@ -1115,9 +1115,9 @@ const Disciplinas = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 16 }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="bg-card rounded-xl border border-border p-4"
+              className="border-t-2 border-foreground pt-3"
             >
-              <h3 className="font-semibold text-card-foreground mb-4 pb-2 border-b border-border">
+              <h3 className="mb-4 text-[24px] font-black tracking-[-0.04em] text-foreground sm:text-[28px]">
                 Catálogo Global
               </h3>
               {(() => {
@@ -1135,7 +1135,7 @@ const Disciplinas = () => {
                 const total = filtered.length;
                 const items = filtered.slice(0, globalLimit);
                 return (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">
                     <AnimatePresence mode="popLayout">
                       {items.map((course) => (
                         <motion.div
@@ -1163,7 +1163,7 @@ const Disciplinas = () => {
                       ))}
                     </AnimatePresence>
                     {globalLimit < total && (
-                      <div className="col-span-2 md:col-span-3 flex justify-center mt-2">
+                      <div className="col-span-full mt-2 flex justify-center">
                         <Button
                           variant="secondary"
                           className="rounded-xl"
@@ -1179,7 +1179,7 @@ const Disciplinas = () => {
             </motion.div>
           </div>
         ) : courses.length > 0 ? (
-          <div className="space-y-6">
+          <div className="space-y-10">
             <AnimatePresence initial={false}>
             {(() => {
               const optCheck = (l: string) => /optat/i.test(l);
@@ -1228,13 +1228,13 @@ const Disciplinas = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 16 }}
                   transition={{ duration: 0.3, ease: 'easeOut' }}
-                  className="bg-card rounded-xl border border-border p-4"
+                  className="border-t-2 border-foreground pt-3 sm:grid sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-6"
                 >
-                  <h3 className="font-semibold text-card-foreground mb-4 pb-2 border-b border-border">
+                  <h3 className="mb-4 text-[24px] font-black leading-tight tracking-[-0.04em] text-foreground sm:text-[28px]">
                     {getSemesterTitle(level)}
                   </h3>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">
                     <AnimatePresence mode="popLayout">
                     {filteredSemesterCourses.map((course) => {
                       const completed = completedDisciplines.includes(course.code);
@@ -1300,7 +1300,7 @@ const Disciplinas = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+              className="fixed inset-0 z-50 flex items-end justify-center bg-overlay/55 sm:items-center sm:p-4"
               onClick={() => setShowImportModal(false)}
             >
               <motion.div
@@ -1308,35 +1308,35 @@ const Disciplinas = () => {
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 10 }}
                 transition={{ duration: 0.18 }}
-                className="w-full max-w-2xl bg-card rounded-2xl shadow-xl border border-border/60 p-6 space-y-4"
+                className="max-h-[92vh] w-full max-w-2xl space-y-5 overflow-y-auto rounded-t-[28px] bg-background p-6 pb-8 shadow-xl sm:rounded-[28px] sm:pb-6"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Upload className="w-5 h-5 text-primary" />
+                    <div className="hidden">
+                      <Upload className="w-5 h-5 text-mar" />
                     </div>
                     <div>
-                      <p className="text-lg font-semibold text-foreground">Importar histórico</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-[22px] font-black leading-tight tracking-[-0.03em] text-foreground">Importar histórico</p>
+                      <p className="mt-1 text-sm font-medium text-muted-foreground">
                         Envie o PDF ou cole o texto do histórico para marcar disciplinas cursadas.
                       </p>
                     </div>
                   </div>
-                  <button onClick={() => setShowImportModal(false)} className="text-muted-foreground hover:text-foreground">
-                    <X className="w-5 h-5" />
+                  <button onClick={() => setShowImportModal(false)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-nevoa text-foreground-2 hover:text-foreground">
+                    <X className="h-[18px] w-[18px]" />
                   </button>
                 </div>
 
                 <div className="space-y-3">
-                  <label className="flex items-center gap-2 px-4 py-3 border rounded-lg cursor-pointer hover:bg-muted">
-                    <Upload className="w-4 h-4" />
-                    <span className="text-sm">Selecionar PDF</span>
+                  <label className="flex h-[88px] cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[18px] border-[1.5px] border-dashed border-tracejado bg-nevoa px-4 transition-colors hover:bg-trilho">
+                    <Upload className="h-5 w-5 text-foreground" />
+                    <span className="text-sm font-bold text-foreground">Selecionar PDF</span>
                     <input type="file" accept=".pdf,text/plain" className="hidden" onChange={handleFileChange} />
                   </label>
 
-                  <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground">
-                    <p className="font-medium text-foreground mb-1 flex items-center gap-1">
+                  <div className="rounded-[18px] bg-mar-claro p-4 text-xs font-medium leading-relaxed text-mar-ink">
+                    <p className="mb-1 flex items-center gap-1.5 text-[13px] font-extrabold">
                       <Shield className="w-3 h-3" />
                       Privacidade
                     </p>
@@ -1348,7 +1348,7 @@ const Disciplinas = () => {
 
                   {/* Métricas de Progresso do Curso - mostra quando há dados importados */}
                   {parsedWorkload && (
-                    <div className="space-y-3">
+                    <div className="hidden">
                       <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
                         <div className="text-xs text-green-600 dark:text-green-400 font-medium mb-3">
                           Dados de Carga Horária Extraídos
@@ -1466,15 +1466,15 @@ const Disciplinas = () => {
                   )}
 
                   <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="rotulo">
                       Disciplinas aprovadas detectadas: {parsedCodes.length}
                     </p>
-                    <div className="flex flex-wrap gap-2 max-h-36 overflow-auto border border-border/70 rounded-lg p-2">
+                    <div className="flex max-h-36 flex-wrap gap-1.5 overflow-auto rounded-[18px] border-[1.5px] border-foreground/10 p-3">
                       {parsedCodes.length === 0 ? (
                         <span className="text-xs text-muted-foreground">Nenhuma encontrada ainda.</span>
                       ) : (
                         parsedCodes.map(code => (
-                          <span key={code} className="px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-semibold">
+                          <span key={code} className="rounded-full bg-mar-claro px-2.5 py-1 font-mono text-xs font-bold text-mar-ink">
                             {code}
                           </span>
                         ))
@@ -1483,7 +1483,7 @@ const Disciplinas = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-2">
+                <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
                   <button
                     onClick={() => {
                       setShowImportModal(false);
@@ -1495,13 +1495,13 @@ const Disciplinas = () => {
                       setImportError('');
                       localStorage.removeItem('progressData');
                     }}
-                    className="px-4 py-2 rounded-lg border border-border text-sm text-foreground hover:bg-muted"
+                    className="h-12 px-5 rounded-full border-[1.5px] border-foreground/20 text-sm font-bold text-foreground hover:bg-nevoa"
                   >
                     Cancelar
                   </button>
                   <button
                     onClick={handleApplyImport}
-                    className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90"
+                    className="h-12 px-6 rounded-full bg-primary text-primary-foreground text-sm font-extrabold hover:bg-primary/85"
                     disabled={isParsing}
                   >
                     Aplicar e marcar cursadas
@@ -1519,7 +1519,7 @@ const Disciplinas = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+              className="fixed inset-0 z-50 flex items-end justify-center bg-overlay/55 sm:items-center sm:p-4"
               onClick={() => setShowDisciplinesModal(false)}
             >
               <motion.div
@@ -1527,21 +1527,21 @@ const Disciplinas = () => {
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 10 }}
                 transition={{ duration: 0.18 }}
-                className="w-full max-w-md bg-card rounded-2xl shadow-xl border border-border/60 p-6"
+                className="w-full max-w-md rounded-t-[28px] bg-background p-6 pb-8 shadow-xl sm:rounded-[28px] sm:pb-6"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <BookOpen className="w-5 h-5 text-primary" />
+                    <div className="hidden">
+                      <BookOpen className="w-5 h-5 text-mar" />
                     </div>
                     <div>
-                      <p className="text-lg font-semibold text-foreground">Disciplinas</p>
-                      <p className="text-sm text-muted-foreground">Gerencie sua grade curricular</p>
+                      <p className="text-[22px] font-black leading-tight tracking-[-0.03em] text-foreground">Disciplinas</p>
+                      <p className="mt-1 text-sm font-medium text-muted-foreground">Gerencie sua grade curricular</p>
                     </div>
                   </div>
-                  <button onClick={() => setShowDisciplinesModal(false)} className="text-muted-foreground hover:text-foreground">
-                    <X className="w-5 h-5" />
+                  <button onClick={() => setShowDisciplinesModal(false)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-nevoa text-foreground-2 hover:text-foreground">
+                    <X className="h-[18px] w-[18px]" />
                   </button>
                 </div>
 
@@ -1566,7 +1566,7 @@ const Disciplinas = () => {
                         setShowDisciplinesModal(false);
                         localStorage.setItem('firstVisitDisciplinas', 'true');
                       }}
-                      className="px-4 py-2 rounded-lg border border-border text-sm text-foreground hover:bg-muted"
+                      className="h-12 px-5 rounded-full border-[1.5px] border-foreground/20 text-sm font-bold text-foreground hover:bg-nevoa"
                     >
                       Mudar para modo completo
                     </button>
@@ -1576,7 +1576,7 @@ const Disciplinas = () => {
                       setShowDisciplinesModal(false);
                       localStorage.setItem('firstVisitDisciplinas', 'true');
                     }}
-                    className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90"
+                    className="h-12 px-6 rounded-full bg-primary text-primary-foreground text-sm font-extrabold hover:bg-primary/85"
                   >
                     Continuar
                   </button>
@@ -1592,7 +1592,7 @@ const Disciplinas = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+              className="fixed inset-0 z-50 flex items-end justify-center bg-overlay/55 sm:items-center sm:p-4"
               onClick={() => setShowUpgradeModal(false)}
             >
               <motion.div
@@ -1600,21 +1600,21 @@ const Disciplinas = () => {
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 10 }}
                 transition={{ duration: 0.18 }}
-                className="w-full max-w-md bg-card rounded-2xl shadow-xl border border-border/60 p-6"
+                className="w-full max-w-md rounded-t-[28px] bg-background p-6 pb-8 shadow-xl sm:rounded-[28px] sm:pb-6"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <BookOpen className="w-5 h-5 text-primary" />
+                    <div className="hidden">
+                      <BookOpen className="w-5 h-5 text-mar" />
                     </div>
                     <div>
-                      <p className="text-lg font-semibold text-foreground">Modo Completo</p>
-                      <p className="text-sm text-muted-foreground">Desbloqueie recursos avançados</p>
+                      <p className="text-[22px] font-black leading-tight tracking-[-0.03em] text-foreground">Modo Completo</p>
+                      <p className="mt-1 text-sm font-medium text-muted-foreground">Desbloqueie recursos avançados</p>
                     </div>
                   </div>
-                  <button onClick={() => setShowUpgradeModal(false)} className="text-muted-foreground hover:text-foreground">
-                    <X className="w-5 h-5" />
+                  <button onClick={() => setShowUpgradeModal(false)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-nevoa text-foreground-2 hover:text-foreground">
+                    <X className="h-[18px] w-[18px]" />
                   </button>
                 </div>
 
@@ -1636,13 +1636,13 @@ const Disciplinas = () => {
                       setShowUpgradeModal(false);
                       setPendingAction(null);
                     }}
-                    className="px-4 py-2 rounded-lg border border-border text-sm text-foreground hover:bg-muted"
+                    className="h-12 px-5 rounded-full border-[1.5px] border-foreground/20 text-sm font-bold text-foreground hover:bg-nevoa"
                   >
                     Cancelar
                   </button>
                   <button
                     onClick={confirmUpgrade}
-                    className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90"
+                    className="h-12 px-6 rounded-full bg-primary text-primary-foreground text-sm font-extrabold hover:bg-primary/85"
                   >
                     Mudar para Completo
                   </button>
@@ -1658,28 +1658,28 @@ const Disciplinas = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+                className="fixed inset-0 bg-overlay/55 flex items-end sm:items-center justify-center z-50 sm:p-4"
                 onClick={() => setShowBlockedModal(false)}
               >
                 <motion.div
                   initial={{ opacity: 0, scale: 0.98, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98, y: 20 }}
-                  className="bg-background rounded-xl shadow-xl max-w-md w-full border"
+                  className="w-full max-w-md rounded-t-[28px] bg-background shadow-xl sm:rounded-[28px]"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="flex items-center justify-between p-6 border-b">
+                  <div className="flex items-center justify-between p-6 pb-2">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center">
+                      <div className="hidden">
                         <AlertCircle className="w-5 h-5 text-warning" />
                       </div>
                       <div>
-                        <p className="text-lg font-semibold text-foreground">Disciplina Bloqueada</p>
-                        <p className="text-sm text-muted-foreground">Pré-requisitos não cursados</p>
+                        <p className="text-[22px] font-black leading-tight tracking-[-0.03em] text-foreground">Disciplina Bloqueada</p>
+                        <p className="mt-1 text-sm font-medium text-muted-foreground">Pré-requisitos não cursados</p>
                       </div>
                     </div>
-                    <button onClick={() => setShowBlockedModal(false)} className="text-muted-foreground hover:text-foreground">
-                      <X className="w-5 h-5" />
+                    <button onClick={() => setShowBlockedModal(false)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-nevoa text-foreground-2 hover:text-foreground">
+                      <X className="h-[18px] w-[18px]" />
                     </button>
                   </div>
 
@@ -1695,20 +1695,20 @@ const Disciplinas = () => {
                         return (
                           <div key={prereqCode} className="flex items-center gap-2 text-sm">
                             <div className={cn(
-                              "w-2 h-2 rounded-full",
+                              "h-2.5 w-2.5 shrink-0 rounded-full",
                               completedDisciplines.includes(prereqCode) 
-                                ? "bg-success" 
-                                : "bg-muted"
+                                ? "bg-mar" 
+                                : "border-[1.5px] border-dashed border-tracejado"
                             )} />
                             <span className={cn(
                               completedDisciplines.includes(prereqCode)
-                                ? "text-success line-through"
-                                : "text-foreground"
+                                ? "font-semibold text-mar-ink line-through"
+                                : "font-semibold text-foreground"
                             )}>
                               {prereqCode}{prereqName ? ` - ${prereqName}` : ''}
                             </span>
                             {completedDisciplines.includes(prereqCode) && (
-                              <span className="text-xs text-success">✓ Cursado</span>
+                              <span className="text-xs font-bold text-mar">✓ Cursado</span>
                             )}
                           </div>
                         );
@@ -1720,13 +1720,13 @@ const Disciplinas = () => {
                     </p>
                   </div>
 
-                  <div className="flex gap-3 justify-end p-6 border-t">
+                  <div className="flex justify-end gap-3 p-6 pt-2">
                     <button
                       onClick={() => {
                         setShowBlockedModal(false);
                         setPendingAction(null);
                       }}
-                      className="px-4 py-2 rounded-lg border border-border text-sm text-foreground hover:bg-muted"
+                      className="h-12 px-5 rounded-full border-[1.5px] border-foreground/20 text-sm font-bold text-foreground hover:bg-nevoa"
                     >
                       Cancelar
                     </button>

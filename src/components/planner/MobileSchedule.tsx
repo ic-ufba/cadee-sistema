@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
 import { useMySections } from '@/hooks/useMySections';
 import { getSpplitedCode } from '@/lib/schedule';
+import { CORES_GRADE_FUNDOS } from '@/lib/grade-cores';
 
 const days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const hours = ['07:00', '07:55', '08:50', '09:45', '10:40', '11:35', '13:00', '13:55', '14:50', '15:45', '16:40', '17:35', '18:30', '19:25', '20:20', '21:15'];
@@ -27,16 +28,8 @@ type ScheduledItem = {
   endTime: string;
 };
 
-const COLORS = [
-  'hsl(217, 91%, 60%)',
-  'hsl(142, 71%, 45%)',
-  'hsl(280, 65%, 60%)',
-  'hsl(0, 72%, 51%)',
-  'hsl(38, 92%, 50%)',
-  'hsl(180, 65%, 45%)',
-  'hsl(320, 65%, 52%)',
-  'hsl(45, 93%, 47%)',
-];
+// Paleta CADEE (ver src/lib/grade-cores.ts) — o hash por código continua o mesmo.
+const COLORS = CORES_GRADE_FUNDOS;
 
 function colorFor(code: string) {
   let hash = 0;
@@ -136,18 +129,18 @@ export function MobileSchedule() {
               key={day}
               onClick={() => setActiveDay(day)}
               className={cn(
-                "flex-shrink-0 px-4 py-2 rounded-lg font-medium transition-all relative",
+                "relative h-10 flex-shrink-0 rounded-full px-4 text-sm font-bold transition-all",
                 activeDay === day
                   ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-accent"
+                  : "bg-nevoa text-foreground-2 hover:bg-trilho"
               )}
             >
               {day}
               {count > 0 && (
                 <span className={cn(
-                  "absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs flex items-center justify-center",
+                  "absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full font-mono text-[11px] font-bold",
                   activeDay === day
-                    ? "bg-primary-foreground text-primary"
+                    ? "bg-mar text-white"
                     : "bg-primary text-primary-foreground"
                 )}>
                   {count}
@@ -172,10 +165,10 @@ export function MobileSchedule() {
             >
               {/* Time */}
               <div className="w-14 flex-shrink-0 text-right">
-                <p className="text-sm font-medium text-card-foreground">
+                <p className="font-mono text-sm font-bold text-foreground">
                   {item.startTime}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="font-mono text-xs text-muted-foreground">
                   {item.endTime}
                 </p>
               </div>
@@ -191,12 +184,12 @@ export function MobileSchedule() {
 
               {/* Content */}
               <div
-                className="flex-1 p-4 rounded-xl border-l-4 bg-card shadow-card mb-2"
+                className="mb-2 flex-1 rounded-[18px] border-l-[6px] bg-nevoa p-4"
                 style={{ borderColor: item.color }}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="font-semibold text-card-foreground">
+                    <p className="text-sm font-extrabold uppercase text-foreground">
                       {item.disciplineName}
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -212,7 +205,7 @@ export function MobileSchedule() {
                       });
                       if (toRemove) toggleSection(toRemove);
                     }}
-                    className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-nevoa text-foreground-2 transition-colors hover:bg-pitanga-tint hover:text-pitanga-ink"
                   >
                     <X className="w-4 h-4" />
                   </button>

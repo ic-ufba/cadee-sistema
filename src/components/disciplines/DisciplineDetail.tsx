@@ -75,20 +75,20 @@ function CompletedButton({
       animate={controls}
       whileHover={{ scale: 1.02 }}
       className={cn(
-        'mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium origin-center transform-gpu will-change-transform',
+        'mt-4 inline-flex h-11 origin-center transform-gpu items-center gap-2 rounded-full px-5 text-sm font-bold will-change-transform',
         completed 
-          ? 'bg-success text-success-foreground' 
+          ? 'bg-mar text-white' 
           : isAvailable
-          ? 'bg-warning/10 text-warning border border-warning/30 hover:bg-warning/20'
+          ? 'bg-dende-claro text-dende-ink hover:bg-dende-tint'
           : isBlocked
-          ? 'dark:bg-gray-700 dark:text-gray-300 bg-gray-200 text-gray-600 border border-gray-400'
-          : 'bg-muted text-muted-foreground hover:bg-muted/80',
+          ? 'border-[1.5px] border-dashed border-tracejado bg-nevoa text-foreground-2'
+          : 'bg-nevoa text-foreground hover:bg-trilho',
       )}
     >
       {completed ? (
         <Check className="w-4 h-4" />
       ) : (
-        <span className="block w-4 h-4 rounded-full border border-current" />
+        <span className="block h-4 w-4 rounded-full border-[1.5px] border-current" />
       )}
       <span>{completed ? 'Cursada' : 'Marcar como cursada'}</span>
     </motion.button>
@@ -355,13 +355,13 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
         <h3
-          className="font-semibold text-card-foreground cursor-pointer select-none"
+          className="cursor-pointer select-none text-[13px] font-extrabold uppercase tracking-[0.12em] text-foreground"
           onClick={onToggle}
         >
           {title}
         </h3>
         {typeof count === 'number' && (
-          <Badge variant="secondary" className="px-2 py-0.5">
+          <Badge variant="secondary" className="px-2 py-0.5 font-mono">
             {count}
           </Badge>
         )}
@@ -369,7 +369,7 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
       <button
         type="button"
         onClick={onToggle}
-        className="px-2 py-1 rounded-md text-sm text-muted-foreground hover:bg-muted"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-sm text-foreground-2 hover:bg-nevoa"
         aria-label={open ? 'Recolher' : 'Expandir'}
       >
         {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -389,29 +389,29 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        className="fixed inset-0 bg-overlay/55 flex items-end sm:items-center justify-center z-50 sm:p-4"
         onClick={onClose}
       >
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
-          className="bg-background rounded-lg p-4 w-full max-w-sm max-h-[75vh] overflow-y-auto md:max-w-2xl md:p-6 shadow border my-4"
+          className="max-h-[88vh] w-full overflow-y-auto rounded-t-[28px] bg-background p-5 pb-8 shadow-xl sm:my-4 sm:max-w-xl sm:rounded-[28px] sm:p-6 md:max-w-2xl md:p-7"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex flex-col gap-1">
-              <span className="text-sm font-semibold text-primary bg-primary/10 px-2 py-1 rounded w-fit">
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-1.5">
+              <span className="w-fit font-mono text-sm font-bold text-mar">
                 {currentCode}
               </span>
-              <h3 className="text-xl font-bold leading-tight">{currentName}</h3>
+              <h3 className="text-[22px] font-black uppercase leading-tight tracking-[-0.03em] sm:text-[26px]">{currentName}</h3>
             </div>
-            <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-              <X className="w-5 h-5" />
+            <button onClick={onClose} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-nevoa text-foreground-2 hover:text-foreground">
+              <X className="h-[18px] w-[18px]" />
             </button>
           </div>
 
-          <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground">
+          <div className="mb-1 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[13px] font-medium text-muted-foreground">
             {typeof (currentDetail as any)?.workload === 'number' && (
               <div className="flex items-center gap-1">
                 <Clock className="w-4 h-4" />
@@ -433,14 +433,14 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
             isBlocked={isBlocked}
           />
 
-          <div className="space-y-6 mt-6">
+          <div className="mt-7 space-y-7">
             {currentDetail?.description && (
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <h3 className="font-semibold text-card-foreground">Ementa</h3>
+                  <h3 className="rotulo">Ementa</h3>
                   {isLive && <LiveDataBadge />}
                 </div>
-                <p className="text-muted-foreground text-sm leading-relaxed">
+                <p className="text-sm font-medium leading-relaxed text-foreground-2">
                   {currentDetail.description}
                 </p>
               </div>
@@ -461,14 +461,14 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
                   {isLoading ? (
                     <div className="space-y-3">
                       {[...Array(3)].map((_, i) => (
-                        <div key={i} className="p-4 rounded-xl border-2 border-border bg-muted/50">
+                        <div key={i} className="rounded-[18px] bg-nevoa p-4">
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 space-y-2">
-                              <div className="h-4 w-40 bg-muted rounded" />
-                              <div className="h-3 w-48 bg-muted rounded" />
-                              <div className="h-3 w-32 bg-muted rounded" />
+                              <div className="h-4 w-40 rounded-full bg-trilho" />
+                              <div className="h-3 w-48 rounded-full bg-trilho" />
+                              <div className="h-3 w-32 rounded-full bg-trilho" />
                             </div>
-                            <div className="h-9 w-24 bg-muted rounded" />
+                            <div className="h-9 w-24 rounded-full bg-trilho" />
                           </div>
                         </div>
                       ))}
@@ -523,16 +523,16 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
                             <button
                               key={`pr-option-${i}`}
                               className={cn(
-                                'px-3 py-1.5 rounded-full text-xs font-medium transition-all inline-flex items-center gap-1',
+                                'inline-flex h-9 items-center gap-1 rounded-full px-4 text-xs font-bold transition-all',
                                 prereqOptionIndex === i
-                                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25'
-                                  : 'bg-muted text-muted-foreground hover:bg-accent',
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-nevoa text-foreground-2 hover:bg-trilho',
                               )}
                               onClick={() => setPrereqOptionIndex(i)}
                             >
                               {`Opção ${i + 1}`}
                               {remainingCounts[i] === minRemaining && (
-                                <Star className="w-3 h-3 text-yellow-500" />
+                                <Star className="h-3 w-3 fill-current text-ouro" />
                               )}
                             </button>
                           ))}
@@ -585,10 +585,10 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
                           <button
                             key={`co-option-${i}`}
                             className={cn(
-                              'px-3 py-1.5 rounded-full text-xs font-medium transition-all',
+                              'h-9 rounded-full px-4 text-xs font-bold transition-all',
                               coreqOptionIndex === i
-                                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25'
-                                : 'bg-muted text-muted-foreground hover:bg-accent',
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-nevoa text-foreground-2 hover:bg-trilho',
                             )}
                             onClick={() => setCoreqOptionIndex(i)}
                           >

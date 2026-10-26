@@ -6,6 +6,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import type { Section } from '@/services/api';
 import { AlertTriangle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { CORES_GRADE_FUNDOS, textoDaCor } from '@/lib/grade-cores';
 
 const days = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
 const hours = ['07:00', '07:55', '08:50', '09:45', '10:40', '11:35', '13:00', '13:55', '14:50', '15:45', '16:40', '17:35', '18:30', '19:25', '20:20', '21:15'];
@@ -35,16 +36,8 @@ type ScheduledItem = {
   section: Section;
 };
 
-const COLORS = [
-  'hsl(217, 91%, 60%)',
-  'hsl(142, 71%, 45%)',
-  'hsl(280, 65%, 60%)',
-  'hsl(0, 72%, 51%)',
-  'hsl(38, 92%, 50%)',
-  'hsl(180, 65%, 45%)',
-  'hsl(330, 71%, 51%)',
-  'hsl(45, 93%, 47%)',
-];
+// Paleta CADEE (ver src/lib/grade-cores.ts) — o hash por código continua o mesmo.
+const COLORS = CORES_GRADE_FUNDOS;
 
 function colorFor(code: string) {
   let hash = 0;
@@ -181,17 +174,17 @@ export function ScheduleGrid({ onSectionClick }: ScheduleGridProps = {}) {
           display: 'grid',
           gridTemplateColumns: `repeat(7, minmax(0, 1fr))`,
           gap: 0,
-          border: '1px solid hsl(var(--border))',
-          borderRadius: '0.75rem',
+          border: '1.5px solid hsl(var(--foreground) / 0.12)',
+          borderRadius: '1.125rem',
           overflow: 'hidden',
-          backgroundColor: 'hsl(var(--card))',
+          backgroundColor: 'hsl(var(--background))',
         }}>
           {/* Linha 1 - Cabeçalho superior */}
-          <div className="day-header bg-muted/50 border-b border-r border-border p-2 md:p-3" style={{ gridColumn: '1' }}>
-            <div className={cn("responsive-text-sm font-semibold text-center", isMobile ? "text-[10px]" : "", isMobile ? "block" : "md:block")}>
+          <div className="day-header border-b border-r border-foreground/10 bg-nevoa p-2 md:p-3" style={{ gridColumn: '1' }}>
+            <div className={cn("responsive-text-sm text-center text-[10px] font-extrabold uppercase tracking-[0.12em] text-foreground-2", isMobile ? "text-[9px]" : "", isMobile ? "block" : "md:block")}>
               Período
             </div>
-            <div className={cn("text-center text-muted-foreground mt-0.5", isMobile ? "text-[9px]" : "text-xs", isMobile ? "block" : "md:block")}>
+            <div className={cn("mt-0.5 text-center font-mono text-muted-foreground", isMobile ? "text-[9px]" : "text-[11px]", isMobile ? "block" : "md:block")}>
               Horário
             </div>
           </div>
@@ -199,12 +192,12 @@ export function ScheduleGrid({ onSectionClick }: ScheduleGridProps = {}) {
             <div
               key={day}
               className={cn(
-                "day-header bg-muted/50 border-b border-r border-border p-2 md:p-3 flex items-center justify-center",
+                "day-header flex items-center justify-center border-b border-r border-foreground/10 bg-nevoa p-2 md:p-3",
                 day === 'SAB' && "border-r-0"
               )}
             >
               <div className={cn(
-                "responsive-text-sm font-semibold text-center",
+                "responsive-text-sm text-center text-[11px] font-extrabold tracking-[0.12em] text-foreground",
                 isMobile ? "text-[10px]" : ""
               )}>
                 {day}
@@ -219,12 +212,12 @@ export function ScheduleGrid({ onSectionClick }: ScheduleGridProps = {}) {
               <div
                 key={`time-${hour}`}
                 className={cn(
-                  "calendar-cell border-r border-border bg-muted/30 p-1.5 md:p-2 flex items-center justify-center",
+                  "calendar-cell flex items-center justify-center border-r border-foreground/10 p-1.5 md:p-2",
                   rowIdx !== hours.length - 1 && "border-b"
                 )}
               >
                 <div className={cn(
-                  "time-slot text-center responsive-text-sm font-medium text-muted-foreground",
+                  "time-slot responsive-text-sm text-center font-mono font-medium text-muted-foreground",
                   isMobile ? "text-[9px]" : "text-xs"
                 )}>
                   {hour}
@@ -240,9 +233,9 @@ export function ScheduleGrid({ onSectionClick }: ScheduleGridProps = {}) {
                     key={`${day}-${hour}`}
                     className={cn(
                       "calendar-cell relative p-0.5 md:p-1",
-                      dayIdx !== days.length - 1 && "border-r border-border",
-                      rowIdx !== hours.length - 1 && "border-b border-border",
-                      cellConflict && "bg-destructive/5"
+                      dayIdx !== days.length - 1 && "border-r border-foreground/[0.07]",
+                      rowIdx !== hours.length - 1 && "border-b border-foreground/[0.07]",
+                      cellConflict && "bg-pitanga-tint/60"
                     )}
                     style={{
                       minHeight: isMobile ? '2.5rem' : '3.25rem',
@@ -264,35 +257,36 @@ export function ScheduleGrid({ onSectionClick }: ScheduleGridProps = {}) {
                                   if (onSectionClick) onSectionClick(item.section);
                                 }}
                                 className={cn(
-                                  "event-block text-white cursor-pointer flex items-center justify-center font-semibold text-center w-full transition-all hover:opacity-90 hover:z-10 relative",
-                                  isMobile ? "text-[9px] rounded-sm" : "text-xs rounded-md",
-                                  hasItemConflict && "ring-2 ring-destructive ring-offset-1 ring-offset-card"
+                                  "event-block relative flex w-full cursor-pointer flex-col items-center justify-center text-center font-extrabold transition-all hover:z-10 hover:brightness-95",
+                                  isMobile ? "rounded-[7px] text-[9px]" : "rounded-[10px] text-xs",
+                                  hasItemConflict && "ring-2 ring-pitanga ring-offset-1 ring-offset-background"
                                 )}
                                 style={{
                                   backgroundColor: item.color,
+                                  color: textoDaCor(item.color),
                                   padding: isMobile ? '0.15rem 0' : '0.4rem 0.25rem',
                                   minHeight: isMobile ? '1.25rem' : '2rem',
                                 }}
                               >
                                 {hasItemConflict && (
                                   <AlertTriangle className={cn(
-                                    "absolute top-0.5 right-0.5 text-white flex-shrink-0",
+                                    "absolute right-0.5 top-0.5 flex-shrink-0 text-current",
                                     isMobile ? "w-2.5 h-2.5" : "w-3 h-3"
                                   )} />
                                 )}
                                 <div className={cn(
-                                  "truncate text-center w-full px-1",
+                                  "w-full truncate px-1 text-center font-mono",
                                   hasItemConflict && (isMobile ? "pr-3" : "pr-4")
                                 )}>
                                   {item.disciplineCode}
                                 </div>
                                 {!isMobile && item.disciplineName && durationSlots >= 2 && (
-                                  <div className="hidden lg:block truncate text-center w-full px-1 font-normal opacity-95 mt-0.5 text-[10px]">
+                                  <div className="mt-0.5 hidden w-full truncate px-1 text-center text-[10px] font-semibold uppercase opacity-90 lg:block">
                                     {item.disciplineName}
                                   </div>
                                 )}
                                 {!isMobile && durationSlots >= 3 && (
-                                  <div className="hidden lg:block text-[9px] opacity-90 mt-0.5 truncate px-1 text-center font-normal">
+                                  <div className="mt-0.5 hidden truncate px-1 text-center text-[9px] font-medium opacity-80 lg:block">
                                     {item.classCode} • {item.professor}
                                   </div>
                                 )}
@@ -300,22 +294,22 @@ export function ScheduleGrid({ onSectionClick }: ScheduleGridProps = {}) {
                             </TooltipTrigger>
                             <TooltipContent side="bottom" className="max-w-xs z-50">
                               <div className="space-y-1">
-                                <p className="font-semibold text-sm">{item.disciplineName}</p>
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-sm font-extrabold">{item.disciplineName}</p>
+                                <p className="font-mono text-xs opacity-75">
                                   {item.disciplineCode} • Turma {item.classCode}
                                 </p>
-                                <p className="text-xs text-muted-foreground truncate">
+                                <p className="truncate text-xs opacity-75">
                                   {item.professor}
                                 </p>
                                 {hasItemConflict && (
                                   <>
-                                    <div className="border-t border-border my-1.5 pt-1.5">
-                                      <p className="text-xs font-medium text-destructive flex items-center gap-1">
+                                    <div className="my-1.5 border-t border-background/20 pt-1.5">
+                                      <p className="flex items-center gap-1 text-xs font-bold text-red-300">
                                         <AlertTriangle className="w-3 h-3" />
                                         Conflito de Horário
                                       </p>
                                       {conflictMessage && (
-                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                        <p className="mt-0.5 text-xs opacity-75">
                                           {conflictMessage}
                                         </p>
                                       )}

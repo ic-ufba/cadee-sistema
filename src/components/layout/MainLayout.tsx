@@ -38,11 +38,11 @@ export function MainLayout({ children }: MainLayoutProps) {
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
+    <div className="flex min-h-screen w-full flex-col bg-background">
       <AppSidebar isCollapsed={isSidebarCollapsed} toggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
-      <main className={cn("flex-1 pb-24 md:pb-0 pt-14 md:pt-0 transition-all duration-300", isSidebarCollapsed ? "md:ml-20" : "md:ml-64")}>
+      <main className={cn("flex-1 pb-32 md:pb-12 pt-[60px] md:pt-0")}>
         <MobileHeader />
-        {children}
+        <div className="mx-auto w-full max-w-[1328px]">{children}</div>
       </main>
       <MobileNav />
       <NewSemesterModal

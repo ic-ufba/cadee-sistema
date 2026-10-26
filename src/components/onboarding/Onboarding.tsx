@@ -7,6 +7,7 @@ import { usePrograms } from '@/hooks/useApi';
 import { useMyPrograms } from '@/hooks/useMyPrograms';
 import { cn } from '@/lib/utils';
 import { fuzzyFilter } from '@/lib/fuzzy';
+import { LogoAssinatura } from '@/components/brand/Logo';
 
 // Função para converter códigos de turno em nomes legíveis
 const getTurnoNome = (codigo: string): string => {
@@ -51,9 +52,9 @@ function LocationFilter({ locations, selectedLocation, onSelect }) {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "flex items-center gap-2 px-3 py-2 w-full rounded-xl border border-border/70 bg-background/50",
-          "text-sm font-normal text-foreground/80 hover:bg-accent/30 transition-colors",
-          isOpen && "ring-1 ring-primary/30"
+          "flex h-11 w-full items-center gap-2 rounded-full bg-nevoa px-4",
+          "text-[13px] font-bold text-foreground transition-colors hover:bg-trilho",
+          isOpen && "ring-2 ring-foreground/15"
         )}
       >
         <MapPin className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
@@ -68,7 +69,7 @@ function LocationFilter({ locations, selectedLocation, onSelect }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.15 }}
-            className="absolute z-10 mt-1 w-full min-w-[200px] rounded-xl bg-popover shadow-lg border border-border/50 overflow-hidden backdrop-blur-sm"
+            className="absolute z-10 mt-1.5 w-full min-w-[200px] overflow-hidden rounded-[18px] bg-popover shadow-lg"
           >
             <div className="p-1 max-h-60 overflow-y-auto">
               <button
@@ -77,10 +78,10 @@ function LocationFilter({ locations, selectedLocation, onSelect }) {
                   setIsOpen(false);
                 }}
                 className={cn(
-                  "w-full text-left px-3 py-2 text-sm rounded-md",
+                  "w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold",
                   !selectedLocation 
-                    ? "bg-accent text-accent-foreground" 
-                    : "hover:bg-accent/50 hover:text-accent-foreground"
+                    ? "bg-primary text-primary-foreground" 
+                    : "hover:bg-nevoa"
                 )}
               >
                 Todas as localizações
@@ -93,10 +94,10 @@ function LocationFilter({ locations, selectedLocation, onSelect }) {
                     setIsOpen(false);
                   }}
                   className={cn(
-                    "w-full text-left px-3 py-2 text-sm rounded-lg",
+                    "w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold",
                     selectedLocation === location
-                      ? "bg-accent/90 text-accent-foreground"
-                      : "hover:bg-accent/30 hover:text-accent-foreground"
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-nevoa"
                   )}
                 >
                   {location}
@@ -137,9 +138,9 @@ function ModeFilter({ modes, selectedMode, onSelect }) {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "flex items-center gap-2 px-3 py-2 w-full rounded-xl border border-border/70 bg-background/50",
-          "text-sm font-normal text-foreground/80 hover:bg-accent/30 transition-colors",
-          isOpen && "ring-1 ring-primary/30"
+          "flex h-11 w-full items-center gap-2 rounded-full bg-nevoa px-4",
+          "text-[13px] font-bold text-foreground transition-colors hover:bg-trilho",
+          isOpen && "ring-2 ring-foreground/15"
         )}
       >
         <Filter className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
@@ -154,7 +155,7 @@ function ModeFilter({ modes, selectedMode, onSelect }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.15 }}
-            className="absolute z-10 mt-1 w-full min-w-[200px] rounded-xl bg-popover shadow-lg border border-border/50 overflow-hidden backdrop-blur-sm"
+            className="absolute z-10 mt-1.5 w-full min-w-[200px] overflow-hidden rounded-[18px] bg-popover shadow-lg"
           >
             <div className="p-1 max-h-60 overflow-y-auto">
               <button
@@ -163,10 +164,10 @@ function ModeFilter({ modes, selectedMode, onSelect }) {
                   setIsOpen(false);
                 }}
                 className={cn(
-                  "w-full text-left px-3 py-2 text-sm rounded-md",
+                  "w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold",
                   !selectedMode 
-                    ? "bg-accent text-accent-foreground" 
-                    : "hover:bg-accent/50 hover:text-accent-foreground"
+                    ? "bg-primary text-primary-foreground" 
+                    : "hover:bg-nevoa"
                 )}
               >
                 Todas as modalidades
@@ -179,10 +180,10 @@ function ModeFilter({ modes, selectedMode, onSelect }) {
                     setIsOpen(false);
                   }}
                   className={cn(
-                    "w-full text-left px-3 py-2 text-sm rounded-lg",
+                    "w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold",
                     selectedMode === mode
-                      ? "bg-accent/90 text-accent-foreground"
-                      : "hover:bg-accent/30 hover:text-accent-foreground"
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-nevoa"
                   )}
                 >
                   {mode}
@@ -301,23 +302,16 @@ export function Onboarding() {
 
   return (
     <>
-      <div className="min-h-screen w-full flex items-start justify-center bg-gradient-to-br from-background to-muted/30 p-4 pt-6 sm:pt-8 sm:items-start sm:pt-12">
+      <div className="flex min-h-screen w-full items-start justify-center bg-background p-5 pt-6 sm:items-start sm:pt-12">
         <div className="w-full max-w-2xl h-auto max-h-[calc(100vh-2rem)] sm:h-[calc(100vh-6rem)] flex flex-col animate-fade-in overflow-hidden">
           {/* Header */}
           <motion.div 
             initial={{ y: -10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="flex items-center gap-3 mb-4 sm:mb-5 px-1"
+            className="mb-7 flex items-center gap-3 px-1 sm:mb-9"
           >
-            <img src="/logo.png" alt="CADEE Logo" className="w-10 h-10 rounded-xl" />
-            <div className="leading-tight">
-              <h1 className="text-lg font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-                CADEE
-              </h1>
-              <p className="text-xs text-muted-foreground">
-                Catálogo Auxiliar de Disciplinas e Estruturação de Estudos
-              </p>
-            </div>
+            <h1 className="sr-only">CADEE</h1>
+            <LogoAssinatura />
           </motion.div>
 
         {/* Card */}
@@ -325,10 +319,10 @@ export function Onboarding() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 overflow-hidden flex flex-col flex-1 max-h-[calc(100vh-10rem)] sm:max-h-[none] sm:h-full"
+          className="flex max-h-[calc(100vh-10rem)] flex-1 flex-col overflow-hidden bg-background sm:h-full sm:max-h-[none]"
         >
-          <div className="p-4 sm:p-5 md:p-6 flex-1 flex flex-col overflow-hidden">
-            <h2 className="text-base font-semibold text-foreground mb-2 sm:mb-3">
+          <div className="flex flex-1 flex-col overflow-hidden px-1 pt-1">
+            <h2 className="mb-4 text-[30px] font-black leading-[1.05] tracking-[-0.04em] text-foreground sm:text-[36px]">
               Selecione seu curso
             </h2>
 
@@ -336,18 +330,18 @@ export function Onboarding() {
             <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
               {/* Barra de busca */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Search className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder="Pesquisar curso..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-background border border-border/70 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all text-sm"
+                  className="h-12 w-full rounded-full bg-nevoa pl-11 pr-4 text-[15px] font-medium text-foreground transition-all placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/15"
                 />
               </div>
               
               {/* Filtros de localização e modalidade */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <LocationFilter 
                   locations={locations} 
                   selectedLocation={selectedLocation} 
@@ -363,10 +357,10 @@ export function Onboarding() {
             </div>
 
             {/* Course List */}
-            <div className="flex-1 min-h-0 overflow-y-auto pb-4 -mx-2 px-2">
+            <div className="-mx-1 min-h-0 flex-1 overflow-y-auto border-t-2 border-foreground px-1 pb-4 pt-3">
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center h-full py-12 space-y-3">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <Loader2 className="w-8 h-8 animate-spin text-mar" />
                   <p className="text-sm text-muted-foreground">Carregando cursos...</p>
                 </div>
               ) : error ? (
@@ -375,7 +369,7 @@ export function Onboarding() {
                   <p className="text-sm text-muted-foreground mt-1">Tente novamente mais tarde</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <AnimatePresence mode="popLayout">
                     {filteredPrograms.length === 0 ? (
                       <motion.div
@@ -407,16 +401,16 @@ export function Onboarding() {
                             }}
                             whileTap={{ scale: 0.98 }}
                             className={cn(
-                              "w-full flex items-start p-4 rounded-xl text-left transition-all",
-                              "border-2",
+                              "flex w-full items-start rounded-[18px] p-4 text-left transition-all",
+                              "border-[1.5px]",
                               isSelected
-                                ? "border-primary bg-primary/5"
-                                : "border-transparent bg-muted/50 hover:bg-muted"
+                                ? "border-foreground bg-nevoa"
+                                : "border-foreground/10 bg-background hover:bg-nevoa"
                             )}
                           >
                             <div className="flex-1 min-w-0">
                               <div>
-                                <p className="font-medium text-foreground text-sm truncate">
+                                <p className="truncate text-sm font-extrabold uppercase text-foreground">
                                   {program.title}
                                 </p>
                                 {/* Mostrar a área apenas se não for um código de turno */}
@@ -460,18 +454,18 @@ export function Onboarding() {
                             
                             <div className="flex-shrink-0 ml-3 flex items-center h-5">
                               <div className={cn(
-                                "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
+                                "flex h-6 w-6 items-center justify-center rounded-full border-[1.5px] transition-colors",
                                 isSelected 
-                                  ? "bg-primary border-primary"
-                                  : "border-muted-foreground/30"
+                                  ? "border-mar bg-mar"
+                                  : "border-foreground/20"
                               )}>
                                 {isSelected && (
                                   <motion.span
                                     initial={{ scale: 0.8, opacity: 0 }}
                                     animate={{ scale: 1, opacity: 1 }}
-                                    className="text-primary-foreground"
+                                    className="text-white"
                                   >
-                                    <Check className="w-3.5 h-3.5" />
+                                    <Check className="h-3.5 w-3.5" strokeWidth={2.4} />
                                   </motion.span>
                                 )}
                               </div>
@@ -486,28 +480,28 @@ export function Onboarding() {
             </div>
 
             {/* Bottom Section - Fixed */}
-            <div className="sticky bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border/50 -mx-4 sm:-mx-6 px-4 sm:px-6 pt-3 sm:pt-4 pb-4 sm:pb-6 -mb-4 sm:mb-0 sm:mt-auto">
+            <div className="sticky bottom-0 left-0 right-0 -mx-1 -mb-4 border-t border-foreground/10 bg-background/95 px-1 pb-4 pt-3 backdrop-blur-sm sm:mb-0 sm:mt-auto sm:pb-6 sm:pt-4">
               {/* Selected Program Preview */}
               {selectedProgram && (
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mb-4 p-3 bg-muted/30 rounded-lg border border-border/50 relative"
+                  className="relative mb-3 rounded-[18px] bg-mar-claro p-3.5"
                 >
                   <button
                     onClick={clearSelection}
-                    className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                    className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-background/70 text-foreground-2 transition-colors hover:text-foreground"
                     aria-label="Remover seleção"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
-                  <h3 className="text-xs font-medium text-muted-foreground mb-1.5">Curso selecionado:</h3>
+                  <h3 className="rotulo mb-1.5 !text-mar-ink">Curso selecionado</h3>
                   <div className="flex items-start">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mr-2">
-                      <GraduationCap className="w-4 h-4 text-primary" />
+                    <div className="mr-2.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-mar">
+                      <GraduationCap className="h-4 w-4 text-white" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{selectedProgram.title}</p>
+                      <p className="truncate text-sm font-extrabold uppercase text-foreground">{selectedProgram.title}</p>
                       {selectedProgram.program_type === 'BACHARELADO' && 
                        selectedProgram.time_code && 
                        !['MT', 'N', 'T', 'M', 'I', 'MN', 'TN', 'MTN'].includes(selectedProgram.time_code) && (
@@ -532,10 +526,10 @@ export function Onboarding() {
                 disabled={!selectedId}
                 whileTap={{ scale: selectedId ? 0.98 : 1 }}
                 className={cn(
-                  "w-full py-3 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2",
+                  "flex h-[52px] w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold transition-colors",
                   selectedId
                     ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                    : "bg-muted text-muted-foreground cursor-not-allowed"
+                    : "cursor-not-allowed bg-nevoa text-muted-foreground"
                 )}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -564,7 +558,7 @@ export function Onboarding() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            className="fixed inset-0 z-50 flex items-end justify-center bg-overlay/55 sm:items-center sm:p-4"
             onClick={() => setShowExperienceModal(false)}
           >
             <motion.div
@@ -572,23 +566,23 @@ export function Onboarding() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
               transition={{ duration: 0.18 }}
-              className="w-full max-w-lg bg-card rounded-2xl shadow-xl border border-border/60 p-6" 
+              className="w-full max-w-lg rounded-t-[28px] bg-background p-6 pb-8 shadow-xl sm:rounded-[28px] sm:pb-6" 
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-start justify-between gap-3 mb-4">
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Como você quer usar o CADEE?</p>
-                  <p className="text-sm text-muted-foreground">Você pode alterar depois nas Configurações.</p>
+                  <p className="text-[22px] font-black leading-tight tracking-[-0.03em] text-foreground">Como você quer usar o CADEE?</p>
+                  <p className="mt-1 text-sm font-medium text-muted-foreground">Você pode alterar depois nas Configurações.</p>
                 </div>
-                <button onClick={() => setShowExperienceModal(false)} className="text-muted-foreground hover:text-foreground">
-                  <X className="w-5 h-5" />
+                <button onClick={() => setShowExperienceModal(false)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-nevoa text-foreground-2 hover:text-foreground">
+                  <X className="h-[18px] w-[18px]" />
                 </button>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2 mb-4">
+              <div className="mb-5 grid gap-2.5 sm:grid-cols-2">
                 <label className={cn(
-                  "flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
-                  modalExperienceMode === 'simplificada' ? "border-primary bg-primary/5" : "border-border/60 hover:bg-muted"
+                  "flex cursor-pointer items-start gap-3 rounded-[18px] border-[1.5px] p-4 transition-colors",
+                  modalExperienceMode === 'simplificada' ? "border-foreground bg-nevoa" : "border-foreground/10 hover:bg-nevoa"
                 )}>
                   <input
                     type="radio"
@@ -596,17 +590,17 @@ export function Onboarding() {
                     value="simplificada"
                     checked={modalExperienceMode === 'simplificada'}
                     onChange={() => setModalExperienceMode('simplificada')}
-                    className="mt-1 accent-primary"
+                    className="mt-1 accent-mar"
                   />
                   <div className="text-sm">
-                    <p className="font-semibold text-foreground">Versão simplificada</p>
+                    <p className="font-extrabold text-foreground">Versão simplificada</p>
                     <p className="text-muted-foreground text-xs mt-0.5">Ir direto para o Planejador. Ideal para começar rápido.</p>
                   </div>
                 </label>
 
                 <label className={cn(
-                  "flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
-                  modalExperienceMode === 'completa' ? "border-primary bg-primary/5" : "border-border/60 hover:bg-muted"
+                  "flex cursor-pointer items-start gap-3 rounded-[18px] border-[1.5px] p-4 transition-colors",
+                  modalExperienceMode === 'completa' ? "border-foreground bg-nevoa" : "border-foreground/10 hover:bg-nevoa"
                 )}>
                   <input
                     type="radio"
@@ -614,10 +608,10 @@ export function Onboarding() {
                     value="completa"
                     checked={modalExperienceMode === 'completa'}
                     onChange={() => setModalExperienceMode('completa')}
-                    className="mt-1 accent-primary"
+                    className="mt-1 accent-mar"
                   />
                   <div className="text-sm">
-                    <p className="font-semibold text-foreground">Versão completa</p>
+                    <p className="font-extrabold text-foreground">Versão completa</p>
                     <p className="text-muted-foreground text-xs mt-0.5">Acesso a todos os recursos. Sempre pode mudar depois.</p>
                   </div>
                 </label>
@@ -626,7 +620,7 @@ export function Onboarding() {
               <div className="flex gap-3 justify-end">
                 <button
                   onClick={() => setShowExperienceModal(false)}
-                  className="px-4 py-2 rounded-lg border border-border text-sm text-foreground hover:bg-muted"
+                  className="h-12 px-5 rounded-full border-[1.5px] border-foreground/20 text-sm font-bold text-foreground hover:bg-nevoa"
                 >
                   Voltar
                 </button>
@@ -634,10 +628,10 @@ export function Onboarding() {
                   onClick={() => modalExperienceMode && finalizeExperience(modalExperienceMode)}
                   disabled={!modalExperienceMode}
                   className={cn(
-                    "px-4 py-2 rounded-lg text-sm font-semibold",
+                    "h-12 rounded-full px-6 text-sm font-extrabold",
                     modalExperienceMode
                       ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                      : "bg-muted text-muted-foreground cursor-not-allowed"
+                      : "cursor-not-allowed bg-nevoa text-muted-foreground"
                   )}
                 >
                   Confirmar

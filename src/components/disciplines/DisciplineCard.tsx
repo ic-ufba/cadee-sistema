@@ -89,29 +89,29 @@ export function DisciplineCard({
       exit={{ opacity: 0, scale: 0.98 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
       className={cn(
-        "group relative bg-card rounded-xl border border-border px-4 pt-4 pb-3 sm:px-5 sm:pt-5 sm:pb-4 cursor-pointer",
-        "flex h-full flex-col",
-        "transition-all duration-200 hover:shadow-card-hover hover:scale-[1.02]",
-        showCompletedStyles && "border-success/50 bg-success/5",
-        isSelected && !showCompletedStyles && "border-primary/50 bg-primary/5",
-        !showCompletedStyles && !isSelected && showAvailable && "bg-warning/10 border-warning hover:bg-warning/20",
-        !showCompletedStyles && !isSelected && showBlocked && "dark:bg-gray-800/50 bg-muted/30 border-gray-400 opacity-60"
+        "group relative min-h-[140px] cursor-pointer rounded-[18px] border-[1.5px] border-foreground/10 bg-background pb-3 pl-3.5 pr-2 pt-2",
+        "flex h-full flex-col gap-1",
+        "transition-colors duration-200 hover:border-foreground/30",
+        showCompletedStyles && "border-mar/30 bg-mar-claro hover:border-mar/50",
+        isSelected && !showCompletedStyles && "border-2 border-foreground bg-background hover:border-foreground",
+        !showCompletedStyles && !isSelected && showAvailable && "border-dende/40 bg-dende-claro hover:border-dende/70",
+        !showCompletedStyles && !isSelected && showBlocked && "border-dashed border-foreground/20 bg-nevoa text-muted-foreground"
       )}
       onClick={onClick}
     >
-      <div className="flex items-center justify-between mb-1 sm:mb-2">
+      <div className="flex items-start justify-between">
         <span
           className={cn(
-            "px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-semibold",
+            "pt-2 font-mono text-xs font-semibold",
             showCompletedStyles
-              ? "bg-success/10 text-success"
+              ? "text-mar-ink"
               : isSelected
-              ? "bg-primary/10 text-primary"
+              ? "text-foreground"
               : showAvailable
-              ? "bg-warning/10 text-warning"
+              ? "text-dende-ink"
               : showBlocked
-              ? "dark:bg-gray-700 dark:text-gray-300 bg-gray-200 text-gray-600"
-              : "bg-muted text-muted-foreground"
+              ? "text-muted-foreground"
+              : "text-foreground-2"
           )}
         >
           {discipline.code}
@@ -120,16 +120,21 @@ export function DisciplineCard({
           <motion.button
             onClick={handleCompletedClick}
             className={cn(
-              "p-2 rounded-lg transition-colors",
+              "flex h-11 w-11 items-center justify-center rounded-full transition-colors",
               isCompleted
-                ? "text-success bg-success/10"
-                : "text-muted-foreground hover:bg-muted"
+                ? "text-white"
+                : isSelected
+                ? "text-foreground"
+                : showAvailable
+                ? "text-dende"
+                : "text-tracejado hover:text-foreground"
             )}
             whileHover={{ scale: 1.08 }}
           >
-            <span className="relative block w-4 h-4">
+            <span className={cn("relative block h-[26px] w-[26px] rounded-full", isCompleted ? "bg-mar" : "bg-background")}>
               {/* Static circle border always present */}
-              <span className="absolute inset-0 rounded-full border border-current" />
+              <span className={cn("absolute inset-0 rounded-full border-current", isCompleted ? "border-0" : showBlocked && !isSelected ? "border-[1.5px] border-dashed" : "border-2")} />
+              {!isCompleted && isSelected && <span className="absolute inset-[7px] rounded-full bg-foreground" />}
               <AnimatePresence mode="wait" initial={false}>
                 {isCompleted && (
                   <motion.span
@@ -140,7 +145,7 @@ export function DisciplineCard({
                     exit={{ opacity: 0, scale: 0.7, rotate: -180 }}
                     transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                   >
-                    <Check className="w-3.5 h-3.5" />
+                    <Check className="h-[15px] w-[15px]" strokeWidth={2.4} />
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -150,14 +155,14 @@ export function DisciplineCard({
       </div>
 
       <div className="flex-1">
-        <h3 className="font-semibold text-card-foreground mb-2 line-clamp-2 text-[11px] sm:text-sm md:text-base">
+        <h3 className={cn("mb-1.5 line-clamp-3 text-[12.5px] font-extrabold uppercase leading-[1.25] sm:text-[13.5px]", showBlocked && !isCompleted && !isSelected ? "text-muted-foreground" : "text-foreground")}>
           {discipline.name}
         </h3>
 
-        <div className="flex items-center gap-4 text-[11px] sm:text-sm text-muted-foreground">
+        <div className="flex items-center gap-3 font-mono text-[11px] text-muted-foreground">
           {typeof (discipline as any).workload === 'number' && (
             <div className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
+              <Clock className="h-3 w-3" />
               <span>{(discipline as any).workload}h</span>
             </div>
           )}
@@ -167,17 +172,17 @@ export function DisciplineCard({
         </div>
 
         {(discipline as any).prerequisites?.length > 0 && (
-          <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 truncate">
+          <p className="mt-1 truncate font-mono text-[10.5px] text-muted-foreground">
             Pré-req: {(discipline as any).prerequisites?.join(', ')}
           </p>
         )}
       </div>
 
       {/* Rodapé compacto com status e contador de turmas */}
-      <div className="mt-2 pt-1 border-t border-border">
+      <div className="mt-auto pr-1.5 pt-2">
         <div className="flex items-center justify-between">
           {/* Reserve space to avoid layout shift (empty component) */}
-          <div className="h-5 sm:h-6 flex items-center gap-2">
+          <div className="flex h-6 items-center gap-2">
             <AnimatePresence mode="popLayout" initial={false}>
               {isCompleted && (
                 <motion.span
@@ -186,7 +191,7 @@ export function DisciplineCard({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.25 }}
-                  className="inline-flex items-center px-2 py-0.5 rounded-md bg-success/10 text-success text-[10px] sm:text-xs font-medium"
+                  className="inline-flex items-center rounded-full bg-mar px-2.5 py-[3px] text-[10.5px] font-extrabold text-white"
                 >
                   Cursada
                 </motion.span>
@@ -198,16 +203,26 @@ export function DisciplineCard({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.25 }}
-                  className="inline-flex items-center px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] sm:text-xs font-medium"
+                  className="inline-flex items-center rounded-full bg-primary px-2.5 py-[3px] text-[10.5px] font-extrabold text-primary-foreground"
                 >
                   Selecionada
                 </motion.span>
               )}
             </AnimatePresence>
+            {!isCompleted && !isSelected && showAvailable && (
+              <span className="inline-flex items-center rounded-full bg-dende px-2.5 py-[3px] text-[10.5px] font-extrabold text-foreground dark:text-background">
+                Disponível
+              </span>
+            )}
+            {!isCompleted && !isSelected && !showAvailable && showBlocked && (
+              <span className="inline-flex items-center rounded-full bg-trilho px-2.5 py-[3px] text-[10.5px] font-extrabold text-foreground-2">
+                Bloqueada
+              </span>
+            )}
           </div>
           <div className="flex-1" />
-          <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
-            <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <div className="flex items-center gap-1 font-mono text-[11.5px] text-foreground-2">
+            <Users className="h-[13px] w-[13px]" />
             <span>{(discipline as any).sections_count ?? 0}</span>
           </div>
         </div>
