@@ -37,13 +37,13 @@ function ResultadoSimulacao({ sim }: { sim: SimulacaoMatricula }) {
     <div className="space-y-3 text-sm">
       <div
         className={cn(
-          'flex items-start gap-2 rounded-lg border p-3',
-          sim.valida ? 'border-success/30 bg-success/10 text-success' : 'border-amber-300/60 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200',
+          'flex items-start gap-2 rounded-[18px] p-4',
+          sim.valida ? 'bg-mar-claro text-mar-ink' : 'bg-dende-claro text-dende-ink',
         )}
       >
         {sim.valida ? <CircleCheck className="mt-0.5 h-4 w-4 shrink-0" /> : <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />}
         <div>
-          <p className="font-medium">{sim.valida ? 'Grade válida pelas regras do SIGAA' : 'Atenção antes de se matricular'}</p>
+          <p className="font-extrabold">{sim.valida ? 'Grade válida pelas regras do SIGAA' : 'Atenção antes de se matricular'}</p>
           <p className="text-xs opacity-90">
             {sim.ch_total}h no semestre
             {sim.ch_maxima_periodo ? ` · máximo do curso: ${sim.ch_maxima_periodo}h` : ''}
@@ -56,10 +56,10 @@ function ResultadoSimulacao({ sim }: { sim: SimulacaoMatricula }) {
 
       {sim.choques.length > 0 && (
         <div>
-          <p className="mb-1 text-xs font-medium text-foreground">Choques de horário</p>
+          <p className="rotulo mb-1.5">Choques de horário</p>
           <ul className="space-y-1">
             {sim.choques.map((c, i) => (
-              <li key={i} className="rounded-md bg-destructive/10 px-2 py-1 text-xs text-destructive">
+              <li key={i} className="rounded-xl bg-pitanga-tint px-3 py-1.5 text-xs font-semibold text-pitanga-ink">
                 {c.turmas.join(' × ')} — {c.dia}, {c.horario}
               </li>
             ))}
@@ -71,7 +71,7 @@ function ResultadoSimulacao({ sim }: { sim: SimulacaoMatricula }) {
         <ul className="space-y-1">
           {sim.problemas.map((p) => (
             <li key={p} className="flex gap-2 text-xs text-muted-foreground">
-              <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+              <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-dende" />
               {p}
             </li>
           ))}
@@ -103,7 +103,7 @@ function ValidarTab() {
       <button
         onClick={() => validar.mutate()}
         disabled={validar.isPending || mySections.length === 0}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
       >
         {validar.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
         {mySections.length === 0 ? 'Adicione turmas para validar' : validar.isPending ? 'Consultando o SIGAA…' : 'Validar minha grade'}
@@ -177,8 +177,8 @@ function SugestaoTab() {
               type="button"
               onClick={() => setTurnos((prev) => (active ? prev.filter((x) => x !== t.id) : [...prev, t.id]))}
               className={cn(
-                'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-                active ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground hover:bg-muted',
+                'h-9 rounded-full px-4 text-xs font-bold transition-colors',
+                active ? 'bg-primary text-primary-foreground' : 'bg-nevoa text-foreground-2 hover:bg-trilho',
               )}
             >
               {t.label}
@@ -186,14 +186,14 @@ function SugestaoTab() {
           );
         })}
         <label className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
-          <input type="checkbox" checked={optativas} onChange={(e) => setOptativas(e.target.checked)} className="accent-primary" />
+          <input type="checkbox" checked={optativas} onChange={(e) => setOptativas(e.target.checked)} className="accent-mar" />
           Incluir optativas
         </label>
       </div>
       <button
         onClick={() => sugerir.mutate()}
         disabled={sugerir.isPending}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
       >
         {sugerir.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
         {sugerir.isPending ? 'Montando sugestão…' : 'Sugerir grade'}
@@ -205,17 +205,17 @@ function SugestaoTab() {
           {matches.length === 0 ? (
             <p className="text-xs text-muted-foreground">Nenhuma combinação encontrada com esses filtros.</p>
           ) : (
-            <ul className="divide-y divide-border rounded-lg border border-border">
+            <ul className="divide-y divide-foreground/10 overflow-hidden rounded-[18px] border-[1.5px] border-foreground/10">
               {matches.map(({ item, section }) => (
-                <li key={`${item.codigo}-${item.turma_id ?? item.turma}`} className="flex items-center justify-between gap-2 px-3 py-2 text-xs">
+                <li key={`${item.codigo}-${item.turma_id ?? item.turma}`} className="flex items-center justify-between gap-2 px-4 py-2.5 text-xs">
                   <span>
-                    <span className="font-medium text-foreground">{item.codigo}</span>
+                    <span className="font-mono font-bold text-mar">{item.codigo}</span>
                     {item.turma && <span className="text-muted-foreground"> · T{item.turma}</span>}
                     {item.natureza && <span className="text-muted-foreground"> · {item.natureza.toLowerCase()}</span>}
                   </span>
                   <span className="tabular-nums text-muted-foreground">
                     {item.carga_horaria ? `${item.carga_horaria}h` : ''}
-                    {!section && <span className="ml-2 text-amber-600">fora do catálogo</span>}
+                    {!section && <span className="ml-2 font-semibold text-dende-ink">fora do catálogo</span>}
                   </span>
                 </li>
               ))}
@@ -225,7 +225,7 @@ function SugestaoTab() {
           {matches.some((m) => m.section) && (
             <button
               onClick={aplicar}
-              className="w-full rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10"
+              className="h-11 w-full rounded-full border-[1.5px] border-foreground/20 px-5 text-sm font-bold text-foreground hover:bg-nevoa"
             >
               Usar esta sugestão na grade
             </button>
@@ -258,15 +258,15 @@ function PrevisaoTab({ active }: { active: boolean }) {
     );
   }
   const grupos = [
-    { titulo: 'Devem abrir', cor: 'border-success/30 bg-success/10 text-success', itens: componentes.filter((c) => c.previsao?.provavel === true) },
+    { titulo: 'Devem abrir', cor: 'border-transparent bg-mar-claro text-mar-ink', itens: componentes.filter((c) => c.previsao?.provavel === true) },
     {
       titulo: 'Improváveis',
-      cor: 'border-amber-300/60 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200',
+      cor: 'border-transparent bg-dende-claro text-dende-ink',
       itens: componentes.filter((c) => c.previsao?.provavel === false),
     },
     {
       titulo: 'Sem histórico de oferta',
-      cor: 'border-border bg-muted text-muted-foreground',
+      cor: 'border-transparent bg-nevoa text-foreground-2',
       itens: componentes.filter((c) => !c.previsao || c.previsao.provavel === null),
     },
   ];
@@ -289,7 +289,7 @@ function PrevisaoTab({ active }: { active: boolean }) {
                   <span
                     key={c.codigo}
                     title={[c.nome, c.previsao?.motivo, c.sem_turma ? 'Atividade: matrícula pelo colegiado' : ''].filter(Boolean).join(' — ')}
-                    className={cn('rounded-full border px-2 py-0.5 text-[11px]', g.cor)}
+                    className={cn('rounded-full border px-2.5 py-1 font-mono text-[11px] font-bold', g.cor)}
                   >
                     {c.codigo}
                     {typeof c.previsao?.probabilidade === 'number' && ` · ${Math.round(c.previsao.probabilidade * 100)}%`}
@@ -313,12 +313,12 @@ export function SigaaPlannerPanel() {
 
   if (!isLoggedIn) {
     return (
-      <div className="flex flex-col gap-2 rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4 text-sm sm:flex-row sm:items-center">
-        <ShieldCheck className="hidden h-6 w-6 shrink-0 text-primary sm:block" />
+      <div className="flex flex-col gap-2 rounded-[18px] bg-mar-claro p-4 text-sm sm:flex-row sm:items-center">
+        <ShieldCheck className="hidden h-6 w-6 shrink-0 text-mar sm:block" />
         <p className="flex-1 text-muted-foreground">
           Entre com o SIGAA para validar esta grade com as regras oficiais, receber uma sugestão automática e ver a previsão de oferta.
         </p>
-        <button onClick={openLogin} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">
+        <button onClick={openLogin} className="h-9 rounded-full bg-primary px-4 text-xs font-bold text-primary-foreground hover:bg-primary/90">
           Entrar
         </button>
       </div>
@@ -326,9 +326,9 @@ export function SigaaPlannerPanel() {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <h3 className="mb-3 flex items-center gap-2 font-semibold text-card-foreground">
-        <ShieldCheck className="h-4 w-4 text-primary" />
+    <div className="rounded-[22px] border-[1.5px] border-foreground/10 bg-background p-4">
+      <h3 className="mb-3 flex items-center gap-2 text-[17px] font-black tracking-[-0.02em] text-foreground">
+        <ShieldCheck className="h-4 w-4 text-mar" />
         Conferir com o SIGAA
       </h3>
       <Tabs value={tab} onValueChange={setTab}>

@@ -253,28 +253,28 @@ const Configuracoes = () => {
 
   return (
     <MainLayout>
-      <div className="p-6 max-w-5xl mx-auto animate-fade-in">
+      <div className="mx-auto max-w-[1100px] animate-fade-in px-5 pb-6 pt-4 sm:px-[clamp(20px,4vw,56px)] sm:pt-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground mb-2">
+          <h1 className="mb-2 text-[30px] font-black leading-[1.05] tracking-[-0.04em] text-foreground sm:text-[clamp(30px,2.8vw,40px)]">
             Ajustes
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm font-medium text-muted-foreground">
             Personalize sua experiência no portal
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-x-12 gap-y-10 md:grid-cols-2">
           {/* Coluna 1 */}
-          <div className="space-y-6">
+          <div className="space-y-10">
             {/* Courses */}
-            <div className="bg-card rounded-xl border border-border p-5">
+            <div className="border-t-2 border-foreground pt-5">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <User className="w-5 h-5 text-primary" />
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-nevoa">
+                  <User className="h-5 w-5 text-foreground" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-card-foreground">Meu curso</h3>
+                  <h3 className="text-[22px] font-black tracking-[-0.03em] text-foreground">Meu curso</h3>
                   {!hasPrograms && (
                     <p className="text-sm text-muted-foreground">Nenhum curso adicionado</p>
                   )}
@@ -286,7 +286,7 @@ const Configuracoes = () => {
                   {myPrograms.map((program) => (
                     <span
                       key={program.id_ref}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted border border-border text-xs text-foreground"
+                      className="inline-flex items-center gap-2 rounded-full bg-mar-claro px-3.5 py-1.5 text-[13px] font-bold text-mar-ink"
                       title={`${program.title} • ${program.location}`}
                     >
                       <span className="max-w-[220px] truncate">{program.title}</span>
@@ -301,21 +301,21 @@ const Configuracoes = () => {
                     handleAddCourse();
                   }
                 }}
-                className="w-full py-2.5 rounded-lg border border-border text-muted-foreground hover:bg-muted transition-colors"
+                className="h-11 w-full rounded-full border-[1.5px] border-foreground/20 text-sm font-bold text-foreground transition-colors hover:bg-nevoa"
               >
                 Mudar Curso
               </button>
             </div>
 
             {/* Carga Horária Manual do Curso */}
-            <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+            <div className="space-y-4 border-t-2 border-foreground pt-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Clock className="w-5 h-5 text-primary" />
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-nevoa">
+                    <Clock className="h-5 w-5 text-foreground" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-card-foreground">Carga Horária do Curso</h3>
+                    <h3 className="text-[22px] font-black tracking-[-0.03em] text-foreground">Carga horária do curso</h3>
                     <p className="text-xs text-muted-foreground">
                       {customCourseWorkload?.enabled
                         ? 'Edição manual ativada'
@@ -335,16 +335,16 @@ const Configuracoes = () => {
               </div>
 
               {/* Quadro Informativo */}
-              <div className="p-3.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-950 dark:text-blue-200 leading-relaxed flex items-start gap-2.5">
-                <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2.5 rounded-[18px] bg-mar-claro p-4 text-xs leading-relaxed text-mar-ink">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-mar" />
                 <div className="space-y-1">
-                  <span className="font-semibold block text-blue-900 dark:text-blue-300">
+                  <span className="block text-[13px] font-extrabold text-mar-ink">
                     Para que serve este ajuste?
                   </span>
                   <p>
                     Esta opção permite definir manualmente a carga horária exigida de disciplinas obrigatórias, optativas e complementares do seu curso.
                   </p>
-                  <p className="text-[11px] text-muted-foreground dark:text-blue-200/80">
+                  <p className="text-[11px] opacity-80">
                     Útil para quem não possui o histórico escolar em PDF, para casos onde houve divergência na contagem automática da importação, ou para quem os dados cadastrados no SIGAA estão inconsistentes.
                   </p>
                 </div>
@@ -352,12 +352,12 @@ const Configuracoes = () => {
 
               {/* Formulário de Edição (quando ativado) */}
               {customCourseWorkload?.enabled && (
-                <form onSubmit={handleSaveHours} className="space-y-4 pt-2 border-t border-border animate-fade-in">
+                <form onSubmit={handleSaveHours} className="animate-fade-in space-y-4 border-t border-foreground/10 pt-4">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {/* Horas Obrigatórias */}
                     <div className="space-y-1.5">
                       <Label htmlFor="mandatory-hours" className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-mar" />
                         Obrigatórias (h)
                       </Label>
                       <Input
@@ -375,7 +375,7 @@ const Configuracoes = () => {
                     {/* Horas Optativas */}
                     <div className="space-y-1.5">
                       <Label htmlFor="elective-hours" className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+                        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-dende" />
                         Optativas (h)
                       </Label>
                       <Input
@@ -393,7 +393,7 @@ const Configuracoes = () => {
                     {/* Horas Complementares */}
                     <div className="space-y-1.5">
                       <Label htmlFor="complementary-hours" className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-ouro" />
                         Complementares (h)
                       </Label>
                       <Input
@@ -410,9 +410,9 @@ const Configuracoes = () => {
                   </div>
 
                   {/* Resumo do Total */}
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/60 border border-border text-xs">
-                    <span className="text-muted-foreground font-medium">Carga Horária Total Resultante:</span>
-                    <span className="text-sm font-bold text-foreground">
+                  <div className="flex items-center justify-between rounded-[14px] bg-nevoa px-4 py-3 text-xs">
+                    <span className="rotulo">Carga horária total resultante</span>
+                    <span className="font-mono text-base font-bold text-foreground">
                       {calculatedTotal}h
                     </span>
                   </div>
@@ -420,7 +420,7 @@ const Configuracoes = () => {
                   {/* Botão de Salvar */}
                   <button
                     type="submit"
-                    className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-xs sm:text-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                    className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
                   >
                     <Save className="w-4 h-4" />
                     Salvar Carga Horária
@@ -430,27 +430,27 @@ const Configuracoes = () => {
             </div>
 
             {/* Theme */}
-            <div className="bg-card rounded-xl border border-border p-5">
-              <h3 className="font-semibold text-card-foreground mb-4">Aparência</h3>
-              <div className="flex gap-3">
+            <div className="border-t-2 border-foreground pt-5">
+              <h3 className="mb-4 text-[22px] font-black tracking-[-0.03em] text-foreground">Aparência</h3>
+              <div className="flex gap-1 rounded-full bg-nevoa p-1">
                 <button
                   onClick={() => theme === 'dark' && toggleTheme()}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border-2 transition-all ${theme === 'light'
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border text-muted-foreground hover:bg-muted'
+                  className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-full text-sm font-bold transition-all ${theme === 'light'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground-2 hover:text-foreground'
                     }`}
                 >
-                  <Sun className="w-5 h-5" />
+                  <Sun className="h-[18px] w-[18px]" />
                   <span>Claro</span>
                 </button>
                 <button
                   onClick={() => theme === 'light' && toggleTheme()}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border-2 transition-all ${theme === 'dark'
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border text-muted-foreground hover:bg-muted'
+                  className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-full text-sm font-bold transition-all ${theme === 'dark'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground-2 hover:text-foreground'
                     }`}
                 >
-                  <Moon className="w-5 h-5" />
+                  <Moon className="h-[18px] w-[18px]" />
                   <span>Escuro</span>
                 </button>
               </div>
@@ -458,21 +458,21 @@ const Configuracoes = () => {
           </div>
 
           {/* Coluna 2 */}
-          <div className="space-y-6">
+          <div className="space-y-10">
             <SigaaSettingsCard />
 
             {/* Export/Import */}
-            <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+            <div className="space-y-4 border-t-2 border-foreground pt-5">
               <div>
-                <h3 className="font-semibold text-card-foreground mb-1">Backup & Sincronização</h3>
+                <h3 className="mb-1 text-[22px] font-black tracking-[-0.03em] text-foreground">Backup & sincronização</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   Exporte ou importe um arquivo JSON completo com todas as suas informações e alterações no sistema.
                 </p>
               </div>
 
-              <div className="p-3 rounded-lg bg-muted/50 border border-border text-xs text-muted-foreground space-y-1">
-                <span className="font-medium text-foreground block">Itens inclusos no backup:</span>
-                <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+              <div className="space-y-1.5 rounded-[18px] bg-nevoa p-4 text-xs text-foreground-2">
+                <span className="rotulo block">Itens inclusos no backup</span>
+                <ul className="list-inside list-disc space-y-0.5 text-[12px] font-medium">
                   <li>Turmas e grade horária planejada</li>
                   <li>Disciplinas concluídas e resultados por período</li>
                   <li>Histórico escolar do SIGAA importado</li>
@@ -484,17 +484,17 @@ const Configuracoes = () => {
               <div className="flex gap-3">
                 <button
                   onClick={handleExport}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-border text-foreground hover:bg-muted font-medium text-xs sm:text-sm transition-colors cursor-pointer"
+                  className="flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-full border-[1.5px] border-foreground/20 text-xs font-bold text-foreground transition-colors hover:bg-nevoa sm:text-sm"
                 >
                   <Download className="w-4 h-4" />
                   <span>Exportar Backup</span>
                 </button>
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border font-medium text-xs sm:text-sm transition-colors cursor-pointer ${
+                  className={`flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-full border-[1.5px] text-xs font-bold transition-colors sm:text-sm ${
                     importSuccess
-                      ? 'border-success bg-success/10 text-success'
-                      : 'border-border text-foreground hover:bg-muted'
+                      ? 'border-mar bg-mar text-white'
+                      : 'border-foreground/20 text-foreground hover:bg-nevoa'
                   }`}
                 >
                   {importSuccess ? <Check className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
@@ -511,21 +511,21 @@ const Configuracoes = () => {
             </div>
 
             {/* Actions */}
-            <div className="bg-card rounded-xl border border-border p-5">
-              <h3 className="font-semibold text-card-foreground mb-4">Ações</h3>
-              <div className="space-y-3">
+            <div className="border-t-2 border-foreground pt-5">
+              <h3 className="mb-4 text-[22px] font-black tracking-[-0.03em] text-foreground">Ações</h3>
+              <div className="space-y-2.5">
                 <button
                   onClick={handleClearSchedule}
-                  className="w-full flex items-center gap-3 py-3 px-4 rounded-lg border border-border text-muted-foreground hover:bg-muted transition-colors"
+                  className="flex h-[52px] w-full items-center gap-3 rounded-[18px] bg-nevoa px-4 text-sm font-bold text-foreground transition-colors hover:bg-trilho"
                 >
-                  <Trash2 className="w-5 h-5" />
+                  <Trash2 className="h-[18px] w-[18px]" />
                   <span>Limpar grade horária</span>
                 </button>
                 <button
                   onClick={handleResetAll}
-                  className="w-full flex items-center gap-3 py-3 px-4 rounded-lg border border-destructive/50 text-destructive hover:bg-destructive/10 transition-colors"
+                  className="flex h-[52px] w-full items-center gap-3 rounded-[18px] bg-pitanga-tint px-4 text-sm font-bold text-pitanga-ink transition-colors hover:bg-pitanga hover:text-white"
                 >
-                  <RotateCcw className="w-5 h-5" />
+                  <RotateCcw className="h-[18px] w-[18px]" />
                   <span>Resetar todos os dados</span>
                 </button>
               </div>
@@ -574,7 +574,7 @@ const Configuracoes = () => {
         </AlertDialog>
 
         {/* Footer */}
-        <div className="text-center text-sm text-muted-foreground pt-12 pb-4">
+        <div className="mt-14 border-t border-foreground/10 pb-4 pt-8 text-center text-[13px] font-medium text-muted-foreground">
           <p>CADEE - Catálogo Auxiliar de Disciplinas e Estruturação de Estudos</p>
           <p className="mt-1">Desenvolvido com ❤️ para estudantes</p>
           <p className="mt-1">
@@ -583,7 +583,7 @@ const Configuracoes = () => {
               href="https://github.com/FormigTeen"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline"
+              className="font-bold text-mar hover:underline"
             >
               Matheus Freitas (FormigTeen)
             </a>
@@ -592,14 +592,14 @@ const Configuracoes = () => {
               href="https://github.com/adaah"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline"
+              className="font-bold text-mar hover:underline"
             >
               Eduarda Almeida (adaah)
             </a>
           </p>
           <p className="mt-1">
             Orientador:{' '}
-            <span className="text-primary">
+            <span className="text-mar">
               Rodrigo Rocha
             </span>
           </p>

@@ -21,7 +21,7 @@ export function BreadcrumbTags({ items, onSelectIndex }: BreadcrumbTagsProps) {
               type="button"
               className={cn(
                 'inline-block px-3 py-1 rounded-lg text-sm font-semibold',
-                isLast ? 'bg-primary/10 text-primary cursor-default' : 'bg-muted text-muted-foreground hover:bg-muted/80',
+                isLast ? 'bg-primary/10 text-mar cursor-default' : 'bg-muted text-muted-foreground hover:bg-muted/80',
               )}
               onClick={() => !isLast && onSelectIndex(idx)}
               disabled={isLast}

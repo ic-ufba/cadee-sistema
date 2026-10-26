@@ -69,7 +69,7 @@ export function SigaaLoginDialog() {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Lock className="h-5 w-5 text-primary" />
+            <Lock className="hidden h-5 w-5 text-mar" />
             Entrar com o SIGAA
           </DialogTitle>
           <DialogDescription>
@@ -118,13 +118,13 @@ export function SigaaLoginDialog() {
           </label>
 
           {login.isError && (
-            <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p role="alert" className="rounded-[14px] bg-pitanga-tint px-4 py-2.5 text-sm font-semibold text-pitanga-ink">
               {mensagemDeErro(login.error)}
             </p>
           )}
 
-          <div className="flex gap-2 rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">
-            <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
+          <div className="flex gap-2 rounded-[18px] bg-nevoa p-4 text-xs font-medium text-foreground-2">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-mar" />
             <p>
               Sua senha vai direto para a API do SIGAA usada pelo CADEE e nunca é gravada. O acesso é só de leitura: nada é
               alterado na sua matrícula.

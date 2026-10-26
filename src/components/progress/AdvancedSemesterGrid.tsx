@@ -4,6 +4,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { SemestreCirculo } from '@/components/brand/Mare';
 
 interface SemesterData {
   semester: number;
@@ -51,7 +52,7 @@ function SemesterDetailContent({
             <div key={d.code} className="flex items-start gap-2">
               <span
                 className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${
-                  d.completed ? 'bg-green-500' : d.enrolled ? 'bg-blue-400' : 'bg-gray-400'
+                  d.completed ? 'bg-mar' : d.enrolled ? 'bg-dende' : 'bg-trilho'
                 }`}
               />
               <div className="min-w-0">
@@ -176,11 +177,12 @@ export function AdvancedSemesterGrid({
             setSelectedSemester(semester);
           }
         }}
-        className={`h-8 rounded-md flex items-center justify-center text-xs font-medium cursor-pointer transition-all border-2 ${colorClass} ${borderClass} ${
-          isMobile ? 'active:scale-95' : 'hover:scale-105'
+        className={`flex cursor-pointer flex-col items-center gap-2 rounded-2xl py-1 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-mar ${
+          isMobile ? 'active:scale-95' : 'hover:scale-[1.04]'
         }`}
       >
-        {semester.semester}º
+        <SemestreCirculo percent={semester.percentage} size={isMobile ? 64 : 72} />
+        <span className="text-[15px] font-black text-foreground">{semester.semester}º</span>
       </div>
     );
 
@@ -202,7 +204,7 @@ export function AdvancedSemesterGrid({
 
   if (courseLevels.length === 0) {
     return (
-      <div className="bg-card rounded-lg border border-border p-4">
+      <div className="border-t-2 border-foreground pt-5">
         <div className="text-center py-4 text-xs text-muted-foreground">
           Nenhuma informação de semestres encontrada para este curso
         </div>
@@ -216,12 +218,12 @@ export function AdvancedSemesterGrid({
 
   return (
     <>
-      <div className="bg-card rounded-lg border border-border p-4">
+      <div className="border-t-2 border-foreground pt-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-sm font-medium text-foreground">Progresso por Semestre</h3>
+            <h3 className="text-[22px] font-black tracking-[-0.035em] text-foreground">Por semestre</h3>
             {currentTerm && (
-              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary">
+              <span className="rounded-full bg-nevoa px-2.5 py-1 font-mono text-[11px] font-semibold text-foreground">
                 Letivo {currentTerm}
               </span>
             )}
@@ -234,7 +236,7 @@ export function AdvancedSemesterGrid({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 mb-4 text-xs text-muted-foreground">
+        <div className="hidden">
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full bg-green-500" />
             <span>100%</span>
@@ -262,16 +264,16 @@ export function AdvancedSemesterGrid({
         </div>
 
         {isMobile && (
-          <p className="text-[10px] text-muted-foreground mb-3">
+          <p className="mb-4 text-[13px] font-medium text-foreground-2">
             Toque em um semestre para ver o detalhamento
           </p>
         )}
 
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+        <div className="grid grid-cols-3 gap-x-2 gap-y-5 sm:grid-cols-5 lg:grid-cols-6">
           {semesterArray.map((semester) => (
             <div key={semester.semester} className="space-y-1">
               {renderSemesterCell(semester)}
-              <div className="text-xs text-center text-muted-foreground">
+              <div className="text-center font-mono text-xs text-muted-foreground">
                 {semester.percentage}%
               </div>
             </div>
@@ -291,7 +293,7 @@ export function AdvancedSemesterGrid({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            className="fixed inset-0 z-50 flex items-end justify-center bg-overlay/55 sm:items-center sm:p-4"
             onClick={() => setSelectedSemester(null)}
           >
             <motion.div
@@ -299,19 +301,19 @@ export function AdvancedSemesterGrid({
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
               transition={{ duration: 0.18 }}
-              className="w-full max-w-md bg-card rounded-2xl shadow-xl border border-border p-5 max-h-[85vh] overflow-y-auto"
+              className="w-full max-w-md max-h-[85vh] overflow-y-auto rounded-t-3xl bg-background px-6 pb-7 pt-5 sm:rounded-3xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-start justify-between gap-3 mb-4">
                 <div>
-                  <p className="text-lg font-semibold text-foreground">
+                  <p className="text-[24px] font-black tracking-[-0.03em] text-foreground">
                     {selectedSemester.semester}º Semestre
                   </p>
                   <p className="text-xs text-muted-foreground">{selectedLevelName}</p>
                 </div>
                 <button
                   onClick={() => setSelectedSemester(null)}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-nevoa text-foreground hover:bg-trilho"
                   aria-label="Fechar"
                 >
                   <X className="w-5 h-5" />

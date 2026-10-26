@@ -2,6 +2,7 @@ import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { SigaaAccountButton } from '@/components/sigaa/SigaaAccount';
+import { Logo } from '@/components/brand/Logo';
 
 export function MobileHeader() {
   const { theme, setTheme } = useTheme();
@@ -20,26 +21,19 @@ export function MobileHeader() {
   };
 
   return (
-    <header className="md:hidden fixed top-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-b border-border/50 z-40 shadow-sm">
-      <div className="flex items-center justify-between h-14 px-4">
-        <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="CADEE Logo" className="h-8 w-auto" />
-          <span className="font-semibold text-foreground">CADEE</span>
-        </div>
-        
+    <header className="md:hidden fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm">
+      <div className="flex h-[60px] items-center justify-between pl-5 pr-2">
+        <Logo size={25} />
+
         <div className="flex items-center gap-1">
-        <SigaaAccountButton variant="icon" />
-        <button
-          onClick={toggleTheme}
-          className="p-2 rounded-lg hover:bg-muted transition-colors"
-          aria-label="Alternar tema"
-        >
-          {theme === 'dark' ? (
-            <Sun className="w-5 h-5 text-foreground" />
-          ) : (
-            <Moon className="w-5 h-5 text-foreground" />
-          )}
-        </button>
+          <SigaaAccountButton variant="icon" />
+          <button
+            onClick={toggleTheme}
+            className="flex h-11 w-11 items-center justify-center rounded-full text-foreground transition-colors hover:bg-nevoa"
+            aria-label="Alternar tema"
+          >
+            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
         </div>
       </div>
     </header>

@@ -62,7 +62,7 @@ export function SigaaAccountButton({ collapsed = false, variant = 'sidebar' }: S
   const compact = collapsed || variant === 'icon';
   const baseClass =
     variant === 'icon'
-      ? 'p-2 rounded-lg hover:bg-muted transition-colors text-foreground'
+      ? 'relative flex h-11 w-11 items-center justify-center rounded-full hover:bg-nevoa transition-colors text-foreground'
       : cn(
           'flex w-full items-center rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
           compact ? 'justify-center p-2' : 'gap-2 px-3 py-2',

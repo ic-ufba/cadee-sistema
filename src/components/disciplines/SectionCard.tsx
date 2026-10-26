@@ -51,20 +51,20 @@ export function SectionCard({ section, isAdded, onAdd, onNavigateCourse }: Secti
   return (
     <div
       className={cn(
-        'p-4 rounded-xl border-2 transition-all',
+        'rounded-[18px] border-[1.5px] p-4 transition-all',
         isFull
-          ? 'border-destructive/50 bg-destructive/5'
+          ? 'border-transparent bg-pitanga-tint'
           : isAlmostFull
-          ? 'border-warning/50 bg-warning/5'
+          ? 'border-transparent bg-dende-claro'
           : isAdded
-          ? 'border-success/50 bg-success/5'
-          : 'border-border bg-muted/50',
+          ? 'border-mar bg-mar-claro'
+          : 'border-foreground/10 bg-background',
       )}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-semibold text-card-foreground text-sm">
+            <span className="text-sm font-extrabold uppercase text-foreground">
               {teachers && teachers.length > 0
                 ? teachers[0]
                 : `Turma ${section.id_ref}`}
@@ -74,12 +74,12 @@ export function SectionCard({ section, isAdded, onAdd, onNavigateCourse }: Secti
           {/* Tags always below the title (no 'Adicionar' tag) */}
           <div className="mb-2 flex flex-wrap gap-1 items-center">
             {isFull && (
-              <span className="px-2 py-0.5 rounded text-xs font-medium bg-destructive text-destructive-foreground">
+              <span className="rounded-full bg-pitanga px-2.5 py-0.5 text-[11px] font-bold text-white">
                 Lotada
               </span>
             )}
             {isAdded && (
-              <span className="px-2 py-0.5 rounded text-xs font-medium bg-success text-success-foreground">
+              <span className="rounded-full bg-mar px-2.5 py-0.5 text-[11px] font-bold text-white">
                 Adicionada
               </span>
             )}
@@ -100,7 +100,7 @@ export function SectionCard({ section, isAdded, onAdd, onNavigateCourse }: Secti
                         <button
                           key={`conf-${code}`}
                           onClick={() => onNavigateCourse?.(code)}
-                          className="px-2 py-0.5 rounded text-xs font-medium bg-secondary text-secondary-foreground inline-flex items-center gap-1 hover:bg-accent transition-all border border-border"
+                          className="inline-flex items-center gap-1 rounded-full bg-pitanga-tint px-2.5 py-0.5 text-[11px] font-bold text-pitanga-ink transition-all hover:bg-pitanga hover:text-white"
                         >
                           <AlertTriangle className="w-3 h-3" /> Choque com {code} — {name}
                         </button>
@@ -115,7 +115,7 @@ export function SectionCard({ section, isAdded, onAdd, onNavigateCourse }: Secti
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="px-2 py-0.5 rounded text-xs font-medium inline-flex items-center gap-1 cursor-default bg-indigo-600 text-white">
+                    <span className="inline-flex cursor-default items-center gap-1 rounded-full bg-dende px-2.5 py-0.5 text-[11px] font-bold text-white">
                       <Flame className="w-3 h-3" /> Poucas Vagas
                     </span>
                   </TooltipTrigger>
@@ -130,7 +130,7 @@ export function SectionCard({ section, isAdded, onAdd, onNavigateCourse }: Secti
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-primary text-primary-foreground inline-flex items-center gap-1 cursor-default">
+                    <span className="inline-flex cursor-default items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-bold text-primary-foreground">
                       <Star className="w-3 h-3" /> Reservado para o curso {reservedRemaining} vagas
                     </span>
                   </TooltipTrigger>
@@ -145,7 +145,7 @@ export function SectionCard({ section, isAdded, onAdd, onNavigateCourse }: Secti
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground inline-flex items-center gap-1 cursor-default">
+                    <span className="inline-flex cursor-default items-center gap-1 rounded-full bg-nevoa px-2.5 py-0.5 text-[11px] font-bold text-foreground-2">
                       Sem reservas para o curso
                     </span>
                   </TooltipTrigger>
@@ -182,7 +182,7 @@ export function SectionCard({ section, isAdded, onAdd, onNavigateCourse }: Secti
             return null;
           })()}
 
-          <div className="mt-2 pt-2 border-t border-border">
+          <div className="mt-2 border-t border-foreground/10 pt-2.5">
             <div className="space-y-2">
               <div className="flex items-start gap-1 text-sm text-muted-foreground">
                 <Clock className="w-4 h-4 mt-0.5 shrink-0" />
@@ -195,8 +195,8 @@ export function SectionCard({ section, isAdded, onAdd, onNavigateCourse }: Secti
                         formattedSchedules.map((h, i) => {
                           const [day, time] = h.split(' ');
                           return (
-                            <span key={i} className="inline-block bg-muted px-2 py-1 rounded text-xs font-mono text-center min-h-[40px] flex flex-col items-center justify-center">
-                              <span className="font-semibold">{day}</span>
+                            <span key={i} className="flex min-h-[44px] flex-col items-center justify-center rounded-xl bg-nevoa px-2 py-1 text-center font-mono text-xs">
+                              <span className="font-sans text-[11px] font-extrabold uppercase">{day}</span>
                               <span className="text-[10px]">{time}</span>
                             </span>
                           );
@@ -222,8 +222,8 @@ export function SectionCard({ section, isAdded, onAdd, onNavigateCourse }: Secti
             <button
               onClick={() => onAdd(section)}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all',
-                'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-lg shadow-destructive/25'
+                'flex h-11 items-center gap-2 rounded-full px-4 text-sm font-bold transition-all',
+                'bg-pitanga text-white hover:bg-pitanga/90'
               )}
             >
               <Eraser className="w-4 h-4" />
@@ -237,10 +237,10 @@ export function SectionCard({ section, isAdded, onAdd, onNavigateCourse }: Secti
                 onClick={() => onAdd(section)}
                 disabled={isFull}
                 className={cn(
-                  'flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all',
+                  'flex h-11 items-center gap-2 rounded-full px-4 text-sm font-bold transition-all',
                   isFull
-                    ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                    : 'bg-warning text-warning-foreground hover:bg-warning/90 shadow-lg shadow-warning/25',
+                    ? 'cursor-not-allowed bg-nevoa text-muted-foreground'
+                    : 'bg-dende text-white hover:bg-dende/90',
                 )}
               >
                 <ArrowLeftRight className="w-4 h-4" />
@@ -251,12 +251,12 @@ export function SectionCard({ section, isAdded, onAdd, onNavigateCourse }: Secti
                 onClick={() => onAdd(section)}
                 disabled={isFull}
                 className={cn(
-                  'flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all',
+                  'flex h-11 items-center gap-2 rounded-full px-4 text-sm font-bold transition-all',
                   isFull
-                    ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                    ? 'cursor-not-allowed bg-nevoa text-muted-foreground'
                     : conflicts.length > 0
-                      ? 'bg-warning text-warning-foreground hover:bg-warning/90 shadow-lg shadow-warning/25'
-                      : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25',
+                      ? 'bg-dende text-white hover:bg-dende/90'
+                      : 'bg-primary text-primary-foreground hover:bg-primary/90',
                 )}
               >
                 {conflicts.length > 0 ? (

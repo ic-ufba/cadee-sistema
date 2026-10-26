@@ -202,44 +202,44 @@ const DisciplineCard = memo(({
       key={course.code}
       data-discipline-code={course.code}
       onClick={() => onClick(course)}
-      className={`p-3 md:p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors flex flex-col justify-between ${
-        isSelected ? 'border-primary ring-1 ring-primary/50 bg-primary/5' : ''
+      className={`flex cursor-pointer flex-col justify-between rounded-[14px] border-[1.5px] px-3.5 py-3 transition-colors ${
+        isSelected ? 'border-transparent bg-nevoa hover:bg-trilho' : 'border-foreground/10 bg-background hover:border-foreground/30'
       }`}
     >
       <div>
-        <div className="flex items-start justify-between gap-2 mb-1.5">
-          <div className="font-semibold text-xs md:text-sm text-foreground min-w-0">
+        <div className="mb-1 flex items-center justify-start gap-2">
+          <div className="min-w-0 font-mono text-xs font-semibold text-mar-ink">
             <span>{course.code}</span>
           </div>
           <span
             className={cn(
-              "text-[10px] px-1.5 py-0.5 font-medium rounded border shrink-0",
-              badgeInfo.type === 'mandatory' && "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-              badgeInfo.type === 'elective' && "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
-              badgeInfo.type === 'equivalent' && "bg-primary/10 text-primary border-primary/20",
-              badgeInfo.type === 'offered' && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+              "shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-extrabold",
+              badgeInfo.type === 'mandatory' && "bg-mar-tint text-mar-ink",
+              badgeInfo.type === 'elective' && "bg-dende-tint text-dende-ink",
+              badgeInfo.type === 'equivalent' && "bg-trilho text-foreground",
+              badgeInfo.type === 'offered' && "bg-trilho text-foreground-2"
             )}
           >
             {badgeInfo.label}
           </span>
         </div>
-        <div className="text-xs text-muted-foreground mb-2 line-clamp-2">
+        <div className="mb-1.5 line-clamp-2 text-[13.5px] font-extrabold uppercase leading-tight text-foreground">
           {course.name}
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-1.5 mt-auto pt-1">
-        <Badge variant="secondary" className="text-xs shrink-0">
+      <div className="mt-auto flex flex-wrap items-center gap-1.5">
+        <Badge variant="secondary" className="shrink-0 border-0 bg-transparent px-0 font-mono text-xs font-medium text-foreground-2 hover:bg-transparent">
           {course.sections_count} turma{course.sections_count !== 1 ? 's' : ''}
         </Badge>
         {isCompleted && (
-          <span className="text-[10px] px-1.5 py-0.5 font-medium rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+          <span className="shrink-0 rounded-full bg-mar px-2 py-0.5 text-[10.5px] font-extrabold text-white">
             Cursada
           </span>
         )}
         {conflictCodes.length > 0 && conflictCodes.map((code) => (
           <span
             key={code}
-            className="text-[10px] px-1.5 py-0.5 font-medium rounded bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 flex items-center gap-1 shrink-0"
+            className="flex shrink-0 items-center gap-1 rounded-full bg-pitanga-tint px-2 py-0.5 text-[10.5px] font-extrabold text-pitanga-ink"
           >
             Choque com {code}
           </span>
@@ -283,65 +283,65 @@ const BlockDisciplineGroupCard = memo(({
   return (
     <div
       data-discipline-code={group.baseCode}
-      className={`border rounded-lg overflow-hidden ${
-        isSelected ? 'border-primary ring-1 ring-primary/50' : ''
+      className={`overflow-hidden rounded-[14px] border-[1.5px] ${
+        isSelected ? 'border-transparent bg-nevoa' : 'border-foreground/10 bg-background'
       }`}
     >
-      <div className="p-3 md:p-4 bg-muted/30 border-b">
+      <div className="border-b border-foreground/10 px-3.5 py-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <div className="font-semibold text-xs md:text-sm mb-1 pr-2 flex items-center gap-2 flex-wrap">
+            <div className="mb-1 flex flex-wrap items-center gap-2 pr-2 font-mono text-xs font-semibold text-mar-ink">
               <span>{group.baseCode}</span>
             </div>
-            <div className="text-xs text-muted-foreground line-clamp-2 pr-2">{group.name}</div>
+            <div className="line-clamp-2 pr-2 text-[13.5px] font-extrabold uppercase leading-tight text-foreground">{group.name}</div>
           </div>
           <span
             className={cn(
-              "text-[10px] px-1.5 py-0.5 font-medium rounded border shrink-0",
-              badgeInfo.type === 'mandatory' && "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-              badgeInfo.type === 'elective' && "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
-              badgeInfo.type === 'equivalent' && "bg-primary/10 text-primary border-primary/20",
-              badgeInfo.type === 'offered' && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+              "shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-extrabold",
+              badgeInfo.type === 'mandatory' && "bg-mar-tint text-mar-ink",
+              badgeInfo.type === 'elective' && "bg-dende-tint text-dende-ink",
+              badgeInfo.type === 'equivalent' && "bg-trilho text-foreground",
+              badgeInfo.type === 'offered' && "bg-trilho text-foreground-2"
             )}
           >
             {badgeInfo.label}
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-1.5 mt-2">
-          <Badge variant="secondary" className="text-xs shrink-0">
+          <Badge variant="secondary" className="shrink-0 border-0 bg-transparent px-0 font-mono text-xs font-medium text-foreground-2 hover:bg-transparent">
             {group.sections_count} turma{group.sections_count !== 1 ? 's' : ''}
           </Badge>
           {allCompleted && (
-            <span className="text-[10px] px-1.5 py-0.5 font-medium rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+            <span className="shrink-0 rounded-full bg-mar px-2 py-0.5 text-[10.5px] font-extrabold text-white">
               Cursada
             </span>
           )}
           {conflictCodes.length > 0 && conflictCodes.map((code) => (
             <span
               key={code}
-              className="text-[10px] px-1.5 py-0.5 font-medium rounded bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 flex items-center gap-1 shrink-0"
+              className="flex shrink-0 items-center gap-1 rounded-full bg-pitanga-tint px-2 py-0.5 text-[10.5px] font-extrabold text-pitanga-ink"
             >
               Choque com {code}
             </span>
           ))}
         </div>
       </div>
-      <div className="divide-y">
+      <div className="divide-y divide-foreground/10">
         {group.courses.map((course) => (
           <button
             key={course.code}
             type="button"
             data-discipline-code={course.code}
             onClick={() => onCourseClick(course as Course)}
-            className="w-full p-3 md:px-4 md:py-3 flex items-center justify-between gap-3 text-left hover:bg-muted/50 transition-colors"
+            className="flex w-full items-center justify-between gap-3 px-3.5 py-3 text-left transition-colors hover:bg-foreground/[0.04]"
           >
             <div className="min-w-0">
-              <div className="text-xs md:text-sm font-medium">{course.code}</div>
+              <div className="font-mono text-xs font-semibold">{course.code}</div>
               <div className="text-[11px] text-muted-foreground">
                 {getBlockCourseVariantLabel(course.code, indexByCode)}
               </div>
             </div>
-            <Badge variant="outline" className="text-xs shrink-0">
+            <Badge variant="outline" className="shrink-0 font-mono text-[11px] font-medium">
               {course.sections_count ?? 0} turma{(course.sections_count ?? 0) !== 1 ? 's' : ''}
             </Badge>
           </button>
@@ -900,17 +900,17 @@ const Planejador = () => {
 
   return (
     <MainLayout>
-      <div className="p-4 md:p-6 max-w-7xl mx-auto animate-fade-in">
+      <div className="px-5 pt-4 sm:px-[clamp(20px,4vw,56px)] sm:pt-8 animate-fade-in">
         {pendingTransition && (
-          <div className="mb-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-4 text-sm text-amber-800 dark:text-amber-200">
+          <div className="mb-5 rounded-2xl bg-dende-claro p-4 text-[13px] font-medium text-dende-ink">
             <strong>Novo semestre {currentTerm}.</strong> Finalize a grade do semestre {planningTerm} na{' '}
             <a href="/" className="underline font-medium">tela inicial</a> antes de planejar novas disciplinas.
           </div>
         )}
         {/* Cabeçalho */}
         <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-            Planejador de Grade
+          <h1 className="mb-4 text-[30px] font-black leading-[1.05] tracking-[-0.04em] text-foreground sm:text-[clamp(30px,2.8vw,40px)]">
+            Planejador de grade
           </h1>
           <div className="space-y-3">
             {myPrograms.length > 0 && (
@@ -918,7 +918,7 @@ const Planejador = () => {
                 {myPrograms.map((p) => (
                   <span
                     key={p.id_ref}
-                    className="inline-flex items-center px-3 py-1.5 rounded-full bg-muted text-muted-foreground border border-border text-xs font-medium"
+                    className="rotulo inline-flex items-center"
                   >
                     {p.title}
                   </span>
@@ -926,15 +926,15 @@ const Planejador = () => {
               </div>
             )}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-muted-foreground flex items-center gap-1">
-                <Eye className="w-4 h-4" />
+              <span className="flex items-center gap-1.5 text-[13px] font-bold text-foreground-2">
+                <Eye className="h-4 w-4" />
                 Visualizar ofertas de:
               </span>
               <Select 
                 value={selectedViewProgramId || "meu-curso"} 
                 onValueChange={(value) => setSelectedViewProgramId(value === "meu-curso" ? null : value)}
               >
-                <SelectTrigger className="w-[250px] h-9">
+                <SelectTrigger className="h-11 w-full rounded-full border-0 bg-nevoa sm:w-[320px]">
                   <SelectValue placeholder="Selecione um curso" />
                 </SelectTrigger>
                 <SelectContent>
@@ -946,7 +946,7 @@ const Planejador = () => {
                         placeholder="Buscar curso..."
                         value={programSearchTerm}
                         onChange={(e) => setProgramSearchTerm(e.target.value)}
-                        className="w-full pl-8 pr-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-full rounded-full border-0 bg-nevoa py-2 pl-8 pr-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-mar"
                       />
                     </div>
                   </div>
@@ -978,14 +978,14 @@ const Planejador = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-10 border-t-2 border-foreground pt-6 lg:grid-cols-[minmax(340px,440px)_minmax(0,1fr)] lg:gap-0">
           {/* Coluna da esquerda - Disciplinas */}
-          <div className="lg:col-span-1 space-y-4">
+          <div className="space-y-4 lg:border-r lg:border-border lg:pr-8">
             {/* Card de Disciplinas */}
-            <div className="bg-card rounded-xl border border-border p-4">
+            <div className="">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h3 className="font-semibold text-card-foreground">Disciplinas do Curso</h3>
+                  <h3 className="text-[22px] font-black tracking-[-0.035em] text-foreground">Disciplinas do curso</h3>
                   {currentTerm && (
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Ofertas do semestre {currentTerm}
@@ -997,7 +997,7 @@ const Planejador = () => {
                     </p>
                   )}
                 </div>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-muted text-muted-foreground border border-border cursor-default">
+                <span className="inline-flex shrink-0 cursor-default items-center gap-1 rounded-full bg-nevoa px-2.5 py-1 text-[11px] font-extrabold text-foreground">
                   {disciplinasAgrupadas.length} disciplinas • {totalTurmasSemestre} turmas
                 </span>
               </div>
@@ -1005,31 +1005,31 @@ const Planejador = () => {
               {/* Barra de busca e filtros otimizada */}
               <div className="mb-4">
                 <div className="relative mb-3">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-2" />
                   <input
                     type="text"
                     placeholder="Buscar disciplina..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                    className="h-12 w-full rounded-full border-0 bg-nevoa pl-11 pr-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-mar transition-all"
                   />
                 </div>
                 
                 <div className="flex flex-wrap items-center gap-2 max-w-[100vw] overflow-x-auto pb-1">
                   <button
                     type="button"
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-card hover:bg-accent text-sm font-medium transition-colors relative"
+                    className="relative inline-flex h-10 items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-transparent px-3.5 text-[13px] font-bold transition-colors hover:bg-nevoa"
                     onClick={() => setFiltroModalOpen(true)}
                   >
                     <Filter className="w-4 h-4" />
                     Dias / Horários
                     {hasActiveFilters && (
-                      <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-primary shadow" aria-label="Filtros ativos"></span>
+                      <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-dende ring-2 ring-background" aria-label="Filtros ativos"></span>
                     )}
                   </button>
 
                   <Select value={typeFilter} onValueChange={(v: any) => setTypeFilter(v)}>
-                    <SelectTrigger className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-card hover:bg-accent text-sm font-medium h-auto w-auto">
+                    <SelectTrigger className="inline-flex h-10 w-auto items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-transparent px-3.5 text-[13px] font-bold hover:bg-nevoa">
                       <span>Tipo: {typeFilter === 'all' ? 'Todas' : typeFilter === 'mandatory' ? 'Obrigatórias' : typeFilter === 'optional' ? 'Optativas' : typeFilter === 'equivalent' ? 'Equivalentes' : 'Ofertadas'}</span>
                     </SelectTrigger>
                     <SelectContent>
@@ -1043,7 +1043,7 @@ const Planejador = () => {
 
                   {hasAnyVacancyData && (
                     <Select value={vacancyFilter} onValueChange={(v: any) => setVacancyFilter(v)}>
-                      <SelectTrigger className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-card hover:bg-accent text-sm font-medium h-auto w-auto">
+                      <SelectTrigger className="inline-flex h-10 w-auto items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-transparent px-3.5 text-[13px] font-bold hover:bg-nevoa">
                         <span>Vagas: {vacancyFilter === 'all' ? 'Todas' : vacancyFilter === 'few' ? 'Poucas' : 'Muitas'}</span>
                       </SelectTrigger>
                       <SelectContent>
@@ -1059,10 +1059,10 @@ const Planejador = () => {
                       type="button"
                       onClick={() => setShowCompleted(!showCompleted)}
                       className={cn(
-                        "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm font-medium transition-colors",
+                        "inline-flex h-10 items-center gap-2 rounded-full border-[1.5px] px-3.5 text-[13px] font-bold transition-colors",
                         !showCompleted 
-                          ? "bg-primary text-primary-foreground border-primary shadow-sm" 
-                          : "bg-card text-muted-foreground border-border hover:bg-accent"
+                          ? "border-primary bg-primary text-primary-foreground" 
+                          : "border-foreground/20 bg-transparent text-foreground hover:bg-nevoa"
                       )}
                     >
                       <Eye className="w-3.5 h-3.5" />
@@ -1075,10 +1075,10 @@ const Planejador = () => {
                       type="button"
                       onClick={() => setHideFull(!hideFull)}
                       className={cn(
-                        "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm font-medium transition-colors",
+                        "inline-flex h-10 items-center gap-2 rounded-full border-[1.5px] px-3.5 text-[13px] font-bold transition-colors",
                         hideFull 
-                          ? "bg-primary text-primary-foreground border-primary shadow-sm" 
-                          : "bg-card text-muted-foreground border-border hover:bg-accent"
+                          ? "border-primary bg-primary text-primary-foreground" 
+                          : "border-foreground/20 bg-transparent text-foreground hover:bg-nevoa"
                       )}
                     >
                       <Eye className="w-3.5 h-3.5" />
@@ -1088,8 +1088,8 @@ const Planejador = () => {
                 </div>
               </div>
 
-              <div className="max-h-[600px] overflow-y-auto">
-                <div className="grid grid-cols-1 gap-3 md:gap-4">
+              <div className="">
+                <div className="grid grid-cols-1 gap-1.5">
                   {isLoading ? (
                     [...Array(8)].map((_, i) => <SkeletonCard key={i} />)
                   ) : (
@@ -1100,10 +1100,10 @@ const Planejador = () => {
                           <button
                             type="button"
                             onClick={() => setSelectedDisciplinesExpanded(!selectedDisciplinesExpanded)}
-                            className="flex items-center gap-2 mb-2 w-full text-left hover:text-foreground transition-colors"
+                            className="mb-1 flex h-10 w-full items-center gap-2 border-b-2 border-foreground text-left transition-colors"
                           >
-                            <div className="h-px flex-1 bg-border"></div>
-                            <span className="text-xs font-medium text-muted-foreground px-2 flex items-center gap-1">
+                            <div className="hidden"></div>
+                            <span className="rotulo flex flex-1 items-center justify-between gap-1 text-foreground">
                               Disciplinas Selecionadas
                               {selectedDisciplinesExpanded ? (
                                 <ChevronUp className="w-3 h-3" />
@@ -1111,7 +1111,7 @@ const Planejador = () => {
                                 <ChevronDown className="w-3 h-3" />
                               )}
                             </span>
-                            <div className="h-px flex-1 bg-border"></div>
+                            <div className="hidden"></div>
                           </button>
                           {selectedDisciplinesExpanded && selectedGroups.map((group) => {
                             // Get conflicting base codes from our map
@@ -1150,10 +1150,10 @@ const Planejador = () => {
               <button
                 type="button"
                 onClick={() => setOtherDisciplinesExpanded(!otherDisciplinesExpanded)}
-                className="flex items-center gap-2 my-2 w-full text-left hover:text-foreground transition-colors"
+                className="mb-1 mt-5 flex h-10 w-full items-center gap-2 border-b-2 border-foreground text-left transition-colors"
               >
-                <div className="h-px flex-1 bg-border"></div>
-                <span className="text-xs font-medium text-muted-foreground px-2 flex items-center gap-1">
+                <div className="hidden"></div>
+                <span className="rotulo flex flex-1 items-center justify-between gap-1 text-foreground">
                   Outras Disciplinas
                   {otherDisciplinesExpanded ? (
                     <ChevronUp className="w-3 h-3" />
@@ -1161,7 +1161,7 @@ const Planejador = () => {
                     <ChevronDown className="w-3 h-3" />
                   )}
                 </span>
-                <div className="h-px flex-1 bg-border"></div>
+                <div className="hidden"></div>
               </button>
               {otherDisciplinesExpanded && nonSelectedGroups.map((group) =>
                 group.isBlockGroup ? (
@@ -1210,20 +1210,20 @@ const Planejador = () => {
           </div>
 
           {/* Coluna da direita - Grade Horária */}
-          <div className="lg:col-span-2">
-            <div className="space-y-4 md:space-y-6">
+          <div className="lg:sticky lg:top-24 lg:self-start lg:pl-8">
+            <div className="space-y-4 md:space-y-5">
               <SigaaPlannerPanel />
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <h2 className="text-xl md:text-2xl font-bold text-foreground mb-1">Grade Atual</h2>
-                  <p className="text-sm md:text-base text-muted-foreground">
+                  <h2 className="mb-1 text-[22px] font-black tracking-[-0.035em] text-foreground sm:text-[24px]">Grade atual</h2>
+                  <p className="text-[13px] font-semibold text-foreground-2">
                     Visualize as disciplinas convertidas e organizadas
                   </p>
                 </div>
                 {mySections.length > 0 && (
                   <Button variant="outline" size="sm" onClick={clearSections} className="w-full sm:w-auto">
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Limpar Grade
+                    <Trash2 className="h-4 w-4" />
+                    Limpar grade
                   </Button>
                 )}
               </div>
@@ -1240,7 +1240,7 @@ const Planejador = () => {
                 </Card>
               ) : (
                 <>
-                  <div className="border rounded-lg overflow-hidden bg-card">
+                  <div className="overflow-hidden">
                     <ScheduleGrid onSectionClick={(section) => setSelectedSection(section)} />
                   </div>
                 </>
@@ -1252,25 +1252,25 @@ const Planejador = () => {
         {/* Modal de Filtros */}
         <AnimatePresence>
           {filtroModalOpen && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={handleCloseSections}>
+            <div className="fixed inset-0 bg-overlay/55 flex items-end sm:items-center justify-center z-50 sm:p-4" onClick={handleCloseSections}>
               <motion.div 
-                className="bg-background rounded-lg p-4 w-full max-w-sm max-h-[75vh] overflow-y-auto md:max-w-lg md:p-6 shadow-lg border my-4" 
+                className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-background px-6 pb-6 pt-5 shadow-xl sm:rounded-3xl sm:p-7" 
                 onClick={(e) => e.stopPropagation()}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
                 transition={{ duration: 0.2 }}
               >
-                <div className="flex items-center justify-between mb-4 border-b pb-2 border-border">
+                <div className="mb-5 flex items-center justify-between border-b-2 border-foreground pb-4">
                   <div className="flex items-center gap-2">
-                    <Filter className="w-5 h-5 text-blue-600" />
-                    <h3 className="text-lg font-bold text-foreground">Filtro de Disciplinas</h3>
+                    <Filter className="hidden" />
+                    <h3 className="text-[23px] font-black tracking-[-0.03em] text-foreground">Filtro de disciplinas</h3>
                   </div>
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={() => setFiltroModalOpen(false)}
-                    className="hover:bg-muted"
+                    className="h-11 w-11 rounded-full bg-nevoa p-0 hover:bg-trilho"
                   >
                     ✕
                   </Button>
@@ -1279,10 +1279,10 @@ const Planejador = () => {
                 <div className="space-y-6">
                   {/* Filtro por Dia */}
                   <div>
-                    <div className="font-semibold mb-2 text-sm text-foreground">Dias da semana:</div>
+                    <div className="rotulo mb-2.5">Dias da semana</div>
                     <div className="grid grid-cols-3 md:flex md:flex-wrap gap-2">
                       {diasSemana.map(dia => (
-                        <label key={dia} className="flex items-center gap-2 p-2 border rounded bg-background hover:bg-muted transition-colors cursor-pointer border-border">
+                        <label key={dia} className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-foreground/15 bg-background px-3 transition-colors hover:bg-nevoa has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
                           <input
                             type="checkbox"
                             checked={diasSelecionados.includes(dia)}
@@ -1290,29 +1290,29 @@ const Planejador = () => {
                               if (e.target.checked) setDiasSelecionados([...diasSelecionados, dia]);
                               else setDiasSelecionados(diasSelecionados.filter(d => d !== dia));
                             }}
-                            className="accent-blue-600"
+                            className="accent-mar"
                           />
                           <span className="text-sm font-medium">{dia}</span>
                         </label>
                       ))}
                     </div>
-                    <div className="font-semibold mt-3 mb-2 text-sm text-foreground">Lógica para dias:</div>
-                    <div className="space-y-2 md:flex md:gap-4">
-                      <label className="flex items-center gap-2 cursor-pointer">
+                    <div className="mb-2 mt-4 text-[13px] font-extrabold text-foreground">Lógica para dias:</div>
+                    <div className="grid grid-cols-2 gap-1 rounded-[18px] bg-nevoa p-1">
+                      <label className="flex min-h-[48px] cursor-pointer items-center justify-center gap-2 rounded-[14px] px-2 text-center transition-colors has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
                         <input
                           type="radio"
                           checked={logicaFiltroDia === 'OU'}
                           onChange={() => setLogicaFiltroDia('OU')}
-                          className="accent-blue-600"
+                          className="accent-mar"
                         />
                         <span className="text-sm">OU (um dia ou outro)</span>
                       </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      <label className="flex min-h-[48px] cursor-pointer items-center justify-center gap-2 rounded-[14px] px-2 text-center transition-colors has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
                         <input
                           type="radio"
                           checked={logicaFiltroDia === 'E'}
                           onChange={() => setLogicaFiltroDia('E')}
-                          className="accent-blue-600"
+                          className="accent-mar"
                         />
                         <span className="text-sm">E (um dia e outro)</span>
                       </label>
@@ -1321,10 +1321,10 @@ const Planejador = () => {
                   
                   {/* Filtro por Horário */}
                   <div>
-                    <h4 className="font-semibold mb-2 text-sm text-foreground">Horários</h4>
-                    <div className="grid grid-cols-4 md:flex md:flex-wrap gap-1 md:gap-2 max-h-32 overflow-y-auto">
+                    <h4 className="rotulo mb-2.5">Horários</h4>
+                    <div className="grid grid-cols-4 gap-1.5">
                       {horariosGrade.map(horario => (
-                        <label key={horario} className="flex items-center gap-1 p-1 md:p-2 border rounded text-xs md:text-sm bg-background hover:bg-muted transition-colors cursor-pointer">
+                        <label key={horario} className="flex h-11 cursor-pointer items-center justify-center gap-1 rounded-xl border-[1.5px] border-foreground/15 bg-background font-mono text-[12.5px] transition-colors hover:bg-nevoa has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
                           <input
                             type="checkbox"
                             checked={horariosSelecionados.includes(horario)}
@@ -1332,30 +1332,30 @@ const Planejador = () => {
                               if (e.target.checked) setHorariosSelecionados([...horariosSelecionados, horario]);
                               else setHorariosSelecionados(horariosSelecionados.filter(h => h !== horario));
                             }}
-                            className="accent-blue-600"
+                            className="accent-mar"
                           />
                           <span className="font-medium">{horario}</span>
                         </label>
                       ))}
                     </div>
                     
-                    <div className="font-semibold mt-3 mb-2 text-sm text-foreground">Lógica para horários:</div>
-                    <div className="space-y-2 md:flex md:gap-4">
-                      <label className="flex items-center gap-2 cursor-pointer">
+                    <div className="mb-2 mt-4 text-[13px] font-extrabold text-foreground">Lógica para horários:</div>
+                    <div className="grid grid-cols-2 gap-1 rounded-[18px] bg-nevoa p-1">
+                      <label className="flex min-h-[48px] cursor-pointer items-center justify-center gap-2 rounded-[14px] px-2 text-center transition-colors has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
                         <input
                           type="radio"
                           checked={logicaFiltroHorario === 'OU'}
                           onChange={() => setLogicaFiltroHorario('OU')}
-                          className="accent-blue-600"
+                          className="accent-mar"
                         />
                         <span className="text-sm">OU (um horário ou outro)</span>
                       </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      <label className="flex min-h-[48px] cursor-pointer items-center justify-center gap-2 rounded-[14px] px-2 text-center transition-colors has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
                         <input
                           type="radio"
                           checked={logicaFiltroHorario === 'E'}
                           onChange={() => setLogicaFiltroHorario('E')}
-                          className="accent-blue-600"
+                          className="accent-mar"
                         />
                         <span className="text-sm">E (um horário e outro)</span>
                       </label>
@@ -1364,10 +1364,10 @@ const Planejador = () => {
                   
                   {/* Restrições de Dias */}
                   <div>
-                    <div className="font-semibold mb-2 text-sm text-foreground">Restrições de Dias (dias que NÃO quer):</div>
+                    <div className="rotulo mb-2.5">Restrições de dias (dias que NÃO quer)</div>
                     <div className="grid grid-cols-3 md:flex md:flex-wrap gap-2">
                       {diasSemana.map(dia => (
-                        <label key={dia} className="flex items-center gap-2 p-2 border rounded bg-background hover:bg-muted transition-colors cursor-pointer">
+                        <label key={dia} className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-foreground/15 bg-background px-3 transition-colors hover:bg-nevoa has-[:checked]:border-pitanga has-[:checked]:bg-pitanga-tint has-[:checked]:text-pitanga-ink">
                           <input
                             type="checkbox"
                             checked={diasRestritos.includes(dia)}
@@ -1375,29 +1375,29 @@ const Planejador = () => {
                               if (e.target.checked) setDiasRestritos([...diasRestritos, dia]);
                               else setDiasRestritos(diasRestritos.filter(d => d !== dia));
                             }}
-                            className="accent-red-600"
+                            className="accent-pitanga"
                           />
                           <span className="text-sm font-medium">{dia}</span>
                         </label>
                       ))}
                     </div>
-                    <div className="font-semibold mt-3 mb-2 text-sm text-foreground">Lógica para restrições de dias:</div>
-                    <div className="space-y-2 md:flex md:gap-4">
-                      <label className="flex items-center gap-2 cursor-pointer">
+                    <div className="mb-2 mt-4 text-[13px] font-extrabold text-foreground">Lógica para restrições de dias:</div>
+                    <div className="grid grid-cols-2 gap-1 rounded-[18px] bg-nevoa p-1">
+                      <label className="flex min-h-[48px] cursor-pointer items-center justify-center gap-2 rounded-[14px] px-2 text-center transition-colors has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
                         <input
                           type="radio"
                           checked={logicaRestricoes === 'OU'}
                           onChange={() => setLogicaRestricoes('OU')}
-                          className="accent-red-600"
+                          className="accent-pitanga"
                         />
                         <span className="text-sm">OU (um dia restrito ou outro)</span>
                       </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      <label className="flex min-h-[48px] cursor-pointer items-center justify-center gap-2 rounded-[14px] px-2 text-center transition-colors has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
                         <input
                           type="radio"
                           checked={logicaRestricoes === 'E'}
                           onChange={() => setLogicaRestricoes('E')}
-                          className="accent-red-600"
+                          className="accent-pitanga"
                         />
                         <span className="text-sm">E (um dia restrito e outro)</span>
                       </label>
@@ -1406,10 +1406,10 @@ const Planejador = () => {
                   
                   {/* Restrições de Horário */}
                   <div>
-                    <div className="font-semibold mb-2 text-sm text-foreground">Restrições de Horário (horários que NÃO quer):</div>
-                    <div className="grid grid-cols-4 md:flex md:flex-wrap gap-1 md:gap-2 max-h-32 overflow-y-auto">
+                    <div className="rotulo mb-2.5">Restrições de horário (horários que NÃO quer)</div>
+                    <div className="grid grid-cols-4 gap-1.5">
                       {horariosGrade.map(horario => (
-                        <label key={horario} className="flex items-center gap-1 p-1 md:p-2 border rounded text-xs md:text-sm bg-background hover:bg-muted transition-colors cursor-pointer">
+                        <label key={horario} className="flex h-11 cursor-pointer items-center justify-center gap-1 rounded-xl border-[1.5px] border-foreground/15 bg-background font-mono text-[12.5px] transition-colors hover:bg-nevoa has-[:checked]:border-pitanga has-[:checked]:bg-pitanga-tint has-[:checked]:text-pitanga-ink">
                           <input
                             type="checkbox"
                             checked={horariosRestritos.includes(horario)}
@@ -1417,29 +1417,29 @@ const Planejador = () => {
                               if (e.target.checked) setHorariosRestritos([...horariosRestritos, horario]);
                               else setHorariosRestritos(horariosRestritos.filter(h => h !== horario));
                             }}
-                            className="accent-red-600"
+                            className="accent-pitanga"
                           />
                           <span className="font-medium">{horario}</span>
                         </label>
                       ))}
                     </div>
-                    <div className="font-semibold mt-3 mb-2 text-sm text-foreground">Lógica para restrições de horário:</div>
-                    <div className="space-y-2 md:flex md:gap-4">
-                      <label className="flex items-center gap-2 cursor-pointer">
+                    <div className="mb-2 mt-4 text-[13px] font-extrabold text-foreground">Lógica para restrições de horário:</div>
+                    <div className="grid grid-cols-2 gap-1 rounded-[18px] bg-nevoa p-1">
+                      <label className="flex min-h-[48px] cursor-pointer items-center justify-center gap-2 rounded-[14px] px-2 text-center transition-colors has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
                         <input
                           type="radio"
                           checked={logicaRestricoesHorario === 'OU'}
                           onChange={() => setLogicaRestricoesHorario('OU')}
-                          className="accent-red-600"
+                          className="accent-pitanga"
                         />
                         <span className="text-sm">OU (um horário restrito ou outro)</span>
                       </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      <label className="flex min-h-[48px] cursor-pointer items-center justify-center gap-2 rounded-[14px] px-2 text-center transition-colors has-[:checked]:bg-primary has-[:checked]:text-primary-foreground">
                         <input
                           type="radio"
                           checked={logicaRestricoesHorario === 'E'}
                           onChange={() => setLogicaRestricoesHorario('E')}
-                          className="accent-red-600"
+                          className="accent-pitanga"
                         />
                         <span className="text-sm">E (um horário restrito e outro)</span>
                       </label>
@@ -1447,17 +1447,17 @@ const Planejador = () => {
                   </div>
                   
                   {/* Botões de ação */}
-                  <div className="flex gap-3 pt-4 border-t">
+                  <div className="sticky bottom-0 -mx-6 flex gap-2.5 border-t border-border bg-background px-6 pb-1 pt-3.5 sm:-mx-7 sm:px-7">
                     <button
                       type="button"
-                      className="flex-1 px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-sm font-medium transition-colors"
+                      className="h-[52px] rounded-full border-[1.5px] border-foreground/20 px-6 text-sm font-extrabold transition-colors hover:bg-nevoa"
                       onClick={limparFiltros}
                     >
                       Limpar
                     </button>
                     <button
                       type="button"
-                      className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
+                      className="h-[52px] flex-1 rounded-full bg-primary px-6 text-sm font-extrabold text-primary-foreground transition-colors hover:bg-primary/85"
                       onClick={aplicarFiltros}
                     >
                       Aplicar
@@ -1472,18 +1472,18 @@ const Planejador = () => {
         {/* Modal de Turmas Disponíveis */}
         <AnimatePresence>
           {showSections && selectedCourse && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={handleCloseSections}>
+            <div className="fixed inset-0 bg-overlay/55 flex items-end sm:items-center justify-center z-50 sm:p-4" onClick={handleCloseSections}>
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
-                className="bg-background rounded-lg p-4 w-full max-w-sm max-h-[75vh] overflow-y-auto md:max-w-2xl md:p-6 shadow border my-4"
+                className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-background px-6 pb-6 pt-5 shadow-xl sm:rounded-3xl sm:p-7"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h3 className="text-xl font-bold">{selectedCourse.code}</h3>
-                    <p className="text-muted-foreground">{selectedCourse.name}</p>
+                    <h3 className="font-mono text-[13px] font-semibold text-mar-ink">{selectedCourse.code}</h3>
+                    <p className="mt-1 text-[23px] font-black uppercase leading-[1.12] tracking-[-0.025em] text-foreground">{selectedCourse.name}</p>
                   </div>
                   <Button variant="ghost" size="sm" onClick={handleCloseSections}>✕</Button>
                 </div>
@@ -1491,7 +1491,7 @@ const Planejador = () => {
                 <div className="space-y-6">
                   {isLoadingSections ? (
                     <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                      <Loader2 className="w-8 h-8 animate-spin text-mar" />
                       <p className="text-sm text-muted-foreground">Carregando informações da disciplina...</p>
                     </div>
                   ) : (
@@ -1622,7 +1622,7 @@ function SectionDetailModal({
   }: { title: string; count?: number; open: boolean; onToggle: () => void }) => (
     <div className="flex items-center justify-between cursor-pointer" onClick={onToggle}>
       <div className="flex items-center gap-2">
-        <h4 className="font-semibold text-sm text-card-foreground">{title}</h4>
+        <h4 className="text-base font-black text-foreground">{title}</h4>
         {typeof count === 'number' && count > 0 && (
           <Badge variant="secondary" className="px-2 py-0.5 text-xs">
             {count}
@@ -1635,7 +1635,7 @@ function SectionDetailModal({
           e.stopPropagation();
           onToggle();
         }}
-        className="px-2 py-1 rounded-md text-sm text-muted-foreground hover:bg-muted"
+        className="flex h-10 w-10 items-center justify-center rounded-full text-foreground hover:bg-nevoa"
         aria-label={open ? 'Recolher' : 'Expandir'}
       >
         {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -1644,18 +1644,18 @@ function SectionDetailModal({
   );
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-background rounded-lg p-4 w-full max-w-sm max-h-[75vh] overflow-y-auto md:max-w-2xl md:p-6 my-4" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-overlay/55 flex items-end sm:items-center justify-center z-50 sm:p-4" onClick={onClose}>
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-background px-6 pb-6 pt-5 shadow-xl sm:rounded-3xl sm:p-7" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-bold">{courseCode}</h3>
-            <p className="text-muted-foreground">{courseName}</p>
+            <h3 className="font-mono text-[13px] font-semibold text-mar-ink">{courseCode}</h3>
+            <p className="mt-1 text-[23px] font-black uppercase leading-[1.12] tracking-[-0.025em] text-foreground">{courseName}</p>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose}>✕</Button>
         </div>
         
         <div className="space-y-6">
-          <div className="border rounded-lg p-4 bg-muted/30">
+          <div className="border-t-2 border-foreground pt-3">
             <SectionHeader
               title="Turmas ofertadas"
               count={sameCourseSections.length}
@@ -1678,7 +1678,7 @@ function SectionDetailModal({
           
           {/* Pré-requisitos */}
           {courseDetail?.prerequisites && courseDetail.prerequisites.length > 0 && (
-            <div className="border rounded-lg p-4 bg-muted/30">
+            <div className="border-t-2 border-foreground pt-3">
               <SectionHeader
                 title="Pré-requisitos"
                 count={courseDetail.prerequisites.length}
@@ -1729,7 +1729,7 @@ function SectionDetailModal({
           
           {/* Disciplinas liberadas por esta disciplina */}
           {unlockedCourses.length > 0 && (
-            <div className="border rounded-lg p-4 bg-muted/30">
+            <div className="border-t-2 border-foreground pt-3">
               <SectionHeader
                 title="Disciplinas liberadas por esta"
                 count={unlockedCourses.length}
@@ -1759,7 +1759,7 @@ function SectionDetailModal({
           
           {/* Disciplinas liberadas (corequisitos) */}
           {courseDetail?.corequisites && courseDetail.corequisites.length > 0 && (
-            <div className="border rounded-lg p-4 bg-muted/30">
+            <div className="border-t-2 border-foreground pt-3">
               <SectionHeader
                 title="Disciplinas liberadas por ela"
                 count={courseDetail.corequisites.length}
@@ -2238,7 +2238,7 @@ function SectionsList({
   }: { title: string; count?: number; open: boolean; onToggle: () => void }) => (
     <div className="flex items-center justify-between cursor-pointer" onClick={onToggle}>
       <div className="flex items-center gap-2">
-        <h4 className="font-semibold text-sm text-card-foreground">{title}</h4>
+        <h4 className="text-base font-black text-foreground">{title}</h4>
         {typeof count === 'number' && count > 0 && (
           <Badge variant="secondary" className="px-2 py-0.5 text-xs">
             {count}
@@ -2251,7 +2251,7 @@ function SectionsList({
           e.stopPropagation();
           onToggle();
         }}
-        className="px-2 py-1 rounded-md text-sm text-muted-foreground hover:bg-muted"
+        className="flex h-10 w-10 items-center justify-center rounded-full text-foreground hover:bg-nevoa"
         aria-label={open ? 'Recolher' : 'Expandir'}
       >
         {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -2281,7 +2281,7 @@ function SectionsList({
     <div className="space-y-6">
       {/* Pré-requisitos */}
       {courseDetail?.prerequisites && courseDetail.prerequisites.length > 0 && (
-        <div className="border rounded-lg p-4 bg-muted/30">
+        <div className="border-t-2 border-foreground pt-3">
           <SectionHeader
             title="Pré-requisitos"
             count={courseDetail.prerequisites.length}
@@ -2332,7 +2332,7 @@ function SectionsList({
       
       {/* Disciplinas liberadas por esta disciplina */}
       {unlockedCourses.length > 0 && (
-        <div className="border rounded-lg p-4 bg-muted/30">
+        <div className="border-t-2 border-foreground pt-3">
           <SectionHeader
             title="Disciplinas liberadas por esta"
             count={unlockedCourses.length}

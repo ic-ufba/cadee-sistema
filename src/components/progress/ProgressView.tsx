@@ -14,6 +14,7 @@ import { InfoPopup } from '@/components/ui/info-popup';
 import { Upload, X, Shield, GraduationCap } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Mare, PercentAnimado } from '@/components/brand/Mare';
 import { useState, useEffect, useMemo } from 'react';
 
 export function ProgressView() {
@@ -379,12 +380,12 @@ export function ProgressView() {
     : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       {/* Header with program info */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Progresso</h1>
+            <h1 className="text-[22px] font-black tracking-[-0.035em] text-foreground sm:text-[26px]">Progresso</h1>
           </div>
           <div className="flex items-center gap-2">
             {hasImportedData && (
@@ -394,7 +395,7 @@ export function ProgressView() {
                     clearSavedData();
                   }
                 }}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-red-200 text-red-600 text-xs font-medium hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/20 sm:flex hidden"
+                className="hidden h-10 items-center gap-2 rounded-full border-[1.5px] border-pitanga/35 px-4 text-[13px] font-bold text-pitanga hover:bg-pitanga-tint sm:inline-flex"
               >
                 <X className="w-3.5 h-3.5" />
                 <span>Limpar dados</span>
@@ -403,7 +404,7 @@ export function ProgressView() {
             {hasImportedData && (
               <button
                 onClick={() => setShowImportModal(true)}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-medium hover:bg-muted"
+                className="inline-flex h-10 items-center gap-2 rounded-full bg-nevoa px-3 text-[13px] font-bold text-foreground hover:bg-trilho sm:px-4"
               >
                 <Upload className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Importar histórico</span>
@@ -416,7 +417,7 @@ export function ProgressView() {
                     clearSavedData();
                   }
                 }}
-                className="inline-flex items-center gap-2 px-2 py-1.5 rounded-lg border border-red-200 text-red-600 text-xs font-medium hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/20 sm:hidden"
+                className="inline-flex h-10 items-center gap-1.5 rounded-full border-[1.5px] border-pitanga/35 px-3 text-[13px] font-bold text-pitanga hover:bg-pitanga-tint sm:hidden"
               >
                 <X className="w-3.5 h-3.5" />
                 <span>Limpar</span>
@@ -427,23 +428,23 @@ export function ProgressView() {
         
         {/* Aviso sobre necessidade de importar histórico */}
         {!hasImportedData && (
-          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+          <div className="rounded-2xl bg-mar-claro p-4 sm:p-5">
             <div className="flex items-start gap-2">
-              <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-mar">
                 <span className="text-white text-xs font-bold">i</span>
               </div>
               <div className="text-sm">
-                <p className="font-medium text-blue-800 dark:text-blue-200 mb-1">
+                <p className="mb-1 font-extrabold text-foreground">
                   Importe seu histórico acadêmico
                 </p>
-                <p className="text-blue-700 dark:text-blue-300">
+                <p className="font-medium text-foreground-2">
                   Para visualizar seu progresso no curso, 
                   <button 
                     onClick={() => {
                       setShowWelcomeModal(false);
                       setShowImportModal(true);
                     }}
-                    className="underline font-medium hover:text-blue-800 dark:hover:text-blue-100 ml-1"
+                    className="ml-1 font-extrabold text-mar underline-offset-2 hover:underline"
                   >
                     importe seu histórico acadêmico
                   </button>.
@@ -454,63 +455,68 @@ export function ProgressView() {
         )}
       </div>
 
-      {/* Unified Progress Card (Geral + Obrigatórias + Optativas + Complementares) */}
-      <div className="bg-card rounded-xl border border-border p-5 md:p-6 space-y-6">
-        {/* Overall Progress Top Section */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-foreground">Progresso Geral</h2>
+      {/* Progresso geral: a maré + números + categorias */}
+      <div className="grid grid-cols-1 items-center gap-8 border-t-2 border-foreground pt-6 md:grid-cols-[minmax(0,300px)_minmax(0,1fr)] md:gap-12 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
+        <div className="-ml-[72px] flex justify-start sm:ml-0 md:justify-center">
+          <Mare percent={Math.min(100, overallProgress)} size={232} className="md:hidden" />
+          <Mare percent={Math.min(100, overallProgress)} size={300} className="hidden md:block" />
+        </div>
+
+        <div className="space-y-6">
+          {/* Geral */}
+          <div>
+            <div className="mb-2 flex items-center gap-2">
+              <h2 className="rotulo">Progresso geral</h2>
               <InfoPopup 
                 iconClassName="w-4 h-4"
                 content="Progresso total baseado nas horas cursadas em relação às horas exigidas do curso (limitado ao teto de cada categoria)."
               />
             </div>
-            <span className="text-2xl font-bold text-foreground">
-              {overallProgress.toFixed(1)}%
+            <span className="numero block text-[48px] text-foreground sm:text-[56px]">
+              <PercentAnimado value={overallProgress} />
             </span>
+            <div className="mt-2 font-mono text-[13px] text-muted-foreground">
+              <span>{progressData.effectiveTotalHours} / {totalRequiredHours} horas</span>
+            </div>
+            <div className="mt-3 h-3 w-full overflow-hidden rounded-full bg-trilho">
+              <div 
+                className="h-full rounded-full bg-foreground transition-all duration-500"
+                style={{ width: `${Math.min(100, overallProgress)}%` }}
+              />
+            </div>
           </div>
-          <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-            <span>{progressData.effectiveTotalHours} / {totalRequiredHours} horas</span>
-          </div>
-          <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-green-500 rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(100, overallProgress)}%` }}
-            />
-          </div>
-        </div>
 
-        {/* Divider & Category Progress Columns */}
-        <div className="pt-5 border-t border-border/60">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
-            <ProgressCard 
-              title="Obrigatórias" 
-              current={progressData.mandatory.completed} 
-              total={progressData.mandatory.total}
-              category="mandatory"
-              showInfo
-              isEstimated={usesCurriculumTotals}
-              infoText="Horas de disciplinas obrigatórias do curso."
-            />
-            <ProgressCard 
-              title="Optativas" 
-              current={progressData.electives.completed} 
-              total={progressData.electives.total}
-              category="elective"
-              showInfo
-              isEstimated={usesCurriculumTotals}
-              infoText="Horas de disciplinas optativas."
-            />
-            <ProgressCard 
-              title="Complementares" 
-              current={progressData.complementary.completed} 
-              total={progressData.complementary.total}
-              category="complementary"
-              showInfo
-              isEstimated={usesCurriculumTotals}
-              infoText="Horas de atividades complementares."
-            />
+          {/* Categorias */}
+          <div className="border-t border-border pt-5">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 sm:gap-6">
+              <ProgressCard 
+                title="Obrigatórias" 
+                current={progressData.mandatory.completed} 
+                total={progressData.mandatory.total}
+                category="mandatory"
+                showInfo
+                isEstimated={usesCurriculumTotals}
+                infoText="Horas de disciplinas obrigatórias do curso."
+              />
+              <ProgressCard 
+                title="Optativas" 
+                current={progressData.electives.completed} 
+                total={progressData.electives.total}
+                category="elective"
+                showInfo
+                isEstimated={usesCurriculumTotals}
+                infoText="Horas de disciplinas optativas."
+              />
+              <ProgressCard 
+                title="Complementares" 
+                current={progressData.complementary.completed} 
+                total={progressData.complementary.total}
+                category="complementary"
+                showInfo
+                isEstimated={usesCurriculumTotals}
+                infoText="Horas de atividades complementares."
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -527,12 +533,12 @@ export function ProgressView() {
       />
 
       {/* Aproveitamento Section */}
-      <div className="bg-card rounded-lg border border-border p-4">
+      <div className="border-t-2 border-foreground pt-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-sm font-medium text-foreground">Aproveitamento</h3>
+            <h3 className="text-[22px] font-black tracking-[-0.035em] text-foreground">Aproveitamento</h3>
             {currentTerm && (
-              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">
+              <span className="rounded-full bg-nevoa px-2.5 py-1 font-mono text-[11px] font-semibold text-foreground">
                 Vigente: {currentTerm}
               </span>
             )}
@@ -565,17 +571,17 @@ export function ProgressView() {
                   status = 'dropped';
                 }
 
-                let colorClass = 'bg-gray-300 dark:bg-gray-700/60';
+                let colorClass = 'border-[1.5px] border-dashed border-tracejado';
                 let title = 'Não finalizado / Em andamento';
 
                 if (status === 'approved') {
-                  colorClass = 'bg-green-500';
+                  colorClass = 'bg-mar';
                   title = 'Aprovação';
                 } else if (status === 'failed') {
-                  colorClass = 'bg-red-500';
+                  colorClass = 'bg-pitanga';
                   title = 'Reprovação';
                 } else if (status === 'dropped') {
-                  colorClass = 'bg-gray-700';
+                  colorClass = 'border-2 border-foreground';
                   title = 'Trancamento';
                 }
 
@@ -594,28 +600,28 @@ export function ProgressView() {
               return (
                 <div
                   key={term}
-                  className="space-y-2 rounded-lg p-2 -mx-2 bg-primary/5 border border-primary/20"
+                  className="space-y-2.5 rounded-2xl bg-nevoa px-3 py-3 -mx-3"
                 >
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-primary">
+                      <span className="font-mono text-[13px] font-semibold text-foreground">
                         {term}
                       </span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                      <span className="rounded-full bg-dende px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.08em] text-foreground">
                         Atual
                       </span>
                     </div>
-                    <span className="text-muted-foreground text-xs">
+                    <span className="font-mono text-xs font-semibold text-foreground-2">
                       {currentApprovedCount}/{currentTotalCount} disciplinas
                     </span>
                   </div>
-                  <div className="grid grid-cols-8 gap-1">
+                  <div className="flex flex-wrap gap-[5px]">
                     {currentItems.map((item, index) => (
                       <TooltipProvider key={index}>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div
-                              className={`h-4 rounded-sm ${item.colorClass} cursor-pointer hover:opacity-80 transition-opacity`}
+                              className={`h-[11px] w-[26px] rounded-full ${item.colorClass} cursor-pointer hover:opacity-80 transition-opacity`}
                             />
                           </TooltipTrigger>
                           <TooltipContent>
@@ -636,43 +642,43 @@ export function ProgressView() {
             return (
               <div
                 key={term}
-                className={`space-y-2 rounded-lg p-2 -mx-2 ${isCurrentTerm ? 'bg-primary/5 border border-primary/20' : ''}`}
+                className={`space-y-2.5 border-b border-border py-3 ${isCurrentTerm ? 'rounded-2xl border-b-0 bg-nevoa px-3 -mx-3' : ''}`}
               >
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
-                    <span className={isCurrentTerm ? 'font-semibold text-primary' : 'text-muted-foreground'}>
+                    <span className={isCurrentTerm ? 'font-mono text-[13px] font-semibold text-foreground' : 'font-mono text-[13px] font-semibold text-foreground-2'}>
                       {term}
                     </span>
                     {isCurrentTerm && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                      <span className="rounded-full bg-dende px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.08em] text-foreground">
                         Atual
                       </span>
                     )}
                   </div>
-                  <span className="text-muted-foreground text-xs">
+                  <span className="font-mono text-xs font-semibold text-foreground-2">
                     {approved}/{total} disciplinas
                   </span>
                 </div>
-                <div className="grid grid-cols-8 gap-1">
+                <div className="flex flex-wrap gap-[5px]">
                   {Array.from({ length: total }).map((_, index) => {
                     let colorClass: string;
                     let title: string;
                     let disciplineCode: string | undefined;
 
                     if (index < approved) {
-                      colorClass = 'bg-green-500';
+                      colorClass = 'bg-mar';
                       title = 'Aprovação';
                       disciplineCode = semesterDisciplines?.approved[index];
                     } else if (index < approved + failed) {
-                      colorClass = 'bg-red-500';
+                      colorClass = 'bg-pitanga';
                       title = 'Reprovação';
                       disciplineCode = semesterDisciplines?.failed[index - approved];
                     } else if (index < approved + failed + dropped) {
-                      colorClass = 'bg-gray-700';
+                      colorClass = 'border-2 border-foreground';
                       title = 'Trancamento';
                       disciplineCode = semesterDisciplines?.dropped[index - approved - failed];
                     } else {
-                      colorClass = 'bg-gray-300 dark:bg-gray-700/60';
+                      colorClass = 'border-[1.5px] border-dashed border-tracejado';
                       title = 'Não feito';
                     }
 
@@ -683,7 +689,7 @@ export function ProgressView() {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div
-                              className={`h-4 rounded-sm ${colorClass} cursor-pointer hover:opacity-80 transition-opacity`}
+                              className={`h-[11px] w-[26px] rounded-full ${colorClass} cursor-pointer hover:opacity-80 transition-opacity`}
                             />
                           </TooltipTrigger>
                           <TooltipContent>
@@ -709,22 +715,22 @@ export function ProgressView() {
           )}
           
           {/* Estatísticas gerais */}
-          <div className="pt-3 border-t border-border">
-            <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="pt-4">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs font-semibold sm:flex sm:flex-wrap">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-500 rounded-sm" />
+                <div className="h-[9px] w-[22px] rounded-full bg-mar" />
                 <span className="text-muted-foreground">Aprovação/Dispensa</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-500 rounded-sm" />
+                <div className="h-[9px] w-[22px] rounded-full bg-pitanga" />
                 <span className="text-muted-foreground">Reprovação</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-gray-700 rounded-sm" />
+                <div className="h-[9px] w-[22px] rounded-full border-2 border-foreground" />
                 <span className="text-muted-foreground">Trancamento</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-gray-300 rounded-sm" />
+                <div className="h-[9px] w-[22px] rounded-full border-[1.5px] border-dashed border-tracejado" />
                 <span className="text-muted-foreground">Não feito</span>
               </div>
             </div>
@@ -739,7 +745,7 @@ export function ProgressView() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            className="fixed inset-0 z-50 flex items-end justify-center bg-overlay/55 sm:items-center sm:p-4"
             onClick={() => setShowWelcomeModal(false)}
           >
             <motion.div
@@ -747,7 +753,7 @@ export function ProgressView() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
               transition={{ duration: 0.18 }}
-              className="w-full max-w-md bg-card rounded-2xl shadow-xl border border-border/60 p-6 space-y-4"
+              className="w-full max-w-md bg-background rounded-t-3xl sm:rounded-3xl shadow-xl p-6 space-y-4"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="text-center space-y-4">
@@ -765,7 +771,7 @@ export function ProgressView() {
                   </p>
                 </div>
 
-                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                <div className="rounded-2xl bg-mar-claro p-4 sm:p-5">
                   <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-2">
                     📊 O que será extraído:
                   </div>
@@ -783,7 +789,7 @@ export function ProgressView() {
                       setShowWelcomeModal(false);
                       localStorage.setItem('firstVisitProgresso', 'true');
                     }}
-                    className="flex-1 px-4 py-2 rounded-lg border border-border text-sm text-foreground hover:bg-muted"
+                    className="flex-1 h-12 px-5 rounded-full border-[1.5px] border-foreground/20 text-sm font-bold text-foreground hover:bg-nevoa"
                   >
                     Agora não
                   </button>
@@ -811,7 +817,7 @@ export function ProgressView() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            className="fixed inset-0 z-50 flex items-end justify-center bg-overlay/55 sm:items-center sm:p-4"
             onClick={() => setShowImportModal(false)}
           >
             <motion.div
@@ -819,35 +825,35 @@ export function ProgressView() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
               transition={{ duration: 0.18 }}
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card rounded-2xl shadow-xl border border-border/60 p-4 sm:p-6 space-y-4"
+              className="max-h-[92vh] w-full max-w-2xl space-y-5 overflow-y-auto rounded-t-[28px] bg-background p-6 pb-8 shadow-xl sm:rounded-[28px] sm:pb-6"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Upload className="w-5 h-5 text-primary" />
+                  <div className="hidden">
+                    <Upload className="w-5 h-5 text-mar" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-base sm:text-lg font-semibold text-foreground">Importar histórico para progresso</p>
-                    <p className="text-xs sm:text-sm text-muted-foreground">
+                    <p className="text-[22px] font-black leading-tight tracking-[-0.03em] text-foreground">Importar histórico para progresso</p>
+                    <p className="mt-1 text-sm font-medium text-muted-foreground">
                       Envie o PDF ou cole o texto do histórico para calcular seu progresso real no curso.
                     </p>
                   </div>
                 </div>
-                <button onClick={() => setShowImportModal(false)} className="text-muted-foreground hover:text-foreground shrink-0">
-                  <X className="w-5 h-5" />
+                <button onClick={() => setShowImportModal(false)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-nevoa text-foreground-2 hover:text-foreground">
+                  <X className="h-[18px] w-[18px]" />
                 </button>
               </div>
 
               <div className="space-y-3">
-                <label className="flex items-center gap-2 px-4 py-3 border rounded-lg cursor-pointer hover:bg-muted">
-                  <Upload className="w-4 h-4 shrink-0" />
-                  <span className="text-sm">Selecionar PDF</span>
+                <label className="flex h-[88px] cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[18px] border-[1.5px] border-dashed border-tracejado bg-nevoa px-4 transition-colors hover:bg-trilho">
+                  <Upload className="h-5 w-5 shrink-0 text-foreground" />
+                  <span className="text-sm font-bold text-foreground">Selecionar PDF</span>
                   <input type="file" accept=".pdf,text/plain" className="hidden" onChange={handleFileChange} />
                 </label>
 
-                <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground">
-                  <p className="font-medium text-foreground mb-1 flex items-center gap-1">
+                <div className="rounded-[18px] bg-mar-claro p-4 text-xs font-medium leading-relaxed text-mar-ink">
+                  <p className="mb-1 flex items-center gap-1.5 text-[13px] font-extrabold">
                     <Shield className="w-3 h-3" />
                     Privacidade
                   </p>
@@ -857,9 +863,17 @@ export function ProgressView() {
                 {isParsing && <p className="text-sm text-muted-foreground">Lendo PDF...</p>}
                 {importError && <p className="text-sm text-destructive">{importError}</p>}
 
+                {/* Retorno visual simples (as métricas do curso ficam ocultas no novo visual) */}
+                {parsedCodes.length > 0 && (
+                  <div className="flex items-center gap-2 rounded-[14px] bg-nevoa px-4 py-3 text-sm font-semibold text-foreground">
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-mar" />
+                    {parsedCodes.length} disciplina{parsedCodes.length > 1 ? 's' : ''} aprovada{parsedCodes.length > 1 ? 's' : ''} detectada{parsedCodes.length > 1 ? 's' : ''}
+                  </div>
+                )}
+
                 {/* Métricas de Progresso do Curso - só mostra quando há dados importados */}
                 {(parsedWorkload || parsedCodes.length > 0) && (
-                  <div className="space-y-3">
+                  <div className="hidden">
                     <p className="text-sm font-medium text-foreground">
                       Métricas do Curso
                     </p>
@@ -994,7 +1008,7 @@ export function ProgressView() {
                         </div>
                         
                         <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                          <div className="rounded-2xl bg-mar-claro p-4 sm:p-5">
                             <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">
                               Horas Obrigatórias
                             </div>
@@ -1046,7 +1060,7 @@ export function ProgressView() {
                 )}
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
                 <button
                   onClick={() => {
                     setShowImportModal(false);
@@ -1054,13 +1068,13 @@ export function ProgressView() {
                     setImportText('');
                     setImportError('');
                   }}
-                  className="px-4 py-2 rounded-lg border border-border text-sm text-foreground hover:bg-muted"
+                  className="h-12 px-5 rounded-full border-[1.5px] border-foreground/20 text-sm font-bold text-foreground hover:bg-nevoa"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleApplyImport}
-                  className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90"
+                  className="h-12 px-6 rounded-full bg-primary text-primary-foreground text-sm font-extrabold hover:bg-primary/85"
                   disabled={isParsing}
                 >
                   Aplicar
