@@ -16,6 +16,7 @@ import { Link } from 'react-router-dom';
 import { ImportarHistoricoModal } from './ImportarHistoricoModal';
 import { useOverallProgress } from '@/hooks/useOverallProgress';
 import { useSigaaAuth } from '@/hooks/useSigaa';
+import { IndicesSigaa, useComplementaresEmAnalise, useCrPorPeriodo } from '@/components/sigaa/IndicesSigaa';
 import { porcento } from '@/lib/curso-texto';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -36,7 +37,9 @@ export function ProgressView({ abrirImportacao = false, onImportacaoAberta }: Pr
   const { currentTerm } = useCurrentTerm();
   const { setMode } = useMode();
   const overall = useOverallProgress();
-  const { session: sigaaSession } = useSigaaAuth();
+  const { session: sigaaSession, isLoggedIn: sigaaLogado } = useSigaaAuth();
+  const crPorPeriodo = useCrPorPeriodo();
+  const complementaresEmAnalise = useComplementaresEmAnalise();
   
   // Estados para importação de histórico
   const [showImportModal, setShowImportModal] = useState(false);
@@ -483,7 +486,9 @@ export function ProgressView({ abrirImportacao = false, onImportacaoAberta }: Pr
     </TooltipProvider>
   );
 
-  const fonteTexto = hasImportedData
+  const fonteTexto = sigaaLogado
+    ? `Sincronizado com sua conta do SIGAA${hasImportedData && sigaaSession?.sincronizadoEm ? ' · ' : ''}`
+    : hasImportedData
     ? sigaaSession?.sincronizadoEm
       ? `Dados do histórico escolar importado do SIGAA · `
       : 'Dados do histórico escolar importado'
@@ -559,6 +564,7 @@ export function ProgressView({ abrirImportacao = false, onImportacaoAberta }: Pr
                   <Link to="/configuracoes" className="font-semibold text-mar hover:text-foreground">registrar</Link>
                 </>
               )}
+              {c.key === 'complementary' && complementaresEmAnalise > 0 && <span> · {complementaresEmAnalise} h em análise</span>}
               {usesCurriculumTotals && <span className="text-dende-ink"> · estimado</span>}
             </span>
           </div>
@@ -575,6 +581,9 @@ export function ProgressView({ abrirImportacao = false, onImportacaoAberta }: Pr
           <span className="hidden lg:inline">Na grade de {termoGrade}, se aprovado</span>
         </span>
       </div>
+
+      {/* Com o SIGAA conectado: índices oficiais e simulador de CR */}
+      <IndicesSigaa />
 
       {/* DETALHE: por semestre + aproveitamento */}
       <div className="mt-10 flex flex-col border-t-2 border-foreground lg:flex-row lg:flex-wrap">
@@ -634,7 +643,7 @@ export function ProgressView({ abrirImportacao = false, onImportacaoAberta }: Pr
                 const aprovadasAtual = currentItems.filter((i) => i.status === 'approved').length;
 
                 return (
-                  <div key={term} className="-mx-2.5 grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3 rounded-[10px] bg-nevoa px-2.5 py-[11px] lg:grid-cols-[72px_minmax(0,1fr)_96px] lg:gap-4">
+                  <div key={term} className="-mx-2.5 grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3 rounded-[10px] bg-nevoa px-2.5 py-[11px] lg:grid-cols-[72px_minmax(0,1fr)_minmax(96px,auto)] lg:gap-4">
                     <span className="flex flex-col gap-[3px]">
                       <span className="font-mono text-xs font-semibold text-foreground">{term}</span>
                       <span className="self-start rounded-full bg-foreground px-1.5 py-px text-[9px] font-extrabold uppercase tracking-[0.08em] text-background">Atual</span>
@@ -661,7 +670,7 @@ export function ProgressView({ abrirImportacao = false, onImportacaoAberta }: Pr
               return (
                 <div
                   key={term}
-                  className={`grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3 py-[11px] lg:grid-cols-[72px_minmax(0,1fr)_96px] lg:gap-4 ${isCurrentTerm ? '-mx-2.5 rounded-[10px] bg-nevoa px-2.5' : 'border-b border-foreground/10'}`}
+                  className={`grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3 py-[11px] lg:grid-cols-[72px_minmax(0,1fr)_minmax(96px,auto)] lg:gap-4 ${isCurrentTerm ? '-mx-2.5 rounded-[10px] bg-nevoa px-2.5' : 'border-b border-foreground/10'}`}
                 >
                   <span className="flex flex-col gap-[3px]">
                     <span className="font-mono text-xs font-semibold text-foreground">{term}</span>
@@ -672,7 +681,12 @@ export function ProgressView({ abrirImportacao = false, onImportacaoAberta }: Pr
                   <span className="flex flex-wrap gap-1">
                     {itens.map((it, i) => <Pilula key={i} status={it.status} dica={it.dica} />)}
                   </span>
-                  <span className="text-right font-mono text-[11px] text-foreground-2">{approved}/{total}</span>
+                  <span className="text-right font-mono text-[11px] text-foreground-2">
+                    {approved}/{total}
+                    {crPorPeriodo.has(term) && (
+                      <> · <b className="font-bold text-mar-ink">CR {crPorPeriodo.get(term)!.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</b></>
+                    )}
+                  </span>
                 </div>
               );
             })}
@@ -690,6 +704,9 @@ export function ProgressView({ abrirImportacao = false, onImportacaoAberta }: Pr
             <span className="inline-flex items-center gap-2"><span className="h-2 w-5 rounded-full bg-pitanga" />Reprovação</span>
             <span className="inline-flex items-center gap-2"><span className="h-2 w-5 rounded-full shadow-[inset_0_0_0_1.5px_hsl(var(--foreground))]" />Trancamento</span>
             <span className="inline-flex items-center gap-2"><span className="h-2 w-5 rounded-full shadow-[inset_0_0_0_1.5px_hsl(var(--tracejado))]" />Em curso</span>
+            {crPorPeriodo.size > 0 && (
+              <span className="inline-flex items-center gap-2"><b className="font-mono text-[11px] text-mar-ink">CR</b>do semestre, pelo SIGAA</span>
+            )}
           </div>
         </section>
       </div>
@@ -714,13 +731,13 @@ export function ProgressView({ abrirImportacao = false, onImportacaoAberta }: Pr
               Limpar dados importados
             </button>
           )}
-          <button
+          {!sigaaLogado && <button
             onClick={() => setShowImportModal(true)}
             className="order-1 inline-flex h-[52px] items-center justify-center gap-2 rounded-full bg-primary px-5 text-[15px] font-extrabold text-primary-foreground hover:bg-primary/90 sm:order-2 sm:h-11 sm:text-xs sm:font-bold"
           >
             <Upload className="h-4 w-4 sm:h-3.5 sm:w-3.5" strokeWidth={2.4} />
             {hasImportedData ? 'Atualizar histórico' : 'Importar histórico'}
-          </button>
+          </button>}
         </div>
       </div>
 

@@ -10,7 +10,8 @@ import { useOverallProgress } from '@/hooks/useOverallProgress';
 import { Calendar, BookOpen, BarChart3, X, Sparkles, GraduationCap, Clock, AlertTriangle, Plus, TrendingUp, ArrowRight, Upload } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ProgressView } from '@/components/progress/ProgressView';
-import { SigaaInsights } from '@/components/sigaa/SigaaInsights';
+import { MeuSemestre, SemestreAndamento, SemestreAtalhos } from '@/components/semestre/MeuSemestre';
+import { useSemestreAtual, useSigaaAuth } from '@/hooks/useSigaa';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMode } from '@/hooks/useMode';
 import { usePlannedDisciplineCategories } from '@/hooks/usePlannedDisciplineCategories';
@@ -26,7 +27,23 @@ const Index = () => {
   const { pendingTransition, planningTerm, canAdvance, advanceToNewSemester, unresolvedCodes } = useSemesterTransition();
   const overallProgress = useOverallProgress();
   const { scheduledCount, disciplinesCount, workloadBreakdown } = usePlannedDisciplineCategories();
-  const [activeTab, setActiveTab] = useState<'schedule' | 'progress'>('schedule');
+  const [activeTab, setActiveTabState] = useState<'semester' | 'schedule' | 'progress'>('schedule');
+  const [abaEscolhida, setAbaEscolhida] = useState(false);
+  const setActiveTab = (aba: 'semester' | 'schedule' | 'progress') => {
+    setAbaEscolhida(true);
+    setActiveTabState(aba);
+  };
+  const { isLoggedIn } = useSigaaAuth();
+  const { emAndamento } = useSemestreAtual();
+
+  // Com o SIGAA conectado, "Meu semestre" abre primeiro enquanto há aulas; fora do período, abre o Planejamento.
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setActiveTabState((aba) => (aba === 'semester' ? 'schedule' : aba));
+      return;
+    }
+    if (!abaEscolhida && emAndamento !== null) setActiveTabState(emAndamento ? 'semester' : 'schedule');
+  }, [isLoggedIn, emAndamento, abaEscolhida]);
   const { setMode, isFull, isSimplified } = useMode();
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [hasImportedHistory, setHasImportedHistory] = useState(false);
@@ -60,13 +77,9 @@ const Index = () => {
 
   const renderTabContent = () => {
     if (activeTab === 'progress') {
-      return (
-        <>
-          <SigaaInsights />
-          <ProgressView abrirImportacao={abrirImportacao} onImportacaoAberta={() => setAbrirImportacao(false)} />
-        </>
-      );
+      return <ProgressView abrirImportacao={abrirImportacao} onImportacaoAberta={() => setAbrirImportacao(false)} />;
     }
+    if (activeTab === 'semester') return <MeuSemestre />;
     return <ScheduleSummary />;
   };
 
@@ -77,7 +90,7 @@ const Index = () => {
         <div className="mb-6 sm:mb-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex min-w-0 flex-col gap-3 sm:gap-3.5">
-              {activeTab === 'schedule' ? (
+              {activeTab !== 'progress' ? (
                 <div className="flex min-h-5 items-center gap-2.5">
                   {/* mobile: universidade e curso; desktop: semestre letivo */}
                   {myPrograms.length > 0 && (
@@ -96,20 +109,35 @@ const Index = () => {
                 )
               )}
               <h1 className="text-[30px] font-black leading-[1.05] tracking-[-0.04em] text-foreground sm:text-[clamp(30px,2.8vw,40px)]">
-                {activeTab === 'schedule' ? 'Controle do semestre' : 'Meu progresso'}
+                {activeTab === 'schedule' ? 'Controle do semestre' : activeTab === 'semester' ? 'Meu semestre' : 'Meu progresso'}
               </h1>
+              {activeTab === 'semester' && <SemestreAndamento />}
               {activeTab === 'schedule' && myPrograms.length > 0 && (
                 <p className="mt-1.5 hidden text-[15px] font-medium text-foreground-2 sm:block">{descricaoCurso(myPrograms[0])}</p>
               )}
             </div>
 
             {/* Abas (+ ações do Progresso no desktop) */}
+            <div className="flex flex-col items-stretch gap-3 lg:items-end">
+            {activeTab === 'semester' && <SemestreAtalhos />}
             <div className="flex flex-wrap items-center gap-2.5">
             <div role="group" aria-label="Visão" className="flex w-full rounded-full bg-nevoa p-1 lg:w-auto">
+              {isLoggedIn && (
+                <button
+                  aria-pressed={activeTab === 'semester'}
+                  onClick={() => setActiveTab('semester')}
+                  className={`inline-flex min-h-11 flex-[1.2] items-center justify-center whitespace-nowrap rounded-full px-3 text-[12.5px] transition-all sm:px-5 sm:text-[13px] lg:flex-none ${activeTab === 'semester'
+                      ? 'bg-primary font-bold text-primary-foreground'
+                      : 'font-semibold text-foreground-2 hover:text-foreground'
+                    }`}
+                >
+                  Meu semestre
+                </button>
+              )}
               <button
                 aria-pressed={activeTab === 'schedule'}
                 onClick={() => setActiveTab('schedule')}
-                className={`inline-flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-full px-5 text-[13px] transition-all lg:flex-none ${activeTab === 'schedule'
+                className={`inline-flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-full px-3 text-[12.5px] transition-all sm:px-5 sm:text-[13px] lg:flex-none ${activeTab === 'schedule'
                     ? 'bg-primary font-bold text-primary-foreground'
                     : 'font-semibold text-foreground-2 hover:text-foreground'
                   }`}
@@ -119,7 +147,7 @@ const Index = () => {
               <button
                 aria-pressed={activeTab === 'progress'}
                 onClick={() => setActiveTab('progress')}
-                className={`inline-flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-full px-5 text-[13px] transition-all lg:flex-none ${activeTab === 'progress'
+                className={`inline-flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-full px-3 text-[12.5px] transition-all sm:px-5 sm:text-[13px] lg:flex-none ${activeTab === 'progress'
                     ? 'bg-primary font-bold text-primary-foreground'
                     : 'font-semibold text-foreground-2 hover:text-foreground'
                   }`}
@@ -129,13 +157,13 @@ const Index = () => {
             </div>
             {activeTab === 'progress' && (
               <>
-                <button
+                {!isLoggedIn && <button
                   onClick={() => setAbrirImportacao(true)}
                   className="hidden min-h-11 items-center gap-2 rounded-full border-[1.5px] border-foreground/20 px-4 text-xs font-bold text-foreground transition-colors hover:bg-nevoa lg:inline-flex"
                 >
                   <Upload className="h-3.5 w-3.5" strokeWidth={2.4} />
                   Importar histórico
-                </button>
+                </button>}
                 {hasImportedHistory && (
                   <button
                     onClick={() => window.dispatchEvent(new Event('cadee:limpar-progresso'))}
@@ -146,6 +174,7 @@ const Index = () => {
                 )}
               </>
             )}
+            </div>
             </div>
           </div>
         </div>
@@ -302,7 +331,7 @@ const Index = () => {
                           <InfoPopup iconClassName="w-3.5 h-3.5" content="Estimativa do progresso da sua formação ao concluir com aprovação as disciplinas planejadas na grade deste semestre." />
                         </div>
                         <div className="flex flex-wrap items-center gap-[22px]">
-                          <Mare percent={proj.overallProgress} size={56} ondaAnimada={false} />
+                          <Mare percent={proj.overallProgress} size={56} />
                           <div className="flex flex-col gap-1.5">
                             <span className="numero text-[40px] leading-[0.9] text-foreground">{porcento(proj.overallProgress)}</span>
                             <span className="font-mono text-xs text-foreground-2">{proj.totalHours} / {overallProgress.totalRequiredHours} h · se tudo for aprovado</span>

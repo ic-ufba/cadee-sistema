@@ -17,7 +17,7 @@ type MareProps = {
   percent: number;
   /** diâmetro em px */
   size?: number;
-  /** onda correndo devagar (use só no medidor grande) */
+  /** onda correndo devagar (padrão em todas as marés) */
   ondaAnimada?: boolean;
   className?: string;
 };
@@ -96,5 +96,5 @@ export function SemestreCirculo({ percent, size = 56 }: { percent: number; size?
       </span>
     );
   }
-  return <Mare percent={percent} size={size} ondaAnimada={false} />;
+  return <Mare percent={percent} size={size} />;
 }

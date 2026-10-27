@@ -19,6 +19,7 @@ import { AnimatePresence } from 'framer-motion';
 import { fetchCourseByCode } from '@/services/api';
 import { useQueries } from '@tanstack/react-query';
 import { ComponentProgram, LiveDataBadge } from '@/components/sigaa/ComponentProgram';
+import { FatosSigaa } from '@/components/sigaa/FatosSigaa';
 // Extracted component to keep identity stable across renders
 function CompletedButton({
   completed,
@@ -432,6 +433,8 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
           />
           </div>
 
+          <FatosSigaa code={detailCode} className="mx-6 mb-4 sm:mx-7" />
+
           <div className="mx-6 border-t-2 border-foreground sm:mx-7 [&>*+*]:border-t [&>*+*]:border-foreground/15">
             {currentDetail?.description && (
               <div className="py-4">
@@ -445,7 +448,7 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
               </div>
             )}
 
-            <div className="py-4 empty:hidden"><ComponentProgram code={detailCode} /></div>
+            <div className="empty:hidden"><ComponentProgram code={detailCode} /></div>
 
             {/* Turmas Disponíveis com collapse */}
             <div>

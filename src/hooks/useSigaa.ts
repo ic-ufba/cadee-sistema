@@ -9,7 +9,15 @@ import { setSigaaSession, updateSigaaSession, useSigaaSession } from '@/lib/siga
 import { buildProgressData, buildStatusUpdates } from '@/lib/sigaaSync';
 import {
   fetchApiStatus,
+  fetchAtualizacoes,
+  fetchAvaliacoes,
+  fetchCalendario,
   fetchCargaHoraria,
+  fetchFrequencia,
+  fetchGradeHoraria,
+  fetchMensagens,
+  fetchNotas,
+  fetchTarefas,
   fetchHistorico,
   fetchIndices,
   fetchIntegralizacao,
@@ -164,4 +172,76 @@ export function useSigaaSync() {
       toast({ title: 'Não foi possível sincronizar', description: error.message, variant: 'destructive' });
     },
   });
+}
+
+// ------------------------------------------------------------------ meu semestre
+
+export function useSigaaGradeHoraria(enabled = true) {
+  const session = useSigaaSession();
+  return useQuery(userQueryOptions('grade-horaria', fetchGradeHoraria, enabled && !!session));
+}
+
+export function useSigaaAvaliacoes(enabled = true) {
+  const session = useSigaaSession();
+  return useQuery(userQueryOptions('avaliacoes', fetchAvaliacoes, enabled && !!session));
+}
+
+export function useSigaaTarefas(enabled = true) {
+  const session = useSigaaSession();
+  return useQuery(userQueryOptions('tarefas', fetchTarefas, enabled && !!session));
+}
+
+export function useSigaaAtualizacoes(enabled = true) {
+  const session = useSigaaSession();
+  return useQuery(userQueryOptions('atualizacoes', fetchAtualizacoes, enabled && !!session));
+}
+
+export function useSigaaNotas(enabled = true) {
+  const session = useSigaaSession();
+  return useQuery(userQueryOptions('notas', fetchNotas, enabled && !!session));
+}
+
+export function useSigaaFrequencia(enabled = true) {
+  const session = useSigaaSession();
+  return useQuery(userQueryOptions('frequencia', fetchFrequencia, enabled && !!session));
+}
+
+export function useSigaaCalendario(enabled = true) {
+  const session = useSigaaSession();
+  return useQuery({ ...userQueryOptions('calendario', fetchCalendario, enabled && !!session), staleTime: 1000 * 60 * 60 * 6 });
+}
+
+export function useSigaaMensagens(enabled = true) {
+  const session = useSigaaSession();
+  return useQuery(userQueryOptions('mensagens', fetchMensagens, enabled && !!session));
+}
+
+function dataLocal(iso: string | null | undefined): Date | null {
+  if (!iso) return null;
+  const [a, m, d] = iso.slice(0, 10).split('-').map(Number);
+  if (!a || !m || !d) return null;
+  return new Date(a, m - 1, d);
+}
+
+/**
+ * O semestre está em andamento? Usa o período letivo do calendário acadêmico do SIGAA e, se ele não vier,
+ * o primeiro e o último dia de aula da grade horária do aluno. Sem login: `emAndamento` = null.
+ */
+export function useSemestreAtual() {
+  const { isLoggedIn } = useSigaaAuth();
+  const calendario = useSigaaCalendario(isLoggedIn);
+  const precisaGrade = isLoggedIn && (calendario.isError || (calendario.isSuccess && !calendario.data?.periodo_letivo?.inicio));
+  const grade = useSigaaGradeHoraria(precisaGrade);
+
+  const inicio = dataLocal(calendario.data?.periodo_letivo?.inicio) ?? dataLocal(grade.data?.data_inicio);
+  const fim = dataLocal(calendario.data?.periodo_letivo?.fim) ?? dataLocal(grade.data?.data_fim);
+  const carregando = isLoggedIn && (calendario.isLoading || (precisaGrade && grade.isLoading));
+
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const emAndamento = !isLoggedIn || carregando ? null : inicio && fim ? hoje >= inicio && hoje <= fim : false;
+  const semana = inicio ? Math.max(1, Math.floor((hoje.getTime() - inicio.getTime()) / (7 * 864e5)) + 1) : null;
+  const totalSemanas = inicio && fim ? Math.max(1, Math.ceil((fim.getTime() - inicio.getTime() + 864e5) / (7 * 864e5))) : null;
+
+  return { emAndamento, carregando, inicio, fim, semana, totalSemanas, calendario: calendario.data };
 }
