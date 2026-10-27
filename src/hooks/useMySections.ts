@@ -6,11 +6,123 @@ import { useMemo } from 'react';
 import { getSpplitedCode } from '@/lib/schedule';
 import { findCorrespondingBlockSections } from '@/lib/blockCourses';
 
-// Persisted sections selected by the user
+// Persisted sections selected by the user (sempre as da grade favorita: é o que o Início e o Progresso mostram)
 const mySectionsAtom = atomWithStorage<Section[]>('mySections', []);
 
-export function useMySections() {
-  const [mySections, setMySections] = useAtom(mySectionsAtom);
+// ---------- Várias grades ----------
+export type GradeSalva = { id: string; nome: string; secoes: Section[] };
+export type EstadoGrades = { lista: GradeSalva[]; ativa: string; favorita: string };
+
+const gradesAtom = atomWithStorage<EstadoGrades | null>('cadee:grades', null);
+
+const GRADE_INICIAL: EstadoGrades = { lista: [{ id: 'g1', nome: 'Grade 1', secoes: [] }], ativa: 'g1', favorita: 'g1' };
+
+function normalizarGrades(e: EstadoGrades | null | undefined): EstadoGrades {
+  if (!e || !Array.isArray(e.lista) || e.lista.length === 0) return GRADE_INICIAL;
+  const ids = e.lista.map((g) => g.id);
+  const favorita = ids.includes(e.favorita) ? e.favorita : ids[0];
+  const ativa = ids.includes(e.ativa) ? e.ativa : favorita;
+  return { lista: e.lista, ativa, favorita };
+}
+
+type Atualizacao = Section[] | ((atual: Section[]) => Section[]);
+
+/**
+ * Grades salvas no Planejador. A favorita guarda as turmas em `mySections` (o que o resto do sistema lê);
+ * as outras ficam em `cadee:grades`.
+ */
+export function useGrades() {
+  const [favoritaSecoes, setFavoritaSecoes] = useAtom(mySectionsAtom);
+  const [bruto, setBruto] = useAtom(gradesAtom);
+  const estado = normalizarGrades(bruto);
+
+  const lista: GradeSalva[] = estado.lista.map((g) => (g.id === estado.favorita ? { ...g, secoes: favoritaSecoes } : g));
+  const ativa = lista.find((g) => g.id === estado.ativa) ?? lista[0];
+
+  const salvar = (fn: (e: EstadoGrades) => EstadoGrades) => setBruto((prev) => fn(normalizarGrades(prev)));
+  const proximoNome = () => {
+    let n = estado.lista.length + 1;
+    const nomes = new Set(estado.lista.map((g) => g.nome));
+    while (nomes.has(`Grade ${n}`)) n++;
+    return `Grade ${n}`;
+  };
+  const novoId = () => `g${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+
+  const abrir = (id: string) => salvar((e) => ({ ...e, ativa: id }));
+
+  const criar = (secoes: Section[] = [], nome?: string) => {
+    const id = novoId();
+    salvar((e) => ({ ...e, lista: [...e.lista, { id, nome: nome ?? proximoNome(), secoes }], ativa: id }));
+    return id;
+  };
+
+  const duplicar = () => criar([...ativa.secoes], `${ativa.nome} (cópia)`);
+
+  const renomear = (id: string, nome: string) => {
+    const limpo = nome.trim().slice(0, 40);
+    if (!limpo) return;
+    salvar((e) => ({ ...e, lista: e.lista.map((g) => (g.id === id ? { ...g, nome: limpo } : g)) }));
+  };
+
+  const favoritar = (id: string) => {
+    if (id === estado.favorita) return;
+    const nova = estado.lista.find((g) => g.id === id);
+    if (!nova) return;
+    const atuais = favoritaSecoes;
+    salvar((e) => ({
+      ...e,
+      favorita: id,
+      lista: e.lista.map((g) => (g.id === e.favorita ? { ...g, secoes: atuais } : g)),
+    }));
+    setFavoritaSecoes(nova.secoes);
+  };
+
+  const excluir = (id: string) => {
+    if (estado.lista.length <= 1) return;
+    const restantes = estado.lista.filter((g) => g.id !== id);
+    if (id === estado.favorita) {
+      const nova = restantes[0];
+      setFavoritaSecoes(nova.secoes);
+      setBruto({ lista: restantes, favorita: nova.id, ativa: estado.ativa === id ? nova.id : estado.ativa });
+    } else {
+      setBruto({ lista: restantes, favorita: estado.favorita, ativa: estado.ativa === id ? estado.favorita : estado.ativa });
+    }
+  };
+
+  return { lista, ativa, ativaId: estado.ativa, favoritaId: estado.favorita, abrir, criar, duplicar, renomear, favoritar, excluir } as const;
+}
+
+/**
+ * Turmas de uma grade.
+ * `alvo: 'favorita'` (padrão) é a grade que vale para o resto do sistema; o Planejador usa `'ativa'`,
+ * a grade aberta nas abas (que pode ser a favorita ou não).
+ */
+export function useMySections(alvo: 'favorita' | 'ativa' = 'favorita') {
+  const [favoritaSecoes, setFavoritaSecoes] = useAtom(mySectionsAtom);
+  const [bruto, setBruto] = useAtom(gradesAtom);
+  const estado = normalizarGrades(bruto);
+  const usaFavorita = alvo === 'favorita' || estado.ativa === estado.favorita;
+  const secoesDaAtiva = estado.lista.find((g) => g.id === estado.ativa)?.secoes;
+  const mySections = useMemo(
+    () => (usaFavorita ? favoritaSecoes : secoesDaAtiva ?? []),
+    [usaFavorita, favoritaSecoes, secoesDaAtiva],
+  );
+
+  const setMySections = (atualizacao: Atualizacao) => {
+    if (usaFavorita) {
+      setFavoritaSecoes(atualizacao as Section[] | ((a: Section[]) => Section[]));
+      return;
+    }
+    setBruto((prev) => {
+      const e = normalizarGrades(prev);
+      return {
+        ...e,
+        lista: e.lista.map((g) =>
+          g.id === e.ativa ? { ...g, secoes: typeof atualizacao === 'function' ? atualizacao(g.secoes) : atualizacao } : g,
+        ),
+      };
+    });
+  };
 
   const toggleSection = (aSection: Section, allSections: Section[] = []) => {
     setMySections((current) => {

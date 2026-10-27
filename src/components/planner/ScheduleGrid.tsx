@@ -49,10 +49,22 @@ function colorFor(code: string) {
 
 interface ScheduleGridProps {
   onSectionClick?: (section: Section) => void;
+  /** Clique num horário vazio (dia em sigla SEG..SAB e hora de início). */
+  onSlotClick?: (dia: string, hora: string) => void;
+  slotSelecionado?: { dia: string; hora: string } | null;
+  /** Semana compacta: só os turnos que têm aula; os outros viram uma faixa fina. */
+  compacta?: boolean;
 }
 
-export function ScheduleGrid({ onSectionClick }: ScheduleGridProps = {}) {
-  const { mySections, getConflictsForSection } = useMySections();
+const TURNOS = [
+  { nome: 'Manhã', ini: 0, fim: 6 },
+  { nome: 'Tarde', ini: 6, fim: 12 },
+  { nome: 'Noite', ini: 12, fim: 16 },
+];
+const ALTURA_RECOLHIDO = 26;
+
+export function ScheduleGrid({ onSectionClick, onSlotClick, slotSelecionado = null, compacta = false }: ScheduleGridProps = {}) {
+  const { mySections, getConflictsForSection } = useMySections('ativa');
   const isMobile = useIsMobile();
 
   // Mapeia cada horário para um índice 0..15 (posição na lista de hours)
@@ -202,13 +214,36 @@ export function ScheduleGrid({ onSectionClick }: ScheduleGridProps = {}) {
 
   const hojeIdx = new Date().getDay(); // 1 = segunda
   const alturaLinha = isMobile ? 28 : 30;
+
+  // ---------- Linhas visíveis (semana completa ou compacta) ----------
+  const linhasComAula = new Set<number>();
+  blocosPorDia.forEach((bs) => bs.forEach((b) => { for (let l = b.inicio; l < b.fim; l++) linhasComAula.add(l); }));
+  const topLinha: number[] = [];
+  const faixasRecolhidas: { nome: string; top: number }[] = [];
+  let alturaTotal = 0;
+  for (const t of TURNOS) {
+    const temAula = Array.from({ length: t.fim - t.ini }, (_, k) => t.ini + k).some((l) => linhasComAula.has(l));
+    const visivel = !compacta || linhasComAula.size === 0 || temAula;
+    for (let l = t.ini; l < t.fim; l++) {
+      if (visivel) {
+        topLinha[l] = alturaTotal;
+        alturaTotal += alturaLinha;
+      } else topLinha[l] = -1;
+    }
+    if (!visivel) {
+      faixasRecolhidas.push({ nome: t.nome, top: alturaTotal });
+      alturaTotal += ALTURA_RECOLHIDO;
+    }
+  }
+  const primeiraDoTurno = new Set(TURNOS.map((t) => t.ini));
+  const colunas = isMobile ? 'grid-cols-[42px_repeat(6,minmax(0,1fr))]' : 'grid-cols-[56px_repeat(6,minmax(0,1fr))]';
   const rotuloDia: Record<string, string> = { SEG: 'SEG', TER: 'TER', QUA: 'QUA', QUI: 'QUI', SEX: 'SEX', SAB: 'SÁB' };
 
   return (
     <TooltipProvider>
       <div className="w-full">
         {/* Cabeçalho dos dias */}
-        <div className={cn('grid', isMobile ? 'grid-cols-[42px_repeat(6,minmax(0,1fr))]' : 'grid-cols-[56px_repeat(6,minmax(0,1fr))]')}>
+        <div className={cn('grid', colunas)}>
           <span />
           {days.map((day, i) => (
             <div key={day} className="flex h-9 items-center justify-center gap-1.5">
@@ -221,32 +256,62 @@ export function ScheduleGrid({ onSectionClick }: ScheduleGridProps = {}) {
         </div>
 
         {/* Corpo: horários + colunas dos dias */}
-        <div className={cn('grid', isMobile ? 'grid-cols-[42px_repeat(6,minmax(0,1fr))]' : 'grid-cols-[56px_repeat(6,minmax(0,1fr))]')}>
-          <div className="flex flex-col">
-            {hours.map((hour) => (
-              <span
-                key={hour}
-                className={cn('flex items-start font-mono text-muted-foreground', isMobile ? 'text-[10px]' : 'text-[11px]')}
-                style={{ height: alturaLinha }}
-              >
-                <span className="-translate-y-[7px]">{hour}</span>
-              </span>
-            ))}
+        <div className="relative">
+        <div className={cn('grid', colunas)}>
+          <div className="relative" style={{ height: alturaTotal }}>
+            {hours.map((hour, l) =>
+              topLinha[l] < 0 ? null : (
+                <span
+                  key={hour}
+                  className={cn('absolute left-0 font-mono text-muted-foreground', isMobile ? 'text-[10px]' : 'text-[11px]')}
+                  style={{ top: topLinha[l] - 7 }}
+                >
+                  {hour}
+                </span>
+              ),
+            )}
           </div>
 
           {days.map((day) => {
             const blocos = blocosPorDia.get(day) ?? [];
+            const ocupadas = new Set<number>();
+            blocos.forEach((b) => { for (let l = b.inicio; l < b.fim; l++) ocupadas.add(l); });
             return (
-              <div key={day} className="relative" style={{ height: alturaLinha * hours.length }}>
+              <div key={day} className="relative" style={{ height: alturaTotal }}>
                 {/* linhas de cada período; linha mais forte na virada de turno */}
-                {hours.map((hour, rowIdx) => (
-                  <span
-                    key={hour}
-                    aria-hidden
-                    className={cn('absolute inset-x-0 border-t', rowIdx === 6 || rowIdx === 12 ? 'border-foreground/25' : 'border-foreground/10')}
-                    style={{ top: rowIdx * alturaLinha }}
-                  />
-                ))}
+                {hours.map((hour, rowIdx) =>
+                  topLinha[rowIdx] < 0 ? null : (
+                    <span
+                      key={hour}
+                      aria-hidden
+                      className={cn('absolute inset-x-0 border-t', primeiraDoTurno.has(rowIdx) && rowIdx > 0 ? 'border-foreground/25' : 'border-foreground/10')}
+                      style={{ top: topLinha[rowIdx] }}
+                    />
+                  ),
+                )}
+
+                {/* horários vazios: clicar filtra as disciplinas com turma ali */}
+                {onSlotClick &&
+                  hours.map((hour, l) => {
+                    if (topLinha[l] < 0 || ocupadas.has(l)) return null;
+                    const sel = slotSelecionado?.dia === day && slotSelecionado?.hora === hour;
+                    return (
+                      <button
+                        key={`vazio-${hour}`}
+                        type="button"
+                        aria-pressed={sel}
+                        aria-label={`Ver disciplinas com turma em ${rotuloDia[day]} ${hour}`}
+                        onClick={() => onSlotClick(day, hour)}
+                        className={cn(
+                          'absolute inset-x-[1px] flex items-center justify-center rounded-md font-mono text-[10px] font-bold text-mar-ink transition-colors',
+                          sel ? 'z-[2] border-2 border-dashed border-mar bg-mar-claro' : 'hover:bg-mar-claro/70 focus-visible:bg-mar-claro',
+                        )}
+                        style={{ top: topLinha[l] + 1, height: alturaLinha - 2 }}
+                      >
+                        {sel && !isMobile ? hour : ''}
+                      </button>
+                    );
+                  })}
 
                 {blocos.map((b) => {
                   const item = b.item;
@@ -269,7 +334,7 @@ export function ScheduleGrid({ onSectionClick }: ScheduleGridProps = {}) {
                             hasItemConflict && 'ring-2 ring-pitanga ring-offset-1 ring-offset-background'
                           )}
                           style={{
-                            top: b.inicio * alturaLinha + 2,
+                            top: topLinha[b.inicio] + 2,
                             height: (b.fim - b.inicio) * alturaLinha - 4,
                             left: `calc(${b.faixa * largura}% + 2px)`,
                             width: `calc(${largura}% - 4px)`,
@@ -310,6 +375,16 @@ export function ScheduleGrid({ onSectionClick }: ScheduleGridProps = {}) {
               </div>
             );
           })}
+        </div>
+        {faixasRecolhidas.map((f) => (
+          <div
+            key={f.nome}
+            className="pointer-events-none absolute right-0 flex items-center justify-center rounded-md border border-dashed border-tracejado bg-nevoa/60 text-[11px] font-bold text-muted-foreground"
+            style={{ top: f.top + 3, height: ALTURA_RECOLHIDO - 6, left: isMobile ? 42 : 56 }}
+          >
+            {f.nome} · livre
+          </div>
+        ))}
         </div>
       </div>
     </TooltipProvider>

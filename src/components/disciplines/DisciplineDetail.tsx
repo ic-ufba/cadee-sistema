@@ -19,7 +19,6 @@ import { AnimatePresence } from 'framer-motion';
 import { fetchCourseByCode } from '@/services/api';
 import { useQueries } from '@tanstack/react-query';
 import { ComponentProgram, LiveDataBadge } from '@/components/sigaa/ComponentProgram';
-import { FatosSigaa } from '@/components/sigaa/FatosSigaa';
 // Extracted component to keep identity stable across renders
 function CompletedButton({
   completed,
@@ -121,6 +120,7 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
   const [openPrereq, setOpenPrereq] = useState(false);
   const [openCoreq, setOpenCoreq] = useState(false);
   const [openEquiv, setOpenEquiv] = useState(false);
+  const [verEquivIndisponiveis, setVerEquivIndisponiveis] = useState(false);
 
   // Função para comportamento de accordion
   const handleToggleSection = (section: 'classes' | 'prereq' | 'coreq' | 'equiv') => {
@@ -433,8 +433,6 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
           />
           </div>
 
-          <FatosSigaa code={detailCode} className="mx-6 mb-4 sm:mx-7" />
-
           <div className="mx-6 border-t-2 border-foreground sm:mx-7 [&>*+*]:border-t [&>*+*]:border-foreground/15">
             {currentDetail?.description && (
               <div className="py-4">
@@ -651,8 +649,8 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
                     onToggle={() => handleToggleSection('equiv')}
                   />
                   <CollapseAnimated open={openEquiv}>
-                    <div className="flex flex-col">
-                      {unique.map((eq) => {
+                    {(() => {
+                      const renderEquivalente = (eq: (typeof unique)[number]) => {
                         const synced = !!(eq as any).name;
                         const code = eq.code;
                         const name = (eq as any).name as string | undefined;
@@ -705,8 +703,32 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
                             courseData={equivCourseData}
                           />
                         );
-                      })}
-                    </div>
+                      };
+                      // As indisponíveis (ainda não sincronizadas) ficam recolhidas num submenu
+                      const disponiveis = unique.filter((eq) => !!(eq as { name?: string }).name);
+                      const indisponiveis = unique.filter((eq) => !(eq as { name?: string }).name);
+                      return (
+                        <div className="flex flex-col">
+                          {disponiveis.map(renderEquivalente)}
+                          {indisponiveis.length > 0 && (
+                            <div className={cn(disponiveis.length > 0 && 'mt-1 border-t border-foreground/10')}>
+                              <button
+                                type="button"
+                                aria-expanded={verEquivIndisponiveis}
+                                onClick={() => setVerEquivIndisponiveis((v) => !v)}
+                                className="flex min-h-[48px] w-full items-center gap-2 text-left text-foreground-2 hover:text-foreground"
+                              >
+                                <span className="text-[13px] font-extrabold">Indisponíveis</span>
+                                <span className="rounded-full bg-nevoa px-2 py-0.5 font-mono text-[11px] font-semibold">{indisponiveis.length}</span>
+                                <span className="flex-1" />
+                                {verEquivIndisponiveis ? <ChevronUp className="h-4 w-4" strokeWidth={2.2} /> : <ChevronDown className="h-4 w-4" strokeWidth={2.2} />}
+                              </button>
+                              {verEquivIndisponiveis && <div className="flex flex-col">{indisponiveis.map(renderEquivalente)}</div>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </CollapseAnimated>
                 </div>
               );

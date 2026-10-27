@@ -2,6 +2,18 @@ import { useState, useMemo, useRef, memo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ScheduleGrid } from '@/components/planner/ScheduleGrid';
+import {
+  AbasGrades,
+  AcoesGrade,
+  BotaoComparar,
+  ChoquesDaGrade,
+  CompararGrades,
+  SeletorVisaoSemana,
+  lerVisaoSemana,
+  salvarVisaoSemana,
+  type VisaoSemana,
+} from '@/components/planner/MinhasGrades';
+import { chocaCom, codigoDaTurma, encontrarChoques, ROTULO_DIA } from '@/lib/choques';
 import { SigaaAcoesPlanejador, SigaaResultadoPlanejador, type PainelSigaa } from '@/components/sigaa/SigaaPlanejador';
 import { mapaDeCores } from '@/lib/grade-cores';
 import { SkeletonCard } from '@/components/ui/skeleton-card';
@@ -30,6 +42,8 @@ import { ChevronDown, ChevronUp, ChevronRight, Check } from 'lucide-react';
 import { getBlockCourseBaseCode, getBlockCourseVariantLabel, groupDisciplinesByBlock, isBlockCourseCode, resolveBlockCourseName } from '@/lib/blockCourses';
 import { isCurriculumElective, isCurriculumMandatory, usePlannedDisciplineCategories } from '@/hooks/usePlannedDisciplineCategories';
 import { tituloCurso } from '@/lib/curso-texto';
+
+type DisciplineGroup = ReturnType<typeof groupDisciplinesByBlock>[number];
 
 const diasSemana = ["SEG", "TER", "QUA", "QUI", "SEX", "SAB"];
 const mapSiglaParaNome = {
@@ -441,6 +455,16 @@ const Planejador = () => {
   }, []);
   const { scheduledCount: resumoQtd, workloadBreakdown: resumoCarga } = usePlannedDisciplineCategories();
   const [painelSigaa, setPainelSigaa] = useState<PainelSigaa>(null);
+  // Várias grades: comparar, semana compacta/completa e, no celular, as abas Grade · Disciplinas
+  const [comparando, setComparando] = useState(false);
+  const [visaoSemana, setVisaoSemana] = useState<VisaoSemana>(lerVisaoSemana);
+  const trocarVisaoSemana = (v: VisaoSemana) => {
+    setVisaoSemana(v);
+    salvarVisaoSemana(v);
+  };
+  const [abaMobile, setAbaMobile] = useState<'grade' | 'disciplinas'>('grade');
+  const [painelHorarioAberto, setPainelHorarioAberto] = useState(false);
+  const [gruposAbertos, setGruposAbertos] = useState<Record<string, boolean>>({});
   
   // Buscar todos os programas disponíveis
   const { data: allPrograms = [] } = usePrograms();
@@ -507,7 +531,7 @@ const Planejador = () => {
   const [horariosRestritos, setHorariosRestritos] = useState<string[]>([]);
   const [logicaRestricoesHorario, setLogicaRestricoesHorario] = useState<'OU' | 'E'>('OU');
   
-  const { hasSectionOnCourse, toggleSection, getConflictsForSection, mySections, clearSections } = useMySections();
+  const { hasSectionOnCourse, toggleSection, getConflictsForSection, mySections, clearSections } = useMySections('ativa');
   // Mesma cor que cada disciplina tem na grade (faixa à esquerda nas selecionadas)
   const coresGrade = useMemo(
     () => mapaDeCores(mySections.map((s) => getBlockCourseBaseCode(s.course?.code || (s as { course_code?: string }).course_code || ''))),
@@ -835,6 +859,84 @@ const Planejador = () => {
     return plannerCourses.reduce((total, course) => total + (course.sections_count || 0), 0);
   }, [plannerCourses, currentTerm, currentTermSectionData]);
 
+  // ---------- Horário clicado na grade: vira o filtro de dia e horário ----------
+  const slotAtual =
+    diasSelecionados.length === 1 && horariosSelecionados.length === 1
+      ? { dia: diasSelecionados[0], hora: horariosSelecionados[0] }
+      : null;
+  const slotTexto = slotAtual ? `${ROTULO_DIA[slotAtual.dia] ?? slotAtual.dia} ${slotAtual.hora}` : '';
+  const limparSlot = () => {
+    setDiasSelecionados([]);
+    setHorariosSelecionados([]);
+    setPainelHorarioAberto(false);
+  };
+  const escolherSlot = (dia: string, hora: string) => {
+    if (slotAtual?.dia === dia && slotAtual?.hora === hora) {
+      limparSlot();
+      return;
+    }
+    setDiasSelecionados([dia]);
+    setHorariosSelecionados([hora]);
+    setLogicaFiltroDia('OU');
+    setLogicaFiltroHorario('OU');
+    if (!telaLarga) setPainelHorarioAberto(true);
+  };
+
+  // Disciplinas com turma no horário clicado que chocam com outra aula da grade (todas as turmas ali chocam)
+  const choqueNoSlot = useMemo(() => {
+    const m = new Map<string, string[]>();
+    if (!slotAtual) return m;
+    const diaNome = mapSiglaParaNome[slotAtual.dia as keyof typeof mapSiglaParaNome];
+    const turmasDoCurso = (code: string): Section[] =>
+      currentTerm ? ((currentTermSectionData.sectionsByCourse.get(code) || []) as Section[]) : allSections.filter((t) => codigoDaTurma(t) === code);
+    for (const g of nonSelectedGroups) {
+      const turmas = g.courses
+        .flatMap((c) => turmasDoCurso(c.code))
+        .filter((t) =>
+          parseTimeCodes(Array.isArray(t.time_codes) ? t.time_codes : []).some((h) => h.dia === diaNome && h.horarioInicio === slotAtual.hora),
+        );
+      if (turmas.length === 0) continue;
+      const choques = turmas.map((t) => chocaCom(t, mySections));
+      if (choques.every(Boolean)) m.set(g.key, [`${choques[0]!.codigo} · ${choques[0]!.quando}`]);
+    }
+    return m;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slotAtual?.dia, slotAtual?.hora, nonSelectedGroups, mySections, currentTerm, currentTermSectionData, allSections]);
+  const gruposNoSlot = useMemo(
+    () => [...nonSelectedGroups].sort((a, b) => Number(choqueNoSlot.has(a.key)) - Number(choqueNoSlot.has(b.key))),
+    [nonSelectedGroups, choqueNoSlot],
+  );
+
+  // Carga horária da grade aberta (pela carga de cada disciplina)
+  const cargaPorBase = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const c of [...plannerCourses, ...(myCourses ?? []), ...coursesIndex]) {
+      const w = (c as { workload?: number }).workload;
+      const b = getBlockCourseBaseCode(c.code);
+      if (w && !m.has(b)) m.set(b, w);
+    }
+    return m;
+  }, [plannerCourses, myCourses, coursesIndex]);
+  const cargaDe = (base: string) => cargaPorBase.get(base) ?? 0;
+  const basesDaGrade = Array.from(new Set(mySections.map((t) => getBlockCourseBaseCode(codigoDaTurma(t))).filter(Boolean)));
+  const cargaDaGrade = basesDaGrade.reduce((t, b) => t + cargaDe(b), 0);
+  const nChoques = useMemo(() => encontrarChoques(mySections).length, [mySections]);
+
+  // Celular: as outras disciplinas agrupadas por tipo, recolhidas
+  const gruposPorTipo = useMemo(() => {
+    const out = { obrigatorias: [] as DisciplineGroup[], optativas: [] as DisciplineGroup[], outras: [] as DisciplineGroup[] };
+    for (const g of nonSelectedGroups) {
+      const c = g.courses[0];
+      const badge = getDisciplineBadge(g.isBlockGroup ? g.baseCode : c.code, c?.level, c?.type, curriculumMandatorySet, curriculumElectiveSet, getEquivalentCodesSync);
+      if (badge.type === 'mandatory') out.obrigatorias.push(g);
+      else if (badge.type === 'elective') out.optativas.push(g);
+      else out.outras.push(g);
+    }
+    return out;
+  }, [nonSelectedGroups, curriculumMandatorySet, curriculumElectiveSet]);
+  const filtrosMobileAtivos =
+    (hasActiveFilters && !slotAtual ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0) + (vacancyFilter !== 'all' ? 1 : 0) + (hideFull ? 1 : 0);
+
   // Função para carregar as turmas de uma disciplina
   const handleShowSections = (course: Course, options?: { ignoreFilters?: boolean }) => {
     // Limpar timeout anterior se existir
@@ -856,6 +958,14 @@ const Planejador = () => {
   };
 
   const handleShowSectionsNoFilters = (course: Course) => handleShowSections(course, { ignoreFilters: true });
+
+  // Abre as turmas de uma disciplina pelo código (ex.: "Trocar turma" no bloco de choques)
+  const abrirTurmasDoCodigo = (codigo: string) => {
+    const curso =
+      plannerCourses.find((c) => c.code === codigo) ??
+      ({ code: codigo, name: mySections.find((t) => codigoDaTurma(t) === codigo)?.course?.name ?? codigo } as Course);
+    handleShowSectionsNoFilters(curso);
+  };
 
 // Função para fechar modal de turmas e voltar para lista de disciplinas
   const handleBackToDisciplines = (course: Course) => {
@@ -958,6 +1068,549 @@ const Planejador = () => {
     </div>
   ) : null;
 
+  const seletorOfertas = (
+    <div className="flex flex-wrap items-center gap-2.5">
+      <span className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground-2">
+        <Eye className="h-4 w-4" />
+        Visualizar ofertas de
+      </span>
+      <Select 
+        value={selectedViewProgramId || "meu-curso"} 
+        onValueChange={(value) => setSelectedViewProgramId(value === "meu-curso" ? null : value)}
+      >
+        <SelectTrigger className="h-11 w-full rounded-full border-0 bg-nevoa px-5 text-sm font-bold sm:w-auto sm:min-w-[260px]">
+          <SelectValue placeholder="Selecione um curso" />
+        </SelectTrigger>
+        <SelectContent>
+          <div className="p-2 border-b">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Buscar curso..."
+                value={programSearchTerm}
+                onChange={(e) => setProgramSearchTerm(e.target.value)}
+                className="w-full rounded-full border-0 bg-nevoa py-2 pl-8 pr-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-mar"
+              />
+            </div>
+          </div>
+          <SelectItem value="meu-curso">
+            Meu curso ({myPrograms.map(p => p.title).join(', ')})
+          </SelectItem>
+          {allPrograms
+            .filter(p => !myPrograms.some(mp => mp.id_ref === p.id_ref))
+            .filter(p => p.title.toLowerCase().includes(programSearchTerm.toLowerCase()))
+            .map((program) => (
+              <SelectItem key={program.id_ref} value={program.id_ref}>
+                {program.title}
+              </SelectItem>
+            ))}
+        </SelectContent>
+      </Select>
+      {selectedViewProgramId && (
+        <button
+          type="button"
+          onClick={() => setSelectedViewProgramId(null)}
+          className="inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-[13px] font-bold text-foreground hover:bg-nevoa"
+        >
+          <X className="h-4 w-4" />
+          Voltar ao meu curso
+        </button>
+      )}
+    </div>
+  );
+
+  // Cartão de uma disciplina fora da grade (mesmo desenho da lista do desktop)
+  const renderGrupo = (group: DisciplineGroup, conflitos?: string[]) =>
+    turmasAbertasPara(group.courses.map((c) => c.code)) && !group.isBlockGroup ? (
+      <div key={group.key}>{painelTurmas}</div>
+    ) : group.isBlockGroup ? (
+      <div key={group.key} className="flex flex-col gap-1.5">
+        <BlockDisciplineGroupCard
+          group={group}
+          indexByCode={indexByCode}
+          onCourseClick={handleShowSections}
+          conflictCodes={conflitos}
+          curriculumMandatorySet={curriculumMandatorySet}
+          curriculumElectiveSet={curriculumElectiveSet}
+        />
+        {turmasAbertasPara(group.courses.map((c) => c.code)) && painelTurmas}
+      </div>
+    ) : (
+      <DisciplineCard
+        key={group.courses[0].code}
+        course={group.courses[0] as Course}
+        onClick={handleShowSections}
+        conflictCodes={conflitos}
+        curriculumMandatorySet={curriculumMandatorySet}
+        curriculumElectiveSet={curriculumElectiveSet}
+      />
+    );
+
+  // Lista com o filtro do horário clicado na grade
+  const listaNoHorario = (
+    <>
+      <div className="mb-1 flex h-10 items-center justify-between gap-2 border-b-2 border-foreground">
+        <span className="rotulo !text-foreground">
+          Com turma em {slotTexto} · {gruposNoSlot.length}
+        </span>
+        <button type="button" onClick={limparSlot} className="text-xs font-bold text-mar underline underline-offset-[3px] hover:text-foreground">
+          ver todas
+        </button>
+      </div>
+      {gruposNoSlot.length === 0 ? (
+        <p className="py-4 text-[13px] font-medium text-foreground-2">Nenhuma disciplina tem turma nesse horário com os filtros atuais.</p>
+      ) : (
+        gruposNoSlot.map((g) => renderGrupo(g, choqueNoSlot.get(g.key)))
+      )}
+    </>
+  );
+
+  // Celular: selecionadas como chips e o resto agrupado e recolhido
+  const selecionadasChips = basesDaGrade.map((b) => {
+    const t = mySections.find((x) => getBlockCourseBaseCode(codigoDaTurma(x)) === b)!;
+    return { base: b, codigo: codigoDaTurma(t), nome: t.course?.name ?? b };
+  });
+  const buscandoOuFiltrando = !!searchTerm || hasActiveFilters || typeFilter !== 'all';
+  const listaMobile = (
+    <>
+      {selecionadasChips.length > 0 && (
+        <div className="mb-3 flex flex-col gap-2">
+          <span className="rotulo !text-foreground">Nesta grade · {selecionadasChips.length}</span>
+          <div className="flex flex-wrap gap-1.5">
+            {selecionadasChips.map((c) => (
+              <button
+                key={c.base}
+                type="button"
+                onClick={() => abrirTurmasDoCodigo(c.codigo)}
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-nevoa pl-2.5 pr-3 font-mono text-xs font-semibold text-foreground hover:bg-trilho"
+                title={c.nome}
+              >
+                <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: coresGrade.get(c.base)?.bg }} />
+                {c.base}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {([
+        ['obrigatorias', 'Obrigatórias', gruposPorTipo.obrigatorias],
+        ['optativas', 'Optativas', gruposPorTipo.optativas],
+        ['outras', 'Equivalentes e outras ofertas', gruposPorTipo.outras],
+      ] as const).map(([chave, rotulo, grupos]) => {
+        if (grupos.length === 0) return null;
+        const aberto = gruposAbertos[chave] ?? buscandoOuFiltrando;
+        return (
+          <div key={chave} className="flex flex-col">
+            <button
+              type="button"
+              aria-expanded={aberto}
+              onClick={() => setGruposAbertos((g) => ({ ...g, [chave]: !aberto }))}
+              className="flex min-h-[52px] w-full items-center justify-between gap-2 border-b border-foreground/15 text-left"
+            >
+              <span className="flex items-center gap-2 text-[15px] font-black tracking-[-0.02em] text-foreground">
+                {rotulo}
+                <span className="rounded-full bg-nevoa px-2 py-0.5 font-mono text-[11px] font-semibold">{grupos.length}</span>
+              </span>
+              {aberto ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+            {aberto && <div className="flex flex-col gap-1.5 pb-3 pt-2">{grupos.map((g) => renderGrupo(g))}</div>}
+          </div>
+        );
+      })}
+      {selectedGroups.length === 0 && nonSelectedGroups.length === 0 && (
+        <p className="py-8 text-center text-muted-foreground">Nenhuma disciplina encontrada</p>
+      )}
+    </>
+  );
+
+  const colunaDisciplinas = (
+    <div className="space-y-4 lg:border-r lg:border-border lg:pr-8">
+      {/* Card de Disciplinas */}
+      <div className="">
+        <div className="mb-4">
+          <div>
+            <h3 className="text-2xl font-black tracking-[-0.035em] text-foreground">Disciplinas do curso</h3>
+            <p className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-foreground-2">
+              {currentTerm && <span>Ofertas do semestre {currentTerm}</span>}
+              <span className="rounded-full bg-nevoa px-2.5 py-0.5 text-[11px] font-extrabold text-foreground">
+                {disciplinasAgrupadas.length} disciplinas · {totalTurmasSemestre} turmas
+              </span>
+            </p>
+            {selectedViewProgramId && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Visualizando: {allPrograms.find(p => p.id_ref === selectedViewProgramId)?.title || 'Outro curso'}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Barra de busca e filtros otimizada */}
+        <div className="mb-4">
+          <div className="relative mb-3">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-2" />
+            <input
+              type="text"
+              placeholder="Buscar disciplina..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="h-12 w-full rounded-full border-0 bg-nevoa pl-11 pr-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-mar transition-all"
+            />
+          </div>
+          
+          {telaLarga ? (
+          <div className="flex flex-wrap items-center gap-2 max-w-[100vw] overflow-x-auto pb-1">
+            <button
+              type="button"
+              className="relative inline-flex h-10 items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-transparent px-3.5 text-[13px] font-bold transition-colors hover:bg-nevoa"
+              onClick={() => setFiltroModalOpen(true)}
+            >
+              <Filter className="h-3.5 w-3.5" />
+              Dias / Horários
+              {hasActiveFilters && (
+                <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-dende ring-2 ring-background" aria-label="Filtros ativos"></span>
+              )}
+            </button>
+
+            <Select value={typeFilter} onValueChange={(v: any) => setTypeFilter(v)}>
+              <SelectTrigger className="inline-flex h-10 w-auto items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-transparent px-3.5 text-[13px] font-bold hover:bg-nevoa">
+                <span>Tipo: {typeFilter === 'all' ? 'Todas' : typeFilter === 'mandatory' ? 'Obrigatórias' : typeFilter === 'optional' ? 'Optativas' : typeFilter === 'equivalent' ? 'Equivalentes' : 'Ofertadas'}</span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="mandatory">Obrigatórias</SelectItem>
+                <SelectItem value="optional">Optativas</SelectItem>
+                <SelectItem value="equivalent">Equivalentes</SelectItem>
+                <SelectItem value="offered">Ofertadas</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {hasAnyVacancyData && (
+              <Select value={vacancyFilter} onValueChange={(v: any) => setVacancyFilter(v)}>
+                <SelectTrigger className="inline-flex h-10 w-auto items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-transparent px-3.5 text-[13px] font-bold hover:bg-nevoa">
+                  <span>Vagas: {vacancyFilter === 'all' ? 'Todas' : vacancyFilter === 'few' ? 'Poucas' : 'Muitas'}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as vagas</SelectItem>
+                  <SelectItem value="few">Poucas vagas</SelectItem>
+                  <SelectItem value="many">Muitas vagas</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+
+            {completedDisciplines.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowCompleted(!showCompleted)}
+                className={cn(
+                  "inline-flex h-10 items-center gap-2 rounded-full border-[1.5px] px-3.5 text-[13px] font-bold transition-colors",
+                  !showCompleted 
+                    ? "border-primary bg-primary text-primary-foreground" 
+                    : "border-foreground/20 bg-transparent text-foreground hover:bg-nevoa"
+                )}
+              >
+                Ocultar cursadas
+              </button>
+            )}
+
+            {hasAnyVacancyData && (
+              <button
+                type="button"
+                onClick={() => setHideFull(!hideFull)}
+                className={cn(
+                  "inline-flex h-10 items-center gap-2 rounded-full border-[1.5px] px-3.5 text-[13px] font-bold transition-colors",
+                  hideFull 
+                    ? "border-primary bg-primary text-primary-foreground" 
+                    : "border-foreground/20 bg-transparent text-foreground hover:bg-nevoa"
+                )}
+              >
+                Ocultar lotadas
+              </button>
+            )}
+            {slotAtual && (
+              <button
+                type="button"
+                onClick={limparSlot}
+                aria-label={`Tirar filtro ${slotTexto}`}
+                className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-mar pl-3.5 pr-3 font-mono text-[12.5px] font-bold text-white"
+              >
+                {slotTexto}
+                <X className="h-3.5 w-3.5" strokeWidth={2.6} />
+              </button>
+            )}
+          </div>
+          ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              className="relative inline-flex h-10 items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-transparent px-3.5 text-[13px] font-bold transition-colors hover:bg-nevoa"
+              onClick={() => setFiltroModalOpen(true)}
+            >
+              <Filter className="h-3.5 w-3.5" />
+              Filtros
+              {filtrosMobileAtivos > 0 && (
+                <span className="rounded-full bg-primary px-1.5 font-mono text-[11px] text-primary-foreground">{filtrosMobileAtivos}</span>
+              )}
+            </button>
+            {completedDisciplines.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowCompleted(!showCompleted)}
+                className={cn(
+                  'inline-flex h-10 items-center gap-2 rounded-full border-[1.5px] px-3.5 text-[13px] font-bold transition-colors',
+                  !showCompleted ? 'border-primary bg-primary text-primary-foreground' : 'border-foreground/20 bg-transparent text-foreground hover:bg-nevoa',
+                )}
+              >
+                Ocultar cursadas
+              </button>
+            )}
+            {slotAtual && (
+              <button
+                type="button"
+                onClick={limparSlot}
+                aria-label={`Tirar filtro ${slotTexto}`}
+                className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-mar pl-3.5 pr-3 font-mono text-[12.5px] font-bold text-white"
+              >
+                {slotTexto}
+                <X className="h-3.5 w-3.5" strokeWidth={2.6} />
+              </button>
+            )}
+          </div>
+          )}
+        </div>
+
+        <div className="">
+          <div className="grid grid-cols-1 gap-1.5">
+            {isLoading ? (
+              [...Array(8)].map((_, i) => <SkeletonCard key={i} />)
+            ) : (
+              <>
+                {slotAtual ? (
+                  listaNoHorario
+                ) : !telaLarga ? (
+                  listaMobile
+                ) : (
+                  <>
+                {/* Disciplinas Selecionadas */}
+                {selectedGroups.length > 0 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDisciplinesExpanded(!selectedDisciplinesExpanded)}
+                      className="mb-1 flex h-10 w-full items-center gap-2 border-b-2 border-foreground text-left transition-colors"
+                    >
+                      <div className="hidden"></div>
+                      <span className="rotulo flex flex-1 items-center justify-between gap-1 !text-foreground">
+                        <span>Disciplinas selecionadas · {selectedGroups.length}</span>
+                        {selectedDisciplinesExpanded ? (
+                          <ChevronUp className="w-3 h-3" />
+                        ) : (
+                          <ChevronDown className="w-3 h-3" />
+                        )}
+                      </span>
+                      <div className="hidden"></div>
+                    </button>
+                    {selectedDisciplinesExpanded && selectedGroups.map((group) => {
+                      // Get conflicting base codes from our map
+                      const conflictBaseCodes = conflictsByBaseCode.get(group.key) || new Set<string>();
+                      const conflictCodes = Array.from(conflictBaseCodes);
+                      
+                      const abertas = turmasAbertasPara(group.courses.map((c) => c.code));
+                      if (abertas && !group.isBlockGroup) return <div key={group.key}>{painelTurmas}</div>;
+                      return group.isBlockGroup ? (
+                        <div key={group.key} className="flex flex-col gap-1.5">
+                        <BlockDisciplineGroupCard
+                          group={group}
+                          indexByCode={indexByCode}
+                          onCourseClick={handleShowSections}
+                          isSelected={true}
+                          cor={coresGrade.get(group.key)?.bg}
+                          conflictCodes={conflictCodes}
+                          curriculumMandatorySet={curriculumMandatorySet}
+                          curriculumElectiveSet={curriculumElectiveSet}
+                        />
+                        {abertas && painelTurmas}
+                        </div>
+                      ) : (
+                        <DisciplineCard
+                          key={group.courses[0].code}
+                          course={group.courses[0] as Course}
+                          onClick={handleShowSections}
+                          isSelected={true}
+                          cor={coresGrade.get(getBlockCourseBaseCode(group.courses[0].code))?.bg}
+                          conflictCodes={conflictCodes}
+                          curriculumMandatorySet={curriculumMandatorySet}
+                          curriculumElectiveSet={curriculumElectiveSet}
+                        />
+                      );
+                    })}
+                  </>
+                )}
+
+                {/* Demais Disciplinas */}
+    {nonSelectedGroups.length > 0 && (
+      <>
+        <button
+          type="button"
+          onClick={() => setOtherDisciplinesExpanded(!otherDisciplinesExpanded)}
+          className="mb-1 mt-5 flex h-10 w-full items-center gap-2 border-b-2 border-foreground text-left transition-colors"
+        >
+          <div className="hidden"></div>
+          <span className="rotulo flex flex-1 items-center justify-between gap-1 !text-foreground">
+            <span>Outras disciplinas</span>
+            {otherDisciplinesExpanded ? (
+              <ChevronUp className="w-3 h-3" />
+            ) : (
+              <ChevronDown className="w-3 h-3" />
+            )}
+          </span>
+          <div className="hidden"></div>
+        </button>
+        {otherDisciplinesExpanded && nonSelectedGroups.map((group) =>
+          turmasAbertasPara(group.courses.map((c) => c.code)) && !group.isBlockGroup ? (
+            <div key={group.key}>{painelTurmas}</div>
+          ) : group.isBlockGroup ? (
+            <div key={group.key} className="flex flex-col gap-1.5">
+            <BlockDisciplineGroupCard
+              group={group}
+              indexByCode={indexByCode}
+              onCourseClick={handleShowSections}
+              curriculumMandatorySet={curriculumMandatorySet}
+              curriculumElectiveSet={curriculumElectiveSet}
+            />
+            {turmasAbertasPara(group.courses.map((c) => c.code)) && painelTurmas}
+            </div>
+          ) : (
+            <DisciplineCard
+              key={group.courses[0].code}
+              course={group.courses[0] as Course}
+              onClick={handleShowSections}
+              curriculumMandatorySet={curriculumMandatorySet}
+              curriculumElectiveSet={curriculumElectiveSet}
+            />
+          )
+        )}
+      </>
+    )}
+
+                {/* Se não houver nenhuma */}
+                {selectedGroups.length === 0 && nonSelectedGroups.length === 0 && (
+                  <div className="col-span-full text-center py-8">
+                    <p className="text-muted-foreground">Nenhuma disciplina encontrada</p>
+                    {searchTerm && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="mt-2"
+                        onClick={() => setSearchTerm('')}
+                      >
+                        Limpar busca
+                      </Button>
+                    )}
+                  </div>
+                )}
+                  </>
+                )}
+              </>
+            )}
+        </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const colunaGrade = (
+    <div className="space-y-4 md:space-y-5">
+      {telaLarga && <SigaaResultadoPlanejador painel={painelSigaa} onFechar={() => setPainelSigaa(null)} />}
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-xl font-black tracking-[-0.035em] text-foreground sm:text-2xl">Minhas grades</h2>
+        <div className="flex items-center gap-2">
+          <BotaoComparar ativo={comparando} onClick={() => setComparando((v) => !v)} />
+          {!comparando && mySections.length > 0 && (
+            <button
+              type="button"
+              onClick={clearSections}
+              aria-label="Limpar grade"
+              className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border-[1.5px] border-foreground/20 px-3.5 text-[13px] font-bold text-foreground transition-colors hover:bg-nevoa"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Limpar grade</span>
+            </button>
+          )}
+        </div>
+      </div>
+      <AbasGrades comparando={comparando} onComparar={() => setComparando(false)} />
+
+      {comparando ? (
+        <CompararGrades cargaDe={cargaDe} onAbrir={() => setComparando(false)} />
+      ) : (
+        <>
+          <AcoesGrade cargaHoraria={cargaDaGrade} />
+          {!telaLarga && (
+            <div className="flex flex-col gap-3 empty:hidden">
+              <SigaaAcoesPlanejador painel={painelSigaa} onPainel={setPainelSigaa} />
+              <SigaaResultadoPlanejador painel={painelSigaa} onFechar={() => setPainelSigaa(null)} />
+            </div>
+          )}
+          {mySections.length === 0 ? (
+            <div className="rounded-[20px] border-[1.5px] border-dashed border-tracejado px-6 py-12 text-center">
+              <Calendar className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+              <h3 className="mb-1.5 text-lg font-black tracking-[-0.02em] text-foreground">Grade vazia</h3>
+              <p className="mx-auto max-w-sm text-[13px] text-foreground-2">
+                Adicione turmas da lista de disciplinas para montar esta grade.
+              </p>
+              {!telaLarga && (
+                <button
+                  type="button"
+                  onClick={() => setAbaMobile('disciplinas')}
+                  className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-[13px] font-extrabold text-primary-foreground"
+                >
+                  <Plus className="h-4 w-4" /> Adicionar disciplina
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <SeletorVisaoSemana visao={visaoSemana} onVisao={trocarVisaoSemana} />
+                <span className="hidden text-xs font-medium text-foreground-2 sm:inline">
+                  {telaLarga ? 'Clique' : 'Toque'} num horário vazio para ver o que tem nele
+                </span>
+              </div>
+              <div className="overflow-hidden">
+                <ScheduleGrid
+                  onSectionClick={(section) => setSelectedSection(section)}
+                  onSlotClick={escolherSlot}
+                  slotSelecionado={slotAtual}
+                  compacta={visaoSemana === 'compacta'}
+                />
+              </div>
+              <p className="-mt-1 text-xs font-medium text-foreground-2 sm:hidden">Toque num horário vazio para ver o que tem nele.</p>
+              <ChoquesDaGrade
+                secoes={mySections}
+                onTrocar={abrirTurmasDoCodigo}
+                onRemover={(t) => toggleSection(t, allSections)}
+              />
+              {!telaLarga && (
+                <button
+                  type="button"
+                  onClick={() => setAbaMobile('disciplinas')}
+                  className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-foreground/20 text-[13px] font-extrabold text-foreground hover:bg-nevoa"
+                >
+                  <Plus className="h-4 w-4" /> Adicionar disciplina
+                </button>
+              )}
+            </>
+          )}
+          <p className="flex items-center gap-1.5 text-xs font-medium text-foreground-2">
+            <Star className="h-3.5 w-3.5 fill-ouro text-[#B88700]" strokeWidth={1.6} />
+            A grade favorita é a que aparece em Minhas turmas, no Início.
+          </p>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <MainLayout>
       <div className="px-5 pt-4 sm:px-[clamp(20px,4vw,56px)] sm:pt-8 animate-fade-in">
@@ -979,341 +1632,44 @@ const Planejador = () => {
             </h1>
           </div>
           <div className="flex flex-col gap-2.5 lg:items-end">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground-2">
-                <Eye className="h-4 w-4" />
-                Visualizar ofertas de
-              </span>
-              <Select 
-                value={selectedViewProgramId || "meu-curso"} 
-                onValueChange={(value) => setSelectedViewProgramId(value === "meu-curso" ? null : value)}
-              >
-                <SelectTrigger className="h-11 w-full rounded-full border-0 bg-nevoa px-5 text-sm font-bold sm:w-auto sm:min-w-[260px]">
-                  <SelectValue placeholder="Selecione um curso" />
-                </SelectTrigger>
-                <SelectContent>
-                  <div className="p-2 border-b">
-                    <div className="relative">
-                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <input
-                        type="text"
-                        placeholder="Buscar curso..."
-                        value={programSearchTerm}
-                        onChange={(e) => setProgramSearchTerm(e.target.value)}
-                        className="w-full rounded-full border-0 bg-nevoa py-2 pl-8 pr-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-mar"
-                      />
-                    </div>
-                  </div>
-                  <SelectItem value="meu-curso">
-                    Meu curso ({myPrograms.map(p => p.title).join(', ')})
-                  </SelectItem>
-                  {allPrograms
-                    .filter(p => !myPrograms.some(mp => mp.id_ref === p.id_ref))
-                    .filter(p => p.title.toLowerCase().includes(programSearchTerm.toLowerCase()))
-                    .map((program) => (
-                      <SelectItem key={program.id_ref} value={program.id_ref}>
-                        {program.title}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-              {selectedViewProgramId && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedViewProgramId(null)}
-                  className="inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-[13px] font-bold text-foreground hover:bg-nevoa"
-                >
-                  <X className="h-4 w-4" />
-                  Voltar ao meu curso
-                </button>
-              )}
-            </div>
-            <SigaaAcoesPlanejador painel={painelSigaa} onPainel={setPainelSigaa} />
-            {!telaLarga && <SigaaResultadoPlanejador painel={painelSigaa} onFechar={() => setPainelSigaa(null)} />}
+            {telaLarga && seletorOfertas}
+            {telaLarga && <SigaaAcoesPlanejador painel={painelSigaa} onPainel={setPainelSigaa} />}
           </div>
         </section>
 
-        <div className="grid grid-cols-1 gap-10 border-t-2 border-foreground pt-6 lg:grid-cols-[minmax(340px,440px)_minmax(0,1fr)] lg:gap-0">
-          {/* Coluna da esquerda - Disciplinas */}
-          <div className="space-y-4 lg:border-r lg:border-border lg:pr-8">
-            {/* Card de Disciplinas */}
-            <div className="">
-              <div className="mb-4">
-                <div>
-                  <h3 className="text-2xl font-black tracking-[-0.035em] text-foreground">Disciplinas do curso</h3>
-                  <p className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-foreground-2">
-                    {currentTerm && <span>Ofertas do semestre {currentTerm}</span>}
-                    <span className="rounded-full bg-nevoa px-2.5 py-0.5 text-[11px] font-extrabold text-foreground">
-                      {disciplinasAgrupadas.length} disciplinas · {totalTurmasSemestre} turmas
-                    </span>
-                  </p>
-                  {selectedViewProgramId && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Visualizando: {allPrograms.find(p => p.id_ref === selectedViewProgramId)?.title || 'Outro curso'}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Barra de busca e filtros otimizada */}
-              <div className="mb-4">
-                <div className="relative mb-3">
-                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-2" />
-                  <input
-                    type="text"
-                    placeholder="Buscar disciplina..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    className="h-12 w-full rounded-full border-0 bg-nevoa pl-11 pr-4 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-mar transition-all"
-                  />
-                </div>
-                
-                <div className="flex flex-wrap items-center gap-2 max-w-[100vw] overflow-x-auto pb-1">
+        {telaLarga ? (
+          <div className="grid grid-cols-[minmax(340px,440px)_minmax(0,1fr)] border-t-2 border-foreground pt-6">
+            {colunaDisciplinas}
+            <div className="sticky top-24 self-start pl-8">{colunaGrade}</div>
+          </div>
+        ) : (
+          <>
+            <div className="sticky top-[60px] z-30 -mx-5 border-b-2 border-foreground bg-background/95 px-5 pb-3 pt-1 backdrop-blur sm:-mx-[clamp(20px,4vw,56px)] sm:px-[clamp(20px,4vw,56px)] md:top-0">
+              <div role="tablist" aria-label="Planejador" className="grid grid-cols-2 gap-1 rounded-full bg-nevoa p-1">
+                {([
+                  ['grade', 'Grade', `${basesDaGrade.length}`],
+                  ['disciplinas', 'Disciplinas', slotAtual ? slotTexto : ''],
+                ] as const).map(([v, rotulo, extra]) => (
                   <button
+                    key={v}
                     type="button"
-                    className="relative inline-flex h-10 items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-transparent px-3.5 text-[13px] font-bold transition-colors hover:bg-nevoa"
-                    onClick={() => setFiltroModalOpen(true)}
-                  >
-                    <Filter className="h-3.5 w-3.5" />
-                    Dias / Horários
-                    {hasActiveFilters && (
-                      <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-dende ring-2 ring-background" aria-label="Filtros ativos"></span>
+                    role="tab"
+                    aria-selected={abaMobile === v}
+                    onClick={() => setAbaMobile(v)}
+                    className={cn(
+                      'inline-flex min-h-11 items-center justify-center gap-2 rounded-full text-[13.5px] font-extrabold transition-colors',
+                      abaMobile === v ? 'bg-primary text-primary-foreground' : 'text-foreground-2',
                     )}
-                  </button>
-
-                  <Select value={typeFilter} onValueChange={(v: any) => setTypeFilter(v)}>
-                    <SelectTrigger className="inline-flex h-10 w-auto items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-transparent px-3.5 text-[13px] font-bold hover:bg-nevoa">
-                      <span>Tipo: {typeFilter === 'all' ? 'Todas' : typeFilter === 'mandatory' ? 'Obrigatórias' : typeFilter === 'optional' ? 'Optativas' : typeFilter === 'equivalent' ? 'Equivalentes' : 'Ofertadas'}</span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas</SelectItem>
-                      <SelectItem value="mandatory">Obrigatórias</SelectItem>
-                      <SelectItem value="optional">Optativas</SelectItem>
-                      <SelectItem value="equivalent">Equivalentes</SelectItem>
-                      <SelectItem value="offered">Ofertadas</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  {hasAnyVacancyData && (
-                    <Select value={vacancyFilter} onValueChange={(v: any) => setVacancyFilter(v)}>
-                      <SelectTrigger className="inline-flex h-10 w-auto items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-transparent px-3.5 text-[13px] font-bold hover:bg-nevoa">
-                        <span>Vagas: {vacancyFilter === 'all' ? 'Todas' : vacancyFilter === 'few' ? 'Poucas' : 'Muitas'}</span>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todas as vagas</SelectItem>
-                        <SelectItem value="few">Poucas vagas</SelectItem>
-                        <SelectItem value="many">Muitas vagas</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-
-                  {completedDisciplines.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowCompleted(!showCompleted)}
-                      className={cn(
-                        "inline-flex h-10 items-center gap-2 rounded-full border-[1.5px] px-3.5 text-[13px] font-bold transition-colors",
-                        !showCompleted 
-                          ? "border-primary bg-primary text-primary-foreground" 
-                          : "border-foreground/20 bg-transparent text-foreground hover:bg-nevoa"
-                      )}
-                    >
-                      Ocultar cursadas
-                    </button>
-                  )}
-
-                  {hasAnyVacancyData && (
-                    <button
-                      type="button"
-                      onClick={() => setHideFull(!hideFull)}
-                      className={cn(
-                        "inline-flex h-10 items-center gap-2 rounded-full border-[1.5px] px-3.5 text-[13px] font-bold transition-colors",
-                        hideFull 
-                          ? "border-primary bg-primary text-primary-foreground" 
-                          : "border-foreground/20 bg-transparent text-foreground hover:bg-nevoa"
-                      )}
-                    >
-                      Ocultar lotadas
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="">
-                <div className="grid grid-cols-1 gap-1.5">
-                  {isLoading ? (
-                    [...Array(8)].map((_, i) => <SkeletonCard key={i} />)
-                  ) : (
-                    <>
-                      {/* Disciplinas Selecionadas */}
-                      {selectedGroups.length > 0 && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedDisciplinesExpanded(!selectedDisciplinesExpanded)}
-                            className="mb-1 flex h-10 w-full items-center gap-2 border-b-2 border-foreground text-left transition-colors"
-                          >
-                            <div className="hidden"></div>
-                            <span className="rotulo flex flex-1 items-center justify-between gap-1 !text-foreground">
-                              <span>Disciplinas selecionadas · {selectedGroups.length}</span>
-                              {selectedDisciplinesExpanded ? (
-                                <ChevronUp className="w-3 h-3" />
-                              ) : (
-                                <ChevronDown className="w-3 h-3" />
-                              )}
-                            </span>
-                            <div className="hidden"></div>
-                          </button>
-                          {selectedDisciplinesExpanded && selectedGroups.map((group) => {
-                            // Get conflicting base codes from our map
-                            const conflictBaseCodes = conflictsByBaseCode.get(group.key) || new Set<string>();
-                            const conflictCodes = Array.from(conflictBaseCodes);
-                            
-                            const abertas = turmasAbertasPara(group.courses.map((c) => c.code));
-                            if (abertas && !group.isBlockGroup) return <div key={group.key}>{painelTurmas}</div>;
-                            return group.isBlockGroup ? (
-                              <div key={group.key} className="flex flex-col gap-1.5">
-                              <BlockDisciplineGroupCard
-                                group={group}
-                                indexByCode={indexByCode}
-                                onCourseClick={handleShowSections}
-                                isSelected={true}
-                                cor={coresGrade.get(group.key)?.bg}
-                                conflictCodes={conflictCodes}
-                                curriculumMandatorySet={curriculumMandatorySet}
-                                curriculumElectiveSet={curriculumElectiveSet}
-                              />
-                              {abertas && painelTurmas}
-                              </div>
-                            ) : (
-                              <DisciplineCard
-                                key={group.courses[0].code}
-                                course={group.courses[0] as Course}
-                                onClick={handleShowSections}
-                                isSelected={true}
-                                cor={coresGrade.get(getBlockCourseBaseCode(group.courses[0].code))?.bg}
-                                conflictCodes={conflictCodes}
-                                curriculumMandatorySet={curriculumMandatorySet}
-                                curriculumElectiveSet={curriculumElectiveSet}
-                              />
-                            );
-                          })}
-                        </>
-                      )}
-
-                      {/* Demais Disciplinas */}
-          {nonSelectedGroups.length > 0 && (
-            <>
-              <button
-                type="button"
-                onClick={() => setOtherDisciplinesExpanded(!otherDisciplinesExpanded)}
-                className="mb-1 mt-5 flex h-10 w-full items-center gap-2 border-b-2 border-foreground text-left transition-colors"
-              >
-                <div className="hidden"></div>
-                <span className="rotulo flex flex-1 items-center justify-between gap-1 !text-foreground">
-                  <span>Outras disciplinas</span>
-                  {otherDisciplinesExpanded ? (
-                    <ChevronUp className="w-3 h-3" />
-                  ) : (
-                    <ChevronDown className="w-3 h-3" />
-                  )}
-                </span>
-                <div className="hidden"></div>
-              </button>
-              {otherDisciplinesExpanded && nonSelectedGroups.map((group) =>
-                turmasAbertasPara(group.courses.map((c) => c.code)) && !group.isBlockGroup ? (
-                  <div key={group.key}>{painelTurmas}</div>
-                ) : group.isBlockGroup ? (
-                  <div key={group.key} className="flex flex-col gap-1.5">
-                  <BlockDisciplineGroupCard
-                    group={group}
-                    indexByCode={indexByCode}
-                    onCourseClick={handleShowSections}
-                    curriculumMandatorySet={curriculumMandatorySet}
-                    curriculumElectiveSet={curriculumElectiveSet}
-                  />
-                  {turmasAbertasPara(group.courses.map((c) => c.code)) && painelTurmas}
-                  </div>
-                ) : (
-                  <DisciplineCard
-                    key={group.courses[0].code}
-                    course={group.courses[0] as Course}
-                    onClick={handleShowSections}
-                    curriculumMandatorySet={curriculumMandatorySet}
-                    curriculumElectiveSet={curriculumElectiveSet}
-                  />
-                )
-              )}
-            </>
-          )}
-
-                      {/* Se não houver nenhuma */}
-                      {selectedGroups.length === 0 && nonSelectedGroups.length === 0 && (
-                        <div className="col-span-full text-center py-8">
-                          <p className="text-muted-foreground">Nenhuma disciplina encontrada</p>
-                          {searchTerm && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="mt-2"
-                              onClick={() => setSearchTerm('')}
-                            >
-                              Limpar busca
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  )}
-              </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Coluna da direita - Grade Horária */}
-          <div className="lg:sticky lg:top-24 lg:self-start lg:pl-8">
-            <div className="space-y-4 md:space-y-5">
-              {telaLarga && <SigaaResultadoPlanejador painel={painelSigaa} onFechar={() => setPainelSigaa(null)} />}
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="mb-1 text-2xl font-black tracking-[-0.035em] text-foreground">Grade atual</h2>
-                  <p className="hidden text-[13px] text-foreground-2 sm:block">
-                    Visualize as disciplinas convertidas e organizadas.
-                  </p>
-                  <p className="font-mono text-xs text-foreground-2 sm:hidden">
-                    {resumoQtd} disciplina{resumoQtd !== 1 ? 's' : ''} · {resumoCarga.total}h
-                  </p>
-                </div>
-                {mySections.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={clearSections}
-                    className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border-[1.5px] border-foreground/20 px-4 text-[13px] font-bold text-foreground transition-colors hover:bg-nevoa"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    Limpar grade
+                    {rotulo}
+                    {extra && <span className="font-mono text-[11px] font-semibold opacity-75">{extra}</span>}
                   </button>
-                )}
+                ))}
               </div>
-
-              {mySections.length === 0 ? (
-                <div className="rounded-[20px] border-[1.5px] border-dashed border-tracejado px-6 py-12 text-center">
-                  <Calendar className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
-                  <h3 className="mb-1.5 text-lg font-black tracking-[-0.02em] text-foreground">Grade vazia</h3>
-                  <p className="mx-auto max-w-sm text-[13px] text-foreground-2">
-                    Adicione turmas da lista de disciplinas para visualizar a grade horária.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="overflow-hidden">
-                    <ScheduleGrid onSectionClick={(section) => setSelectedSection(section)} />
-                  </div>
-                </>
-              )}
             </div>
-          </div>
-        </div>
+            <div className="pt-5">{abaMobile === 'grade' ? colunaGrade : colunaDisciplinas}</div>
+          </>
+        )}
 
         {/* Modal de Filtros */}
         <AnimatePresence>
@@ -1343,6 +1699,73 @@ const Planejador = () => {
                 </div>
                 
                 <div className="space-y-6">
+                  {/* No celular, os outros filtros também moram aqui */}
+                  {!telaLarga && (
+                    <>
+                      <div className="flex flex-col gap-2">{seletorOfertas}</div>
+                      <div>
+                        <div className="rotulo mb-2.5">Tipo</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {([
+                            ['all', 'Todas'],
+                            ['mandatory', 'Obrigatórias'],
+                            ['optional', 'Optativas'],
+                            ['equivalent', 'Equivalentes'],
+                            ['offered', 'Ofertadas'],
+                          ] as const).map(([v, rotulo]) => (
+                            <button
+                              key={v}
+                              type="button"
+                              aria-pressed={typeFilter === v}
+                              onClick={() => setTypeFilter(v)}
+                              className={cn(
+                                'h-10 rounded-full border-[1.5px] px-3.5 text-[13px] font-bold transition-colors',
+                                typeFilter === v ? 'border-primary bg-primary text-primary-foreground' : 'border-foreground/15 hover:bg-nevoa',
+                              )}
+                            >
+                              {rotulo}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      {hasAnyVacancyData && (
+                        <div>
+                          <div className="rotulo mb-2.5">Vagas</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {([
+                              ['all', 'Todas'],
+                              ['few', 'Poucas'],
+                              ['many', 'Muitas'],
+                            ] as const).map(([v, rotulo]) => (
+                              <button
+                                key={v}
+                                type="button"
+                                aria-pressed={vacancyFilter === v}
+                                onClick={() => setVacancyFilter(v)}
+                                className={cn(
+                                  'h-10 rounded-full border-[1.5px] px-3.5 text-[13px] font-bold transition-colors',
+                                  vacancyFilter === v ? 'border-primary bg-primary text-primary-foreground' : 'border-foreground/15 hover:bg-nevoa',
+                                )}
+                              >
+                                {rotulo}
+                              </button>
+                            ))}
+                            <button
+                              type="button"
+                              aria-pressed={hideFull}
+                              onClick={() => setHideFull(!hideFull)}
+                              className={cn(
+                                'h-10 rounded-full border-[1.5px] px-3.5 text-[13px] font-bold transition-colors',
+                                hideFull ? 'border-primary bg-primary text-primary-foreground' : 'border-foreground/15 hover:bg-nevoa',
+                              )}
+                            >
+                              Ocultar lotadas
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
                   {/* Filtro por Dia */}
                   <div>
                     <div className="rotulo mb-2.5">Dias da semana</div>
@@ -1535,6 +1958,63 @@ const Planejador = () => {
           )}
         </AnimatePresence>
 
+        {/* Celular: o horário tocado na grade abre a lista por cima */}
+        <AnimatePresence>
+          {!telaLarga && painelHorarioAberto && slotAtual && (
+            <div className="fixed inset-0 z-50 flex items-end bg-overlay/55" onClick={limparSlot}>
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 24 }}
+                transition={{ duration: 0.2 }}
+                role="dialog"
+                aria-modal="true"
+                aria-label={`Disciplinas com turma em ${slotTexto}`}
+                className="flex max-h-[78vh] w-full flex-col rounded-t-[28px] bg-background shadow-xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span aria-hidden className="mx-auto mt-2.5 block h-1 w-10 shrink-0 rounded-full bg-trilho" />
+                <div className="flex items-start justify-between gap-3 px-5 pb-3 pt-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="font-mono text-[22px] font-bold leading-none text-foreground">{slotTexto}</span>
+                    <span className="text-[13px] font-medium text-foreground-2">
+                      {gruposNoSlot.length} disciplina{gruposNoSlot.length !== 1 ? 's' : ''} com turma nesse horário
+                      {choqueNoSlot.size > 0 && ` · ${choqueNoSlot.size} choca${choqueNoSlot.size !== 1 ? 'm' : ''} com a grade`}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={limparSlot}
+                    aria-label="Fechar"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-nevoa text-foreground hover:bg-trilho"
+                  >
+                    <X className="h-[18px] w-[18px]" strokeWidth={2.4} />
+                  </button>
+                </div>
+                <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto border-t border-foreground/10 px-5 py-3">
+                  {gruposNoSlot.length === 0 ? (
+                    <p className="py-6 text-center text-[13px] font-medium text-foreground-2">Nenhuma disciplina tem turma nesse horário com os filtros atuais.</p>
+                  ) : (
+                    gruposNoSlot.map((g) => renderGrupo(g, choqueNoSlot.get(g.key)))
+                  )}
+                </div>
+                <div className="border-t border-foreground/10 px-5 pb-6 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPainelHorarioAberto(false);
+                      setAbaMobile('disciplinas');
+                    }}
+                    className="flex min-h-12 w-full items-center justify-center rounded-full border-[1.5px] border-foreground/20 text-[13px] font-extrabold text-foreground hover:bg-nevoa"
+                  >
+                    Ver na aba Disciplinas
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
         {/* Modal de Turmas Disponíveis */}
         <AnimatePresence>
           {showSections && selectedCourse && !telaLarga && (
@@ -1683,7 +2163,7 @@ function SectionDetailModal({
     };
   };
   
-  const { getConflictsForSection, toggleSection, hasSection, getSectionForCourse } = useMySections();
+  const { getConflictsForSection, toggleSection, hasSection, getSectionForCourse } = useMySections('ativa');
   const { myPrograms } = useMyPrograms();
   const myProgramTitles = new Set(myPrograms.map(p => (p.title || '').trim().toLowerCase()));
   
@@ -2029,7 +2509,7 @@ function SectionDetailModal({
 
 // Componente para exibir card de uma seção
 function SectionCard({ section, isCurrentSection = false }: { section: Section; isCurrentSection?: boolean }) {
-  const { toggleSection, hasSectionOnCourse, getConflictsForSection, hasSection, getSectionForCourse } = useMySections();
+  const { toggleSection, hasSectionOnCourse, getConflictsForSection, hasSection, getSectionForCourse } = useMySections('ativa');
   const { data: allSections = [] } = useSections();
   const { myPrograms } = useMyPrograms();
   const myProgramTitles = new Set(myPrograms.map(p => (p.title || '').trim().toLowerCase()));
@@ -2181,7 +2661,7 @@ function SectionsList({
   const { data: sections = [], isLoading } = useCourseSections(courseCode);
   const { data: allSections = [] } = useSections();
   const detailCourseCode = isBlockCourseCode(courseCode) ? getBlockCourseBaseCode(courseCode) : courseCode;
-  const { toggleSection, hasSectionOnCourse, getConflictsForSection, hasSection, getSectionForCourse } = useMySections();
+  const { toggleSection, hasSectionOnCourse, getConflictsForSection, hasSection, getSectionForCourse } = useMySections('ativa');
   const { myPrograms } = useMyPrograms();
   const myProgramTitles = new Set(myPrograms.map(p => (p.title || '').trim().toLowerCase()));
 
