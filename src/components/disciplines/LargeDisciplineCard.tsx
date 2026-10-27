@@ -121,90 +121,69 @@ export function LargeDisciplineCard({
     }
   };
 
+  const anel = (
+    <span
+      className={cn(
+        'flex h-[26px] w-[26px] items-center justify-center rounded-full',
+        isCompleted ? 'bg-mar text-white' : isEquivalent ? 'border-2 border-dende' : 'border-2 border-foreground/30'
+      )}
+    >
+      {isCompleted && <Check className="h-3.5 w-3.5" strokeWidth={2.6} />}
+    </span>
+  );
+
   if (!synced) {
     return (
-      <div
-        className={cn(
-          'group relative rounded-[18px] border-[1.5px] border-dashed border-tracejado bg-nevoa px-5 py-4',
-          'flex flex-col gap-2 opacity-90',
-        )}
-      >
-        <div className="flex items-center justify-between">
-          <span className="font-mono text-[13px] font-bold text-foreground-2">{code}</span>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-foreground/10 py-3.5 last:border-b-0">
+        <div className="flex min-w-0 flex-col gap-1">
+          <span className="font-mono text-xs font-semibold text-muted-foreground">{code}</span>
+          <span className="text-sm font-extrabold leading-tight text-muted-foreground">Não disponível</span>
+          <span className="text-xs font-medium leading-relaxed text-muted-foreground">Essa disciplina ainda não está sincronizada.</span>
+        </div>
+        <div className="flex flex-col items-end gap-1.5">
           {shouldShowCompletedButton && (
             <button
               onClick={handleCompletedClick}
-              className={cn(
-                'flex h-[26px] w-[26px] items-center justify-center rounded-full transition-colors',
-                isCompleted ? 'bg-mar text-white' : 'text-foreground/30 hover:text-foreground/60',
-              )}
-              aria-label={isCompleted ? 'Desmarcar como cursada' : 'Marcar como cursada'}
+              className="-mb-1 -mr-2.5 -mt-2 flex h-11 w-11 items-center justify-center"
+              aria-label={isCompleted ? `Desmarcar como cursada: ${code}` : `Marcar como cursada: ${code}`}
             >
-              {isCompleted ? (
-                <Check className="h-3.5 w-3.5" strokeWidth={2.4} />
-              ) : (
-                <span className="block h-[22px] w-[22px] rounded-full border-[1.5px] border-current" />
-              )}
+              {anel}
             </button>
           )}
+          <span className="whitespace-nowrap rounded-full bg-trilho px-[9px] py-[3px] text-[10.5px] font-extrabold text-foreground-2">Indisponível</span>
         </div>
-
-        <h3 className="text-sm font-extrabold uppercase text-foreground">Não disponível</h3>
-        <p className="text-xs text-muted-foreground">Essa disciplina ainda não está sincronizada.</p>
       </div>
     );
   }
 
   return (
     <div
-      className={cn(
-        'group relative cursor-pointer rounded-[18px] border-[1.5px] border-foreground/10 bg-background px-5 py-4',
-        'flex h-full flex-col transition-all duration-200 hover:bg-nevoa',
-        isCompleted && 'border-transparent bg-mar-claro hover:bg-mar-claro',
-      )}
+      className="grid cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-foreground/10 py-3.5 transition-colors last:border-b-0 hover:bg-nevoa/50"
       onClick={onClick}
     >
-      <div className="flex items-center justify-between mb-1">
-        <span className={cn(
-          "font-mono text-[13px] font-bold",
-          isCompleted ? "text-mar-ink" :
-          "text-mar"
-        )}>{code}</span>
-        <div className="flex items-center gap-1">
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className={cn('font-mono text-xs font-semibold', isCompleted ? 'text-mar-ink' : isEquivalent ? 'text-dende-ink' : 'text-foreground-2')}>
+          {code}
+        </span>
+        <span className="text-sm font-extrabold uppercase leading-tight text-foreground">{name ?? code}</span>
+      </div>
+      <div className="flex flex-col items-end gap-1.5">
+        <div className="flex items-center">
           {!isEquivalent && <FavoriteButton active={favorite} onToggle={() => toggleFavorite(code)} />}
           {shouldShowCompletedButton && (
             <button
               onClick={handleCompletedClick}
-              className={cn('flex h-[26px] w-[26px] items-center justify-center rounded-full transition-colors', isCompleted ? 'bg-mar text-white' : 'text-foreground/30 hover:text-foreground/60')}
-              aria-label={isCompleted ? 'Desmarcar como cursada' : 'Marcar como cursada'}
+              className="-mb-1 -mr-2.5 -mt-2 flex h-11 w-11 items-center justify-center"
+              aria-label={isCompleted ? `Desmarcar como cursada: ${code}` : `Marcar como cursada: ${code}`}
             >
-              {isCompleted ? <Check className="h-3.5 w-3.5" strokeWidth={2.4} /> : <span className="block h-[22px] w-[22px] rounded-full border-[1.5px] border-current" />}
+              {anel}
             </button>
           )}
         </div>
-      </div>
-
-      <div className="flex-1">
-        <h3 className="mb-2 line-clamp-2 text-sm font-extrabold uppercase leading-snug text-foreground">{name ?? code}</h3>
-        {typeof (summary as any)?.workload === 'number' && (
-          <div className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
-            <Clock className="h-3.5 w-3.5" />
-            <span>{(summary as any).workload}h</span>
-          </div>
-        )}
-      </div>
-
-      <div className="mt-2 border-t border-foreground/10 pt-2">
-        <div className="flex items-center justify-between">
-          {isCompleted && (
-            <span className="inline-flex items-center rounded-full bg-mar px-2.5 py-0.5 text-[10px] font-bold text-white sm:text-[11px]">Cursada</span>
-          )}
-          <div className="flex-1" />
-          <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
-            <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span>{sectionsCount}</span>
-          </div>
-        </div>
+        <span className="flex items-center gap-1 font-mono text-[11.5px] text-foreground-2" aria-label={`${sectionsCount} turmas`}>
+          <Users className="h-[13px] w-[13px]" />
+          {sectionsCount}
+        </span>
       </div>
     </div>
   );

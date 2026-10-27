@@ -25,3 +25,19 @@ export const CORES_GRADE_FUNDOS: string[] = CORES_GRADE.map((c) => c.bg);
 export function textoDaCor(bg: string): string {
   return CORES_GRADE.find((c) => c.bg === bg)?.fg ?? "#FFFFFF";
 }
+
+/** Mesma cor que a disciplina recebe na grade do Planejador (mesmo hash do ScheduleGrid). */
+export function corPorCodigo(code: string): CorGrade {
+  let hash = 0;
+  for (let i = 0; i < code.length; i++) hash = ((hash << 5) - hash) + code.charCodeAt(i);
+  return CORES_GRADE[Math.abs(hash) % CORES_GRADE.length];
+}
+
+/** Distribui as cores pela ordem em que as disciplinas aparecem, sem repetir até a 9ª. */
+export function mapaDeCores(codigos: string[]): Map<string, CorGrade> {
+  const mapa = new Map<string, CorGrade>();
+  for (const codigo of codigos) {
+    if (!mapa.has(codigo)) mapa.set(codigo, CORES_GRADE[mapa.size % CORES_GRADE.length]);
+  }
+  return mapa;
+}

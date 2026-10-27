@@ -1,7 +1,7 @@
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
-import { SigaaAccountButton } from '@/components/sigaa/SigaaAccount';
+import { ContaMenu } from './ContaMenu';
 import { Logo } from '@/components/brand/Logo';
 
 export function MobileHeader() {
@@ -25,16 +25,17 @@ export function MobileHeader() {
       <div className="flex h-[60px] items-center justify-between pl-5 pr-2">
         <Logo size={25} />
 
-        <div className="flex items-center gap-1">
-          <SigaaAccountButton variant="icon" />
+        <div className="flex items-center gap-1.5">
+          <ContaMenu />
           <button
             onClick={toggleTheme}
             className="flex h-11 w-11 items-center justify-center rounded-full text-foreground transition-colors hover:bg-nevoa"
             aria-label="Alternar tema"
           >
-            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
           </button>
         </div>
+
       </div>
     </header>
   );

@@ -72,7 +72,7 @@ export function PercentAnimado({ value, casas = 1, sufixo = "%" }: { value: numb
   }, [value, reduce]);
   return (
     <>
-      {shown.toFixed(casas)}
+      {shown.toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas })}
       {sufixo}
     </>
   );

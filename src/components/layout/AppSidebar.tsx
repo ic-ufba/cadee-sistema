@@ -2,7 +2,7 @@ import { Home, BookOpen, Calendar, SlidersHorizontal, Sun, Moon, Github, Graduat
 import { NavLink } from '@/components/NavLink';
 import { useApp } from '@/contexts/AppContext';
 import { cn } from '@/lib/utils';
-import { SigaaAccountButton } from '@/components/sigaa/SigaaAccount';
+import { ContaMenu } from './ContaMenu';
 import { Logo } from '@/components/brand/Logo';
 import { useMyPrograms } from '@/hooks/useMyPrograms';
 
@@ -57,30 +57,8 @@ export function AppSidebar({ isCollapsed = false, toggleCollapse }: AppSidebarPr
           </ul>
         </nav>
 
-        <div className="flex items-center gap-2">
-          {curso && (
-            <NavLink
-              to="/configuracoes"
-              title={`${curso.title} — mudar de curso em Ajustes`}
-              className="flex h-11 items-center gap-2.5 rounded-full border-[1.5px] border-foreground/15 py-1 pl-1.5 pr-4 text-[13px] font-bold text-foreground transition-colors hover:bg-nevoa"
-            >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-nevoa">
-                <GraduationCap className="h-4 w-4" />
-              </span>
-              <span className="max-w-[180px] truncate">{tituloCurso(curso.title)}</span>
-            </NavLink>
-          )}
-          <SigaaAccountButton variant="icon" />
-          <a
-            href="https://github.com/FormigTeen/sigaa-static"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="GitHub"
-            aria-label="GitHub"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-foreground-2 transition-colors hover:bg-nevoa hover:text-foreground"
-          >
-            <Github className="h-[18px] w-[18px]" />
-          </a>
+        <div className="flex items-center gap-2.5">
+          <ContaMenu />
           <button
             onClick={toggleTheme}
             title="Alternar tema"

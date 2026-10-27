@@ -1,4 +1,4 @@
-import { Clock, Check, Users, Heart } from 'lucide-react';
+import { Clock, Check, Users, Heart, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '@/contexts/AppContext';
 import { cn } from '@/lib/utils';
@@ -89,8 +89,8 @@ export function DisciplineCard({
       exit={{ opacity: 0, scale: 0.98 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
       className={cn(
-        "group relative min-h-[140px] cursor-pointer rounded-[18px] border-[1.5px] border-foreground/10 bg-background pb-3 pl-3.5 pr-2 pt-2",
-        "flex h-full flex-col gap-1",
+        "group relative min-h-[124px] cursor-pointer rounded-[18px] border-[1.5px] border-foreground/10 bg-background py-3 pl-3.5 pr-3",
+        "flex h-full flex-col justify-between gap-2",
         "transition-colors duration-200 hover:border-foreground/30",
         showCompletedStyles && "border-mar/30 bg-mar-claro hover:border-mar/50",
         isSelected && !showCompletedStyles && "border-2 border-foreground bg-background hover:border-foreground",
@@ -99,10 +99,10 @@ export function DisciplineCard({
       )}
       onClick={onClick}
     >
-      <div className="flex items-start justify-between">
+      <div className="flex items-center justify-between">
         <span
           className={cn(
-            "pt-2 font-mono text-xs font-semibold",
+            "font-mono text-[11.5px] font-semibold",
             showCompletedStyles
               ? "text-mar-ink"
               : isSelected
@@ -120,7 +120,7 @@ export function DisciplineCard({
           <motion.button
             onClick={handleCompletedClick}
             className={cn(
-              "flex h-11 w-11 items-center justify-center rounded-full transition-colors",
+              "-m-[9px] flex h-11 w-11 items-center justify-center rounded-full transition-colors",
               isCompleted
                 ? "text-white"
                 : isSelected
@@ -155,34 +155,17 @@ export function DisciplineCard({
       </div>
 
       <div className="flex-1">
-        <h3 className={cn("mb-1.5 line-clamp-3 text-[12.5px] font-extrabold uppercase leading-[1.25] sm:text-[13.5px]", showBlocked && !isCompleted && !isSelected ? "text-muted-foreground" : "text-foreground")}>
+        <h3 className={cn("line-clamp-3 text-[12.5px] font-extrabold uppercase leading-[1.25] sm:text-[13px]", showBlocked && !isCompleted && !isSelected ? "text-muted-foreground" : "text-foreground")}>
           {discipline.name}
         </h3>
 
-        <div className="flex items-center gap-3 font-mono text-[11px] text-muted-foreground">
-          {typeof (discipline as any).workload === 'number' && (
-            <div className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              <span>{(discipline as any).workload}h</span>
-            </div>
-          )}
-          {typeof (discipline as any).credits === 'number' && (
-            <span>{(discipline as any).credits} créditos</span>
-          )}
-        </div>
-
-        {(discipline as any).prerequisites?.length > 0 && (
-          <p className="mt-1 truncate font-mono text-[10.5px] text-muted-foreground">
-            Pré-req: {(discipline as any).prerequisites?.join(', ')}
-          </p>
-        )}
       </div>
 
       {/* Rodapé compacto com status e contador de turmas */}
-      <div className="mt-auto pr-1.5 pt-2">
+      <div>
         <div className="flex items-center justify-between">
           {/* Reserve space to avoid layout shift (empty component) */}
-          <div className="flex h-6 items-center gap-2">
+          <div className="flex h-5 items-center gap-2">
             <AnimatePresence mode="popLayout" initial={false}>
               {isCompleted && (
                 <motion.span
@@ -205,7 +188,7 @@ export function DisciplineCard({
                   transition={{ duration: 0.25 }}
                   className="inline-flex items-center rounded-full bg-primary px-2.5 py-[3px] text-[10.5px] font-extrabold text-primary-foreground"
                 >
-                  Selecionada
+                  Na grade
                 </motion.span>
               )}
             </AnimatePresence>
@@ -215,14 +198,15 @@ export function DisciplineCard({
               </span>
             )}
             {!isCompleted && !isSelected && !showAvailable && showBlocked && (
-              <span className="inline-flex items-center rounded-full bg-trilho px-2.5 py-[3px] text-[10.5px] font-extrabold text-foreground-2">
+              <span className="inline-flex items-center gap-1 rounded-full py-[3px] text-[10.5px] font-extrabold text-foreground-2">
+                <Lock className="h-2.5 w-2.5" strokeWidth={3} />
                 Bloqueada
               </span>
             )}
           </div>
           <div className="flex-1" />
-          <div className="flex items-center gap-1 font-mono text-[11.5px] text-foreground-2">
-            <Users className="h-[13px] w-[13px]" />
+          <div className="flex items-center gap-1 font-mono text-[10.5px] text-foreground-2" title="Turmas ofertadas">
+            <Users className="h-[11px] w-[11px]" strokeWidth={2.4} />
             <span>{(discipline as any).sections_count ?? 0}</span>
           </div>
         </div>

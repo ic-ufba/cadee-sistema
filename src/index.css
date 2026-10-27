@@ -50,6 +50,7 @@
     --dende-claro: 25 100% 95%;         /* #FFF1E7 */
 
     --ouro: 45 96% 48%;                 /* #F2B705 */
+    --pedra: 37 9% 57%;                 /* #9C9385 — complementares */
 
     --pitanga: 3 65% 48%;               /* #C8342B */
     --pitanga-tint: 6 67% 89%;          /* #F6D5D1 */
@@ -115,6 +116,7 @@
     --dende-claro: 24 35% 12%;
 
     --ouro: 43 91% 62%;
+    --pedra: 37 12% 68%;                /* #B9B0A2 */
 
     --pitanga: 7 100% 71%;
     --pitanga-tint: 7 27% 17%;
@@ -218,4 +220,11 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Tema escuro: mar e pitanga ficam claros, então o texto sobre eles fica escuro (contraste) */
+.dark .bg-mar.text-white,
+.dark .bg-pitanga.text-white,
+.dark .bg-mar > .text-white {
+  color: hsl(var(--background));
 }

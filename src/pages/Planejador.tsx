@@ -25,9 +25,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useQueries } from '@tanstack/react-query';
 import { fetchProgramDetail } from '@/services/api';
 import { useSemesterTransition } from '@/hooks/useSemesterTransition';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronRight, Check } from 'lucide-react';
 import { getBlockCourseBaseCode, getBlockCourseVariantLabel, groupDisciplinesByBlock, isBlockCourseCode, resolveBlockCourseName } from '@/lib/blockCourses';
-import { isCurriculumElective, isCurriculumMandatory } from '@/hooks/usePlannedDisciplineCategories';
+import { isCurriculumElective, isCurriculumMandatory, usePlannedDisciplineCategories } from '@/hooks/usePlannedDisciplineCategories';
+import { tituloCurso } from '@/lib/curso-texto';
 
 const diasSemana = ["SEG", "TER", "QUA", "QUI", "SEX", "SAB"];
 const mapSiglaParaNome = {
@@ -202,15 +203,13 @@ const DisciplineCard = memo(({
       key={course.code}
       data-discipline-code={course.code}
       onClick={() => onClick(course)}
-      className={`flex cursor-pointer flex-col justify-between rounded-[14px] border-[1.5px] px-3.5 py-3 transition-colors ${
+      className={`flex cursor-pointer items-center gap-3 rounded-[14px] border-[1.5px] px-3.5 py-3 transition-colors ${
         isSelected ? 'border-transparent bg-nevoa hover:bg-trilho' : 'border-foreground/10 bg-background hover:border-foreground/30'
       }`}
     >
-      <div>
-        <div className="mb-1 flex items-center justify-start gap-2">
-          <div className="min-w-0 font-mono text-xs font-semibold text-mar-ink">
-            <span>{course.code}</span>
-          </div>
+      <div className="min-w-0 flex-1">
+        <div className="mb-1 flex flex-wrap items-center gap-2">
+          <span className="font-mono text-xs font-semibold text-mar-ink">{course.code}</span>
           <span
             className={cn(
               "shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-extrabold",
@@ -222,29 +221,27 @@ const DisciplineCard = memo(({
           >
             {badgeInfo.label}
           </span>
+          {isCompleted && (
+            <span className="shrink-0 rounded-full bg-mar px-2 py-0.5 text-[10.5px] font-extrabold text-white">Cursada</span>
+          )}
         </div>
-        <div className="mb-1.5 line-clamp-2 text-[13.5px] font-extrabold uppercase leading-tight text-foreground">
+        <div className="line-clamp-2 text-[13.5px] font-extrabold uppercase leading-tight text-foreground">
           {course.name}
         </div>
-      </div>
-      <div className="mt-auto flex flex-wrap items-center gap-1.5">
-        <Badge variant="secondary" className="shrink-0 border-0 bg-transparent px-0 font-mono text-xs font-medium text-foreground-2 hover:bg-transparent">
-          {course.sections_count} turma{course.sections_count !== 1 ? 's' : ''}
-        </Badge>
-        {isCompleted && (
-          <span className="shrink-0 rounded-full bg-mar px-2 py-0.5 text-[10.5px] font-extrabold text-white">
-            Cursada
-          </span>
+        {conflictCodes.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {conflictCodes.map((code) => (
+              <span key={code} className="rounded-full bg-pitanga-tint px-2 py-0.5 text-[10.5px] font-extrabold text-pitanga-ink">
+                Choque com {code}
+              </span>
+            ))}
+          </div>
         )}
-        {conflictCodes.length > 0 && conflictCodes.map((code) => (
-          <span
-            key={code}
-            className="flex shrink-0 items-center gap-1 rounded-full bg-pitanga-tint px-2 py-0.5 text-[10.5px] font-extrabold text-pitanga-ink"
-          >
-            Choque com {code}
-          </span>
-        ))}
       </div>
+      <span className="flex shrink-0 items-center gap-1 font-mono text-xs text-foreground-2">
+        {course.sections_count} turma{course.sections_count !== 1 ? 's' : ''}
+        <ChevronRight className="h-4 w-4" />
+      </span>
     </div>
   );
 });
@@ -427,6 +424,15 @@ const Planejador = () => {
   const [selectedViewProgramId, setSelectedViewProgramId] = useState<string | null>(null);
   // Estado para busca de cursos no seletor
   const [programSearchTerm, setProgramSearchTerm] = useState("");
+  // Desktop largo: as turmas abrem dentro da lista (no celular continuam na gaveta)
+  const [telaLarga, setTelaLarga] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const onChange = () => setTelaLarga(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  const { scheduledCount: resumoQtd, workloadBreakdown: resumoCarga } = usePlannedDisciplineCategories();
   
   // Buscar todos os programas disponíveis
   const { data: allPrograms = [] } = usePrograms();
@@ -898,6 +904,47 @@ const Planejador = () => {
     // Isso será feito através da dependência das variáveis de filtro no useMemo
   };
 
+  const turmasAbertasPara = (codes: string[]) =>
+    telaLarga && showSections && !!selectedCourse && codes.includes(selectedCourse.code);
+
+  const painelTurmas = selectedCourse ? (
+    <div className="rounded-[14px] border-2 border-foreground px-3.5 pb-1.5 pt-3">
+      <div className="flex items-start gap-2 pb-2.5">
+        <div className="min-w-0 flex-1">
+          <span className="font-mono text-xs font-semibold text-mar-ink">{selectedCourse.code}</span>
+          <div className="mt-1 text-[13.5px] font-extrabold uppercase leading-tight text-foreground">{selectedCourse.name}</div>
+        </div>
+        <button
+          type="button"
+          onClick={handleCloseSections}
+          aria-label="Fechar turmas"
+          className="-mr-1.5 -mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full hover:bg-nevoa"
+        >
+          <ChevronUp className="h-4 w-4" />
+        </button>
+      </div>
+      {isLoadingSections ? (
+        <div className="flex items-center gap-2 border-t border-foreground/10 py-4 text-[13px] text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin text-mar" /> Carregando turmas…
+        </div>
+      ) : (
+        <SectionsList
+          compacto
+          courseCode={selectedCourse.code}
+          currentTerm={currentTerm}
+          onCourseClick={handleShowSectionsNoFilters}
+          diasSelecionados={applyFiltersToSections ? diasSelecionados : []}
+          horariosSelecionados={applyFiltersToSections ? horariosSelecionados : []}
+          diasRestritos={applyFiltersToSections ? diasRestritos : []}
+          horariosRestritos={applyFiltersToSections ? horariosRestritos : []}
+          hasAnyVacancyData={hasAnyVacancyData}
+          hideFull={applyFiltersToSections ? hideFull : false}
+          vacancyFilter={applyFiltersToSections ? vacancyFilter : 'all'}
+        />
+      )}
+    </div>
+  ) : null;
+
   return (
     <MainLayout>
       <div className="px-5 pt-4 sm:px-[clamp(20px,4vw,56px)] sm:pt-8 animate-fade-in">
@@ -908,33 +955,27 @@ const Planejador = () => {
           </div>
         )}
         {/* Cabeçalho */}
-        <div className="mb-6">
-          <h1 className="mb-4 text-[30px] font-black leading-[1.05] tracking-[-0.04em] text-foreground sm:text-[clamp(30px,2.8vw,40px)]">
-            Planejador de grade
-          </h1>
-          <div className="space-y-3">
-            {myPrograms.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
-                {myPrograms.map((p) => (
-                  <span
-                    key={p.id_ref}
-                    className="rotulo inline-flex items-center"
-                  >
-                    {p.title}
-                  </span>
-                ))}
-              </div>
-            )}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="flex items-center gap-1.5 text-[13px] font-bold text-foreground-2">
+        <section className="flex flex-col gap-5 pb-6 lg:flex-row lg:flex-wrap lg:items-end lg:justify-between">
+          <div className="flex min-w-0 flex-col gap-3.5">
+            <span className="rotulo !text-foreground">
+              {myPrograms.length > 0 ? tituloCurso(myPrograms[0]?.title) : 'Planejador'}
+              {currentTerm ? ` · Ofertas ${currentTerm}` : ''}
+            </span>
+            <h1 className="text-[30px] font-black leading-[1.05] tracking-[-0.04em] text-foreground sm:text-[clamp(30px,2.8vw,40px)]">
+              Planejador de grade
+            </h1>
+          </div>
+          <div className="flex flex-col gap-2.5 lg:items-end">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground-2">
                 <Eye className="h-4 w-4" />
-                Visualizar ofertas de:
+                Visualizar ofertas de
               </span>
               <Select 
                 value={selectedViewProgramId || "meu-curso"} 
                 onValueChange={(value) => setSelectedViewProgramId(value === "meu-curso" ? null : value)}
               >
-                <SelectTrigger className="h-11 w-full rounded-full border-0 bg-nevoa sm:w-[320px]">
+                <SelectTrigger className="h-11 w-full rounded-full border-0 bg-nevoa px-5 text-sm font-bold sm:w-auto sm:min-w-[260px]">
                   <SelectValue placeholder="Selecione um curso" />
                 </SelectTrigger>
                 <SelectContent>
@@ -964,42 +1005,57 @@ const Planejador = () => {
                 </SelectContent>
               </Select>
               {selectedViewProgramId && (
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <button
+                  type="button"
                   onClick={() => setSelectedViewProgramId(null)}
-                  className="h-9"
+                  className="inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-[13px] font-bold text-foreground hover:bg-nevoa"
                 >
-                  <X className="w-4 h-4 mr-1" />
+                  <X className="h-4 w-4" />
                   Voltar ao meu curso
-                </Button>
+                </button>
               )}
             </div>
+            {mySections.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-nevoa px-2.5 py-1 font-mono text-xs text-foreground">
+                  {resumoQtd} disciplina{resumoQtd !== 1 ? 's' : ''} · {resumoCarga.total}h
+                </span>
+                {conflictsByBaseCode.size > 0 ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-pitanga-tint px-2.5 py-1 font-mono text-xs text-pitanga-ink">
+                    <AlertTriangle className="h-3 w-3" />
+                    {conflictsByBaseCode.size} com conflito
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-mar-tint px-2.5 py-1 font-mono text-xs text-mar-ink">
+                    <Check className="h-3 w-3" strokeWidth={2.6} />
+                    sem conflitos
+                  </span>
+                )}
+              </div>
+            )}
           </div>
-        </div>
+        </section>
 
         <div className="grid grid-cols-1 gap-10 border-t-2 border-foreground pt-6 lg:grid-cols-[minmax(340px,440px)_minmax(0,1fr)] lg:gap-0">
           {/* Coluna da esquerda - Disciplinas */}
           <div className="space-y-4 lg:border-r lg:border-border lg:pr-8">
             {/* Card de Disciplinas */}
             <div className="">
-              <div className="flex items-center justify-between mb-3">
+              <div className="mb-4">
                 <div>
-                  <h3 className="text-[22px] font-black tracking-[-0.035em] text-foreground">Disciplinas do curso</h3>
-                  {currentTerm && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Ofertas do semestre {currentTerm}
-                    </p>
-                  )}
+                  <h3 className="text-2xl font-black tracking-[-0.035em] text-foreground">Disciplinas do curso</h3>
+                  <p className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-foreground-2">
+                    {currentTerm && <span>Ofertas do semestre {currentTerm}</span>}
+                    <span className="rounded-full bg-nevoa px-2.5 py-0.5 text-[11px] font-extrabold text-foreground">
+                      {disciplinasAgrupadas.length} disciplinas · {totalTurmasSemestre} turmas
+                    </span>
+                  </p>
                   {selectedViewProgramId && (
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Visualizando: {allPrograms.find(p => p.id_ref === selectedViewProgramId)?.title || 'Outro curso'}
                     </p>
                   )}
                 </div>
-                <span className="inline-flex shrink-0 cursor-default items-center gap-1 rounded-full bg-nevoa px-2.5 py-1 text-[11px] font-extrabold text-foreground">
-                  {disciplinasAgrupadas.length} disciplinas • {totalTurmasSemestre} turmas
-                </span>
               </div>
 
               {/* Barra de busca e filtros otimizada */}
@@ -1021,7 +1077,7 @@ const Planejador = () => {
                     className="relative inline-flex h-10 items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-transparent px-3.5 text-[13px] font-bold transition-colors hover:bg-nevoa"
                     onClick={() => setFiltroModalOpen(true)}
                   >
-                    <Filter className="w-4 h-4" />
+                    <Filter className="h-3.5 w-3.5" />
                     Dias / Horários
                     {hasActiveFilters && (
                       <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-dende ring-2 ring-background" aria-label="Filtros ativos"></span>
@@ -1065,8 +1121,7 @@ const Planejador = () => {
                           : "border-foreground/20 bg-transparent text-foreground hover:bg-nevoa"
                       )}
                     >
-                      <Eye className="w-3.5 h-3.5" />
-                      Ocultar Cursadas
+                      Ocultar cursadas
                     </button>
                   )}
 
@@ -1081,8 +1136,7 @@ const Planejador = () => {
                           : "border-foreground/20 bg-transparent text-foreground hover:bg-nevoa"
                       )}
                     >
-                      <Eye className="w-3.5 h-3.5" />
-                      Ocultar Lotadas
+                      Ocultar lotadas
                     </button>
                   )}
                 </div>
@@ -1103,8 +1157,8 @@ const Planejador = () => {
                             className="mb-1 flex h-10 w-full items-center gap-2 border-b-2 border-foreground text-left transition-colors"
                           >
                             <div className="hidden"></div>
-                            <span className="rotulo flex flex-1 items-center justify-between gap-1 text-foreground">
-                              Disciplinas Selecionadas
+                            <span className="rotulo flex flex-1 items-center justify-between gap-1 !text-foreground">
+                              <span>Disciplinas selecionadas · {selectedGroups.length}</span>
                               {selectedDisciplinesExpanded ? (
                                 <ChevronUp className="w-3 h-3" />
                               ) : (
@@ -1118,9 +1172,11 @@ const Planejador = () => {
                             const conflictBaseCodes = conflictsByBaseCode.get(group.key) || new Set<string>();
                             const conflictCodes = Array.from(conflictBaseCodes);
                             
+                            const abertas = turmasAbertasPara(group.courses.map((c) => c.code));
+                            if (abertas && !group.isBlockGroup) return <div key={group.key}>{painelTurmas}</div>;
                             return group.isBlockGroup ? (
+                              <div key={group.key} className="flex flex-col gap-1.5">
                               <BlockDisciplineGroupCard
-                                key={group.key}
                                 group={group}
                                 indexByCode={indexByCode}
                                 onCourseClick={handleShowSections}
@@ -1129,6 +1185,8 @@ const Planejador = () => {
                                 curriculumMandatorySet={curriculumMandatorySet}
                                 curriculumElectiveSet={curriculumElectiveSet}
                               />
+                              {abertas && painelTurmas}
+                              </div>
                             ) : (
                               <DisciplineCard
                                 key={group.courses[0].code}
@@ -1153,8 +1211,8 @@ const Planejador = () => {
                 className="mb-1 mt-5 flex h-10 w-full items-center gap-2 border-b-2 border-foreground text-left transition-colors"
               >
                 <div className="hidden"></div>
-                <span className="rotulo flex flex-1 items-center justify-between gap-1 text-foreground">
-                  Outras Disciplinas
+                <span className="rotulo flex flex-1 items-center justify-between gap-1 !text-foreground">
+                  <span>Outras disciplinas</span>
                   {otherDisciplinesExpanded ? (
                     <ChevronUp className="w-3 h-3" />
                   ) : (
@@ -1164,15 +1222,19 @@ const Planejador = () => {
                 <div className="hidden"></div>
               </button>
               {otherDisciplinesExpanded && nonSelectedGroups.map((group) =>
-                group.isBlockGroup ? (
+                turmasAbertasPara(group.courses.map((c) => c.code)) && !group.isBlockGroup ? (
+                  <div key={group.key}>{painelTurmas}</div>
+                ) : group.isBlockGroup ? (
+                  <div key={group.key} className="flex flex-col gap-1.5">
                   <BlockDisciplineGroupCard
-                    key={group.key}
                     group={group}
                     indexByCode={indexByCode}
                     onCourseClick={handleShowSections}
                     curriculumMandatorySet={curriculumMandatorySet}
                     curriculumElectiveSet={curriculumElectiveSet}
                   />
+                  {turmasAbertasPara(group.courses.map((c) => c.code)) && painelTurmas}
+                  </div>
                 ) : (
                   <DisciplineCard
                     key={group.courses[0].code}
@@ -1213,31 +1275,36 @@ const Planejador = () => {
           <div className="lg:sticky lg:top-24 lg:self-start lg:pl-8">
             <div className="space-y-4 md:space-y-5">
               <SigaaPlannerPanel />
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h2 className="mb-1 text-[22px] font-black tracking-[-0.035em] text-foreground sm:text-[24px]">Grade atual</h2>
-                  <p className="text-[13px] font-semibold text-foreground-2">
-                    Visualize as disciplinas convertidas e organizadas
+                  <h2 className="mb-1 text-2xl font-black tracking-[-0.035em] text-foreground">Grade atual</h2>
+                  <p className="hidden text-[13px] text-foreground-2 sm:block">
+                    Visualize as disciplinas convertidas e organizadas.
+                  </p>
+                  <p className="font-mono text-xs text-foreground-2 sm:hidden">
+                    {resumoQtd} disciplina{resumoQtd !== 1 ? 's' : ''} · {resumoCarga.total}h
                   </p>
                 </div>
                 {mySections.length > 0 && (
-                  <Button variant="outline" size="sm" onClick={clearSections} className="w-full sm:w-auto">
-                    <Trash2 className="h-4 w-4" />
+                  <button
+                    type="button"
+                    onClick={clearSections}
+                    className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border-[1.5px] border-foreground/20 px-4 text-[13px] font-bold text-foreground transition-colors hover:bg-nevoa"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
                     Limpar grade
-                  </Button>
+                  </button>
                 )}
               </div>
 
               {mySections.length === 0 ? (
-                <Card>
-                  <CardContent className="p-8 md:p-12 text-center">
-                    <Calendar className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                    <h3 className="text-base md:text-lg font-semibold mb-2">Grade vazia</h3>
-                    <p className="text-sm md:text-base text-muted-foreground">
-                      Adicione turmas da lista de disciplinas para visualizar a grade horária.
-                    </p>
-                  </CardContent>
-                </Card>
+                <div className="rounded-[20px] border-[1.5px] border-dashed border-tracejado px-6 py-12 text-center">
+                  <Calendar className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+                  <h3 className="mb-1.5 text-lg font-black tracking-[-0.02em] text-foreground">Grade vazia</h3>
+                  <p className="mx-auto max-w-sm text-[13px] text-foreground-2">
+                    Adicione turmas da lista de disciplinas para visualizar a grade horária.
+                  </p>
+                </div>
               ) : (
                 <>
                   <div className="overflow-hidden">
@@ -1471,21 +1538,29 @@ const Planejador = () => {
 
         {/* Modal de Turmas Disponíveis */}
         <AnimatePresence>
-          {showSections && selectedCourse && (
+          {showSections && selectedCourse && !telaLarga && (
             <div className="fixed inset-0 bg-overlay/55 flex items-end sm:items-center justify-center z-50 sm:p-4" onClick={handleCloseSections}>
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
-                className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-background px-6 pb-6 pt-5 shadow-xl sm:rounded-3xl sm:p-7"
+                className="max-h-[calc(100vh-56px)] w-full max-w-2xl overflow-y-auto rounded-t-[28px] bg-background px-6 pb-8 pt-2.5 shadow-xl sm:rounded-[28px] sm:p-7"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="font-mono text-[13px] font-semibold text-mar-ink">{selectedCourse.code}</h3>
-                    <p className="mt-1 text-[23px] font-black uppercase leading-[1.12] tracking-[-0.025em] text-foreground">{selectedCourse.name}</p>
+                <span aria-hidden className="mx-auto mb-4 block h-1 w-10 rounded-full bg-trilho sm:hidden" />
+                <div className="mb-5 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="font-mono text-[13px] font-semibold text-foreground-2">{selectedCourse.code}</span>
+                    <p className="mt-1.5 text-2xl font-black uppercase leading-[1.08] tracking-[-0.03em] text-foreground">{selectedCourse.name}</p>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={handleCloseSections}>✕</Button>
+                  <button
+                    type="button"
+                    onClick={handleCloseSections}
+                    aria-label="Fechar"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-nevoa text-foreground hover:bg-trilho"
+                  >
+                    <X className="h-[18px] w-[18px]" strokeWidth={2.4} />
+                  </button>
                 </div>
                 
                 <div className="space-y-6">
@@ -2089,8 +2164,10 @@ function SectionsList({
   horariosRestritos,
   hasAnyVacancyData,
   hideFull,
-  vacancyFilter
+  vacancyFilter,
+  compacto = false
 }: { 
+  compacto?: boolean;
   courseCode: string;
   currentTerm: string | null;
   onCourseClick: (course: Course) => void;
@@ -2240,9 +2317,7 @@ function SectionsList({
       <div className="flex items-center gap-2">
         <h4 className="text-base font-black text-foreground">{title}</h4>
         {typeof count === 'number' && count > 0 && (
-          <Badge variant="secondary" className="px-2 py-0.5 text-xs">
-            {count}
-          </Badge>
+          <span className="rounded-full bg-nevoa px-[9px] py-0.5 font-mono text-xs font-semibold">{count}</span>
         )}
       </div>
       <button
@@ -2278,9 +2353,9 @@ function SectionsList({
   }
 
   return (
-    <div className="space-y-6">
+    <div className={compacto ? 'flex flex-col' : 'space-y-6'}>
       {/* Pré-requisitos */}
-      {courseDetail?.prerequisites && courseDetail.prerequisites.length > 0 && (
+      {!compacto && courseDetail?.prerequisites && courseDetail.prerequisites.length > 0 && (
         <div className="border-t-2 border-foreground pt-3">
           <SectionHeader
             title="Pré-requisitos"
@@ -2306,8 +2381,8 @@ function SectionsList({
                           <Badge 
                             variant="outline" 
                             className={cn(
-                              "text-xs cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors",
-                              !isAvailable && "opacity-60 cursor-not-allowed hover:bg-muted"
+                              "cursor-pointer rounded-full border-0 bg-nevoa px-3 py-1 text-xs font-bold text-foreground transition-colors hover:bg-primary hover:text-primary-foreground",
+                              !isAvailable && "cursor-not-allowed opacity-60 hover:bg-nevoa hover:text-foreground"
                             )}
                             onClick={() => course && isAvailable && onCourseClick(course)}
                             title={course ? (isAvailable ? `Ver detalhes de ${course.name}` : `${course.name} - Não disponível neste período`) : `Disciplina: ${normalized.code}`}
@@ -2331,7 +2406,7 @@ function SectionsList({
       )}
       
       {/* Disciplinas liberadas por esta disciplina */}
-      {unlockedCourses.length > 0 && (
+      {!compacto && unlockedCourses.length > 0 && (
         <div className="border-t-2 border-foreground pt-3">
           <SectionHeader
             title="Disciplinas liberadas por esta"
@@ -2346,7 +2421,7 @@ function SectionsList({
                   <div className="flex flex-wrap gap-2">
                     <Badge 
                       variant="outline" 
-                      className="text-xs cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                      className="cursor-pointer rounded-full border-0 bg-nevoa px-3 py-1 text-xs font-bold text-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
                       onClick={() => onCourseClick(course)}
                       title={`Ver detalhes de ${course.name}`}
                     >
@@ -2361,7 +2436,7 @@ function SectionsList({
       )}
       
       {/* Lista de turmas disponíveis */}
-      <div className="space-y-4">
+      <div className={compacto ? 'flex flex-col' : 'flex flex-col border-t-2 border-foreground'}>
         {(() => {
           // Detectar se o sistema de vagas está ativo: alguma turma tem seats_accepted > 0
           const vacancySystemActive = filteredSections.some(
@@ -2399,138 +2474,155 @@ function SectionsList({
               ? 'bg-amber-500'
               : 'bg-green-500';
             
+            const turmaNome = (section as any)?.section_code || section.id_ref;
+            const DIA_CURTO: Record<string, string> = { Segunda: 'SEG', 'Terça': 'TER', Quarta: 'QUA', Quinta: 'QUI', Sexta: 'SEX', 'Sábado': 'SÁB' };
+            const resumoHorario = (() => {
+              const porDia = new Map<string, string[]>();
+              horariosParsed.forEach((h) => {
+                const l = porDia.get(h.dia) ?? [];
+                l.push(h.horarioInicio);
+                porDia.set(h.dia, l);
+              });
+              return Array.from(porDia.entries()).map(([d, hs]) => `${DIA_CURTO[d] ?? d} ${hs.join(' · ')}`).join(' / ');
+            })();
+            const porDiaCompleto = (() => {
+              const porDia = new Map<string, { inicio: string; fim: string }[]>();
+              horariosParsed.forEach((h) => {
+                const l = porDia.get(h.dia) ?? [];
+                l.push({ inicio: h.horarioInicio, fim: h.horarioFim });
+                porDia.set(h.dia, l);
+              });
+              return Array.from(porDia.entries());
+            })();
+            const rotuloAcao = isSelected ? 'Remover' : isOtherSectionOfSameCourse ? 'Substituir' : 'Adicionar';
+            const pilulaVagas = seatsCount === 0
+              ? null
+              : vacancySystemActive
+                ? freeSeats === 0
+                  ? { texto: 'Lotado', cls: 'bg-pitanga-tint text-pitanga-ink', ponto: 'bg-pitanga' }
+                  : freeSeats <= 10
+                    ? { texto: `${freeSeats} vaga${freeSeats !== 1 ? 's' : ''}`, cls: 'bg-dende-tint text-dende-ink', ponto: 'bg-dende' }
+                    : { texto: `${freeSeats} vagas`, cls: 'bg-mar-tint text-mar-ink', ponto: 'bg-mar' }
+                : { texto: `${seatsCount} vagas`, cls: 'bg-nevoa text-foreground-2', ponto: 'bg-tracejado' };
+
+            const botao = (
+              <button
+                type="button"
+                onClick={() => toggleSection(section, allSections)}
+                disabled={isSelected && hasConflict}
+                className={cn(
+                  'inline-flex items-center justify-center gap-1.5 rounded-full font-extrabold transition-colors disabled:opacity-50',
+                  compacto ? 'mt-1 min-h-10 self-start px-4 text-[12.5px]' : 'min-h-12 w-full text-[15px]',
+                  isSelected ? 'bg-pitanga text-white hover:bg-pitanga/90' : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                )}
+              >
+                {isSelected ? <Trash2 className="h-4 w-4" /> : <Plus className="h-4 w-4" strokeWidth={2.6} />}
+                {rotuloAcao}
+              </button>
+            );
+
+            const selos = (
+              <span className="flex flex-wrap items-center justify-end gap-1.5">
+                {isActuallyCurrentSection && <span className="rounded-full bg-mar px-2 py-[3px] text-[10.5px] font-extrabold text-white">Na grade</span>}
+                {hasConflict && !isActuallyCurrentSection && <span className="rounded-full bg-pitanga-tint px-2 py-[3px] text-[10.5px] font-extrabold text-pitanga-ink">Conflito</span>}
+                {hasExclusive && reservedRemaining > 0 && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-mar-tint px-2 py-[3px] text-[10.5px] font-extrabold text-mar-ink">
+                    <Star className="h-2.5 w-2.5 fill-current" /> Reservado · {reservedRemaining} vagas
+                  </span>
+                )}
+                {pilulaVagas && (
+                  <span className={cn('inline-flex items-center gap-[5px] rounded-full px-[9px] py-[3px] text-[10.5px] font-extrabold', pilulaVagas.cls)}>
+                    <span className={cn('h-1.5 w-1.5 rounded-full', pilulaVagas.ponto)} />
+                    {pilulaVagas.texto}
+                  </span>
+                )}
+              </span>
+            );
+
+            if (compacto) {
+              return (
+                <div key={section.id_ref} className="flex flex-col gap-1.5 border-t border-foreground/10 py-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={cn('text-[13px] font-black', freeSeats === 0 && vacancySystemActive ? 'text-foreground-2' : 'text-foreground')}>
+                      Turma <span className="font-mono font-semibold">{turmaNome}</span>
+                    </span>
+                    {selos}
+                  </div>
+                  <span className={cn('text-[12.5px]', teachers.length > 0 ? 'uppercase text-foreground-2' : 'text-foreground')}>
+                    {teachers.length > 0 ? teachers.join(', ') : 'Nenhum professor informado'}
+                  </span>
+                  <span className="font-mono text-[11.5px] text-foreground-2">
+                    {resumoHorario || 'Horário a definir'}
+                    {seatsCount > 0 && ` · ${seatsAccepted}/${seatsCount}`}
+                  </span>
+                  {botao}
+                </div>
+              );
+            }
+
             return (
-              <div key={section.id_ref} className="border rounded-lg p-4 md:p-6 bg-muted/30">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-                  <div className="flex gap-2 flex-wrap">
-                    <Badge variant="secondary" className="text-xs md:text-sm px-3 py-1">
-                      {(section as any)?.section_code || `Turma ${section.id_ref}`}
-                    </Badge>
-                    {isActuallyCurrentSection && (
-                      <Badge variant="default" className="text-xs md:text-sm px-3 py-1">
-                        Turma Atual
-                      </Badge>
-                    )}
-                    {/* Selo de vagas: quando sistema inativo mostra contagem, quando ativo mostra status */}
-                    {!vacancySystemActive && (
-                      <Badge variant="outline" className="text-xs md:text-sm px-3 py-1">
-                        {seatsCount === 0 ? 'Sem informação' : `${seatsCount} vagas`}
-                      </Badge>
-                    )}
-                    {vacancySystemActive && (
-                      <VacancyStatusBadge seatsAccepted={seatsAccepted} seatsCount={seatsCount} />
-                    )}
-                    {isSelected && (
-                      <Badge variant="default" className="text-xs md:text-sm px-3 py-1">
-                        Selecionada
-                      </Badge>
-                    )}
-                    {hasConflict && (
-                      <Badge variant="destructive" className="text-xs md:text-sm px-3 py-1">
-                        Conflito
-                      </Badge>
-                    )}
-                  </div>
-                  <Button
-                    size="sm"
-                    className="mt-2 md:mt-0 px-4 py-2 text-xs md:text-sm flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded shadow"
-                    onClick={() => toggleSection(section, allSections)}
-                    disabled={isSelected && hasConflict}
-                    variant={isSelected ? "destructive" : "default"}
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    {isSelected ? 'Remover' : isOtherSectionOfSameCourse ? 'Substituir' : 'Adicionar'}
-                  </Button>
+              <div key={section.id_ref} className="flex flex-col gap-4 border-b border-foreground/10 py-5">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xl font-black tracking-[-0.02em] text-foreground">
+                    Turma <span className="font-mono font-medium">{turmaNome}</span>
+                  </span>
+                  {selos}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div className="space-y-2">
-                    <div>
-                      <span className="font-semibold text-muted-foreground">Docente:</span>
-                      <p className="mt-1">{teachers.length > 0 ? teachers.join(', ') : 'Professor(a) não definido'}</p>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-muted-foreground">Período:</span>
-                      <p className="mt-1">{(section as any)?.period || (section as any)?.term || currentTerm || 'Não informado'}</p>
-                    </div>
+                {botao}
+
+                <div className="flex flex-col gap-1">
+                  <span className="rotulo">Docente</span>
+                  <span className={cn('text-sm', teachers.length > 0 ? 'font-bold uppercase text-foreground' : 'font-medium text-foreground-2')}>
+                    {teachers.length > 0 ? teachers.join(', ') : 'Nenhum professor informado para a turma'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <span className="rotulo">Período</span>
+                    <span className="font-mono text-sm text-foreground">{(section as any)?.period || (section as any)?.term || currentTerm || 'Não informado'}</span>
                   </div>
-                  <div className="space-y-2">
-                    <div>
-                      <span className="font-semibold text-muted-foreground">Horários:</span>
-                      <p className="mt-1">{timeCodes.length > 0 ? timeCodes.join(', ') : 'Horário não definido'}</p>
-                      <div className="mt-1 grid gap-1" style={{ gridTemplateColumns: horariosParsed.length <= 4 ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)' }}>
-                        {horariosParsed.length > 0 ? (
-                          horariosParsed.map((h, idx) => (
-                            <span key={idx} className="inline-block bg-muted px-2 py-1 rounded text-xs font-mono min-h-[40px] flex flex-col items-start justify-center">
-                              <span className="font-semibold">{h.dia}</span>
-                              <span className="text-[10px]">{h.horarioInicio} - {h.horarioFim}</span>
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-xs text-red-500 bg-red-50 px-2 py-0.5 rounded">Horário não informado</span>
-                        )}
+                  <div className="flex flex-col gap-1">
+                    <span className="rotulo">Horários</span>
+                    <span className="font-mono text-sm text-foreground">{timeCodes.length > 0 ? timeCodes.join(', ') : 'Não definido'}</span>
+                  </div>
+                </div>
+
+                {porDiaCompleto.length > 0 ? (
+                  porDiaCompleto.map(([dia, faixas]) => (
+                    <div key={dia} className="flex flex-col gap-2">
+                      <span className="text-[13px] font-extrabold text-foreground">{dia}</span>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {faixas.map((f, i) => (
+                          <span key={i} className="rounded-xl bg-nevoa px-3 py-2.5 font-mono text-[13px] text-foreground">
+                            {f.inicio} – {f.fim}
+                          </span>
+                        ))}
                       </div>
                     </div>
-                  </div>
-                </div>
+                  ))
+                ) : (
+                  <span className="rounded-xl bg-pitanga-tint px-3 py-2 text-xs font-semibold text-pitanga-ink">Horário não informado</span>
+                )}
 
-                {/* Contador de vagas — aparece para TODAS as turmas quando sistema ativo */}
-                {vacancySystemActive && (
-                  <div className="mt-4 pt-3 border-t border-border/50">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-                      <span className="flex items-center gap-1">
-                        <Users className="w-3 h-3" />
-                        {seatsCount === 0
-                          ? 'Vagas não informadas'
-                          : `${seatsAccepted} preenchida${seatsAccepted !== 1 ? 's' : ''} · ${freeSeats} livre${freeSeats !== 1 ? 's' : ''} de ${seatsCount}`}
+                {vacancySystemActive && seatsCount > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between text-[13px] font-semibold text-foreground-2">
+                      <span className="inline-flex items-center gap-1.5">
+                        <Users className="h-3.5 w-3.5" />
+                        {seatsAccepted} preenchido{seatsAccepted !== 1 ? 's' : ''} · {freeSeats} livre{freeSeats !== 1 ? 's' : ''} de {seatsCount}
                       </span>
-                      {seatsCount > 0 && (
-                        <span className="font-medium">{progress}%</span>
-                      )}
+                      <span className={cn('font-mono font-semibold', freeSeats === 0 ? 'text-pitanga' : freeSeats <= 10 ? 'text-dende-ink' : 'text-mar')}>{progress}%</span>
                     </div>
-                    {seatsCount > 0 && (
-                      <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 ${progressBarColor}`}
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-                    )}
+                    <div className="h-2 overflow-hidden rounded-full bg-trilho">
+                      <div className={cn('h-full rounded-full', freeSeats === 0 ? 'bg-pitanga' : freeSeats <= 10 ? 'bg-dende' : 'bg-mar')} style={{ width: `${progress}%` }} />
+                    </div>
                   </div>
                 )}
 
-                {/* Selos de reserva — só mostrar quando sistema de vagas NÃO estiver ativo */}
-                {!vacancySystemActive && (
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    {hasExclusive && reservedRemaining > 0 && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-primary text-primary-foreground inline-flex items-center gap-1 cursor-default">
-                              <Star className="w-3 h-3" /> Reservado para o curso {reservedRemaining} vagas
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <div>Vagas reservadas ao(s) seu(s) programa(s) selecionado(s).</div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                    {!hasExclusive && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground inline-flex items-center gap-1 cursor-default">
-                              Sem reservas para o curso
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <div>Esta turma não possui vagas reservadas para o seu curso.</div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                  </div>
+                {!vacancySystemActive && !hasExclusive && (
+                  <span className="self-start rounded-full bg-nevoa px-2.5 py-[3px] text-[11px] font-extrabold text-foreground-2">Sem reservas para o curso</span>
                 )}
               </div>
             );
