@@ -438,3 +438,144 @@ export async function fetchProgramaComponente(codigo: string): Promise<ProgramaC
     throw e;
   }
 }
+
+// ---------------------------------------------------------------- meu semestre (logado)
+// Rotas do "portal do aluno". No servidor da Rede IC elas precisam estar em SIGAA_API_ROTAS_PERMITIDAS.
+
+export interface AulaGrade {
+  dia: number; // 1 = domingo … 7 = sábado
+  dia_nome: string;
+  inicio: string | null;
+  fim: string | null;
+  turno: string;
+  codigos: string[];
+  turma_id: number | null;
+  codigo: string | null;
+  nome: string;
+  turma: string | null;
+  local: string | null;
+}
+
+export interface GradeHoraria {
+  periodo: string | null;
+  data_inicio: string | null;
+  data_fim: string | null;
+  aulas: AulaGrade[];
+  conflitos: string[];
+  sem_horario: string[];
+}
+
+export interface AvaliacaoAgendada {
+  id: number | null;
+  data: string | null;
+  hora: string | null;
+  descricao: string;
+  turma_id: number | null;
+  turma_codigo: string | null;
+  turma_nome: string | null;
+}
+
+export interface TarefaPendente {
+  id: number | null;
+  titulo: string;
+  inicio: string | null;
+  fim: string | null;
+  enviada: boolean | null;
+  nota: number | null;
+  em_grupo: boolean | null;
+  aberta: boolean | null;
+  turma_id: number | null;
+  turma_codigo: string | null;
+  turma_nome: string | null;
+}
+
+export interface Atualizacao {
+  data: string | null;
+  turma_id: number | null;
+  turma: string;
+  periodo: string | null;
+  tipo: string | null;
+  titulo: string | null;
+}
+
+export interface AvaliacaoNota {
+  abreviacao: string;
+  denominacao: string | null;
+  peso: number | null;
+  nota: number | null;
+}
+
+export interface NotasTurma {
+  turma_id: number | null;
+  codigo: string | null;
+  nome: string | null;
+  periodo: string | null;
+  lancadas: boolean;
+  mensagem: string | null;
+  unidades: Array<{ rotulo: string; nota: number | null; avaliacoes: AvaliacaoNota[] }>;
+  reposicao: number | null;
+  resultado: number | null;
+  faltas: number | null;
+  situacao: string | null;
+}
+
+export interface FrequenciaResumo {
+  turma_id: number | null;
+  codigo: string | null;
+  nome: string | null;
+  frequencia: {
+    lancada: boolean;
+    total_faltas: number;
+    max_faltas: number | null;
+    faltas_restantes: number | null;
+    percentual_ch: number | null;
+    minimo_percentual: number | null;
+  };
+}
+
+export interface EventoCalendario {
+  rotulo: string;
+  grupo: string | null;
+  inicio: string | null;
+  fim: string | null;
+  definido: boolean;
+}
+
+export interface Calendario {
+  ano: number | null;
+  periodo: number | null;
+  periodo_letivo: { inicio: string | null; fim: string | null; definido: boolean } | null;
+  eventos: EventoCalendario[];
+}
+
+export interface MensagemResumo {
+  id: string | null;
+  remetente: string | null;
+  assunto: string;
+  data: string | null;
+  lida: boolean | null;
+}
+
+export const fetchGradeHoraria = () => get<GradeHoraria>('/v1/grade-horaria');
+export const fetchAvaliacoes = () => get<AvaliacaoAgendada[]>('/v1/avaliacoes');
+export const fetchTarefas = () => get<TarefaPendente[]>('/v1/tarefas');
+export const fetchAtualizacoes = () => get<Atualizacao[]>('/v1/atualizacoes');
+export const fetchNotas = () => get<NotasTurma[]>('/v1/notas');
+export const fetchFrequencia = () => get<FrequenciaResumo[]>('/v1/frequencia');
+export const fetchCalendario = () => get<Calendario>('/v1/calendario');
+export const fetchMensagens = () => get<{ mensagens: MensagemResumo[] }>('/v1/mensagens');
+
+export type DocumentoSigaa = 'comprovante' | 'declaracao' | 'historico';
+
+const DOCUMENTOS: Record<DocumentoSigaa, string> = {
+  comprovante: '/v1/documentos/comprovante-inscricao/html',
+  declaracao: '/v1/documentos/declaracao-vinculo/pdf',
+  historico: '/v1/historico/pdf',
+};
+
+/** Baixa o documento oficial (PDF ou HTML do SIGAA) já com o token e devolve o arquivo. */
+export async function fetchDocumento(tipo: DocumentoSigaa): Promise<Blob> {
+  ensureConfigured();
+  const { data } = await client.get<Blob>(DOCUMENTOS[tipo], { responseType: 'blob', timeout: 90_000 });
+  return data;
+}

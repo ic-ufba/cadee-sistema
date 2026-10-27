@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { BookOpenText, ChevronDown, ChevronUp, Loader2, Radio } from 'lucide-react';
+import { ChevronDown, ChevronUp, Loader2, Radio } from 'lucide-react';
+import { SeloSigaa } from '@/components/sigaa/IndicesSigaa';
 import { useComponentProgram } from '@/hooks/useApi';
 import { isSigaaApiConfigured } from '@/services/sigaaApi';
 import { cn } from '@/lib/utils';
@@ -42,46 +43,41 @@ export function ComponentProgram({ code }: { code: string }) {
   const secoes = programa ? SECOES.filter((s) => programa[s.key]?.trim()) : [];
 
   return (
-    <div className="space-y-3">
+    <div>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex h-[52px] w-full items-center justify-between rounded-[18px] bg-nevoa px-4 text-left transition-colors hover:bg-trilho"
+        className="flex min-h-[58px] w-full items-center gap-2.5 text-left text-foreground"
         aria-expanded={open}
       >
-        <span className="flex items-center gap-2 text-sm font-extrabold text-foreground">
-          <BookOpenText className="h-4 w-4 text-mar" />
-          Programa da disciplina
-        </span>
-        {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        <h3 className="text-base font-black tracking-[-0.01em]">Programa da disciplina</h3>
+        <SeloSigaa />
+        <span className="flex-1" />
+        {open ? <ChevronUp className="h-[18px] w-[18px]" strokeWidth={2.2} /> : <ChevronDown className="h-[18px] w-[18px]" strokeWidth={2.2} />}
       </button>
 
       {open && (
-        <div className="space-y-4 rounded-[18px] border-[1.5px] border-foreground/10 p-4 text-sm">
+        <div className="flex flex-col gap-3.5 pb-5 pt-1 text-[13px]">
           {isLoading && (
-            <p className="flex items-center gap-2 text-muted-foreground">
+            <p className="flex items-center gap-2 text-foreground-2">
               <Loader2 className="h-4 w-4 animate-spin" /> Consultando o SIGAA…
             </p>
           )}
-          {isError && <p className="text-muted-foreground">Não foi possível consultar o programa agora.</p>}
+          {isError && <p className="text-foreground-2">Não foi possível consultar o programa agora.</p>}
           {!isLoading && !isError && (!programa || secoes.length === 0) && (
-            <p className="text-muted-foreground">O departamento ainda não cadastrou o programa desta disciplina no SIGAA.</p>
+            <p className="text-foreground-2">O departamento ainda não cadastrou o programa desta disciplina no SIGAA.</p>
           )}
-          {programa && secoes.length > 0 && (
-            <>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs text-muted-foreground">
-                  {programa.periodo ? `Vigente desde ${programa.periodo}` : 'Programa atual'}
-                </span>
-                <LiveDataBadge />
+          {programa &&
+            secoes.map((s) => (
+              <div key={s.key} className="flex flex-col gap-1">
+                <h4 className="text-[13px] font-extrabold text-foreground">{s.titulo}</h4>
+                <p className="whitespace-pre-line leading-[1.55] text-foreground-2">{programa[s.key]}</p>
               </div>
-              {secoes.map((s) => (
-                <div key={s.key}>
-                  <h4 className="rotulo mb-1">{s.titulo}</h4>
-                  <p className="whitespace-pre-line leading-relaxed text-muted-foreground">{programa[s.key]}</p>
-                </div>
-              ))}
-            </>
+            ))}
+          {programa && secoes.length > 0 && (
+            <span className="font-mono text-[11px] text-muted-foreground">
+              {programa.periodo ? `vigente desde ${programa.periodo}` : 'programa atual'}
+            </span>
           )}
         </div>
       )}

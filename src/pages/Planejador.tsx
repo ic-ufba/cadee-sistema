@@ -2,7 +2,8 @@ import { useState, useMemo, useRef, memo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ScheduleGrid } from '@/components/planner/ScheduleGrid';
-import { SigaaPlannerPanel } from '@/components/sigaa/SigaaPlannerPanel';
+import { SigaaAcoesPlanejador, SigaaResultadoPlanejador, type PainelSigaa } from '@/components/sigaa/SigaaPlanejador';
+import { mapaDeCores } from '@/lib/grade-cores';
 import { SkeletonCard } from '@/components/ui/skeleton-card';
 import { useApp } from '@/contexts/AppContext';
 import { Course, Section } from '@/services/api';
@@ -179,9 +180,11 @@ const DisciplineCard = memo(({
   conflictCodes = [],
   curriculumMandatorySet,
   curriculumElectiveSet,
+  cor,
 }: { 
   course: Course; 
   onClick: (course: Course) => void;
+  cor?: string;
   isSelected?: boolean;
   conflictCodes?: string[];
   curriculumMandatorySet?: Set<string>;
@@ -203,9 +206,10 @@ const DisciplineCard = memo(({
       key={course.code}
       data-discipline-code={course.code}
       onClick={() => onClick(course)}
-      className={`flex cursor-pointer items-center gap-3 rounded-[14px] border-[1.5px] px-3.5 py-3 transition-colors ${
-        isSelected ? 'border-transparent bg-nevoa hover:bg-trilho' : 'border-foreground/10 bg-background hover:border-foreground/30'
+      className={`flex cursor-pointer items-center gap-3 rounded-[14px] border-[1.5px] py-3 pr-3.5 transition-colors ${
+        isSelected ? 'border-foreground/15 bg-background pl-[18px] hover:border-foreground/30' : 'border-foreground/10 bg-background pl-3.5 hover:border-foreground/30'
       }`}
+      style={isSelected && cor ? { boxShadow: `inset 5px 0 0 ${cor}` } : undefined}
     >
       <div className="min-w-0 flex-1">
         <div className="mb-1 flex flex-wrap items-center gap-2">
@@ -256,7 +260,9 @@ const BlockDisciplineGroupCard = memo(({
   conflictCodes = [],
   curriculumMandatorySet,
   curriculumElectiveSet,
+  cor,
 }: {
+  cor?: string;
   group: ReturnType<typeof groupDisciplinesByBlock>[number];
   indexByCode: Map<string, { name?: string }>;
   onCourseClick: (course: Course) => void;
@@ -281,8 +287,9 @@ const BlockDisciplineGroupCard = memo(({
     <div
       data-discipline-code={group.baseCode}
       className={`overflow-hidden rounded-[14px] border-[1.5px] ${
-        isSelected ? 'border-transparent bg-nevoa' : 'border-foreground/10 bg-background'
+        isSelected ? 'border-foreground/15 bg-background pl-1' : 'border-foreground/10 bg-background'
       }`}
+      style={isSelected && cor ? { boxShadow: `inset 5px 0 0 ${cor}` } : undefined}
     >
       <div className="border-b border-foreground/10 px-3.5 py-3">
         <div className="flex items-start justify-between gap-2">
@@ -433,6 +440,7 @@ const Planejador = () => {
     return () => mq.removeEventListener('change', onChange);
   }, []);
   const { scheduledCount: resumoQtd, workloadBreakdown: resumoCarga } = usePlannedDisciplineCategories();
+  const [painelSigaa, setPainelSigaa] = useState<PainelSigaa>(null);
   
   // Buscar todos os programas disponíveis
   const { data: allPrograms = [] } = usePrograms();
@@ -500,6 +508,11 @@ const Planejador = () => {
   const [logicaRestricoesHorario, setLogicaRestricoesHorario] = useState<'OU' | 'E'>('OU');
   
   const { hasSectionOnCourse, toggleSection, getConflictsForSection, mySections, clearSections } = useMySections();
+  // Mesma cor que cada disciplina tem na grade (faixa à esquerda nas selecionadas)
+  const coresGrade = useMemo(
+    () => mapaDeCores(mySections.map((s) => getBlockCourseBaseCode(s.course?.code || (s as { course_code?: string }).course_code || ''))),
+    [mySections],
+  );
   const { completedDisciplines } = useApp();
   const { data: allSections = [] } = useSections();
   const { currentTerm } = useCurrentTerm();
@@ -1015,24 +1028,8 @@ const Planejador = () => {
                 </button>
               )}
             </div>
-            {mySections.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-nevoa px-2.5 py-1 font-mono text-xs text-foreground">
-                  {resumoQtd} disciplina{resumoQtd !== 1 ? 's' : ''} · {resumoCarga.total}h
-                </span>
-                {conflictsByBaseCode.size > 0 ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-pitanga-tint px-2.5 py-1 font-mono text-xs text-pitanga-ink">
-                    <AlertTriangle className="h-3 w-3" />
-                    {conflictsByBaseCode.size} com conflito
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-mar-tint px-2.5 py-1 font-mono text-xs text-mar-ink">
-                    <Check className="h-3 w-3" strokeWidth={2.6} />
-                    sem conflitos
-                  </span>
-                )}
-              </div>
-            )}
+            <SigaaAcoesPlanejador painel={painelSigaa} onPainel={setPainelSigaa} />
+            {!telaLarga && <SigaaResultadoPlanejador painel={painelSigaa} onFechar={() => setPainelSigaa(null)} />}
           </div>
         </section>
 
@@ -1181,6 +1178,7 @@ const Planejador = () => {
                                 indexByCode={indexByCode}
                                 onCourseClick={handleShowSections}
                                 isSelected={true}
+                                cor={coresGrade.get(group.key)?.bg}
                                 conflictCodes={conflictCodes}
                                 curriculumMandatorySet={curriculumMandatorySet}
                                 curriculumElectiveSet={curriculumElectiveSet}
@@ -1193,6 +1191,7 @@ const Planejador = () => {
                                 course={group.courses[0] as Course}
                                 onClick={handleShowSections}
                                 isSelected={true}
+                                cor={coresGrade.get(getBlockCourseBaseCode(group.courses[0].code))?.bg}
                                 conflictCodes={conflictCodes}
                                 curriculumMandatorySet={curriculumMandatorySet}
                                 curriculumElectiveSet={curriculumElectiveSet}
@@ -1274,7 +1273,7 @@ const Planejador = () => {
           {/* Coluna da direita - Grade Horária */}
           <div className="lg:sticky lg:top-24 lg:self-start lg:pl-8">
             <div className="space-y-4 md:space-y-5">
-              <SigaaPlannerPanel />
+              {telaLarga && <SigaaResultadoPlanejador painel={painelSigaa} onFechar={() => setPainelSigaa(null)} />}
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="mb-1 text-2xl font-black tracking-[-0.035em] text-foreground">Grade atual</h2>

@@ -30,6 +30,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { parseCompleteHistory, type WorkloadData, codeRegex } from '@/utils/historyParser';
+import { useSigaaAuth, useSigaaPlanejamento } from '@/hooks/useSigaa';
+import { SeloSigaa } from '@/components/sigaa/IndicesSigaa';
 
 const Disciplinas = () => {
   const { completedDisciplines, toggleCompletedDiscipline, getDisciplineStatus, setDisciplineStatus, clearDisciplineStatus } = useApp();
@@ -41,6 +43,23 @@ const Disciplinas = () => {
   const { isFavorite, favoriteCodes, toggleFavorite } = useFavoriteCourses();
   const { data: allCourses = [] } = useAllCourses();
   const { mySections } = useMySections();
+  // Complementos do SIGAA (só com login): filtros "Posso pegar" e "Atrasadas"
+  const { isLoggedIn: sigaaLogado } = useSigaaAuth();
+  const planejamentoSigaa = useSigaaPlanejamento(sigaaLogado);
+  const [sigaaFiltro, setSigaaFiltro] = useState<null | 'posso' | 'atrasadas'>(null);
+  const codigosSigaa = useMemo(() => {
+    const posso = new Set<string>();
+    const atrasadas = new Set<string>();
+    for (const c of planejamentoSigaa.data?.candidatos ?? []) {
+      const cod = c.codigo.toUpperCase();
+      if (c.apto === true) posso.add(cod);
+      if (c.atrasado) atrasadas.add(cod);
+    }
+    return { posso, atrasadas };
+  }, [planejamentoSigaa.data]);
+  useEffect(() => {
+    if (!sigaaLogado) setSigaaFiltro(null);
+  }, [sigaaLogado]);
   const queryClient = useQueryClient();
 
   const selectedBaseCodes = useMemo(() => {
@@ -338,6 +357,30 @@ const Disciplinas = () => {
     
     return false;
   }, [completedDisciplines, equivalentCodesToCompleted, hasAnyFailedOrDropped, getDisciplineStatus]);
+
+  const aplicarFiltroSigaa = useCallback(
+    <T extends { code: string }>(lista: T[]): T[] => {
+      if (!sigaaLogado || !sigaaFiltro) return lista;
+      const alvo = sigaaFiltro === 'posso' ? codigosSigaa.posso : codigosSigaa.atrasadas;
+      return lista.filter(
+        (c) =>
+          (alvo.has(c.code.toUpperCase()) || alvo.has(getBlockCourseBaseCode(c.code).toUpperCase())) &&
+          !(sigaaFiltro === 'posso' && isCourseCompleted(c.code)),
+      );
+    },
+    [sigaaLogado, sigaaFiltro, codigosSigaa, isCourseCompleted],
+  );
+  // Contagens só do que existe no currículo exibido, para bater com a lista filtrada
+  const contagemSigaa = useMemo(() => {
+    const noCurso = (alvo: Set<string>, semCursadas: boolean) =>
+      new Set(
+        (courses ?? [])
+          .filter((c) => alvo.has(c.code.toUpperCase()) || alvo.has(getBlockCourseBaseCode(c.code).toUpperCase()))
+          .filter((c) => !semCursadas || !isCourseCompleted(c.code))
+          .map((c) => getBlockCourseBaseCode(c.code)),
+      ).size;
+    return { posso: noCurso(codigosSigaa.posso, true), atrasadas: noCurso(codigosSigaa.atrasadas, false) };
+  }, [courses, codigosSigaa, isCourseCompleted]);
 
   // Toggle completed for a course and all its equivalents (async, usa lazy fetch)
   const handleToggleCompletedForAllEquivalents = useCallback(async (code: string) => {
@@ -904,7 +947,7 @@ const Disciplinas = () => {
           <div className="flex flex-wrap items-center gap-5">
             {myPrograms.length > 0 && (
               <div className="hidden items-center gap-3.5 sm:flex">
-                <Mare percent={Math.min(100, overall.overallProgress)} size={52} ondaAnimada={false} />
+                <Mare percent={Math.min(100, overall.overallProgress)} size={52} />
                 <div className="flex flex-col gap-1">
                   <span className="rotulo !text-foreground">Progresso geral</span>
                   <span className="numero text-[30px] leading-[0.95] text-foreground">{porcento(overall.overallProgress)}</span>
@@ -912,6 +955,7 @@ const Disciplinas = () => {
                 </div>
               </div>
             )}
+            {!sigaaLogado && (
             <button
               onClick={() => setShowImportModal(true)}
               className="hidden min-h-12 items-center gap-2 rounded-full bg-primary px-5 text-[13px] font-bold text-primary-foreground hover:bg-primary/90 sm:inline-flex"
@@ -919,6 +963,7 @@ const Disciplinas = () => {
               <Upload className="h-4 w-4" />
               Importar histórico
             </button>
+            )}
           </div>
         </section>
 
@@ -1000,6 +1045,37 @@ const Disciplinas = () => {
               </button>
             ))}
           </div>
+          {sigaaLogado && (
+            <div role="group" aria-label="Filtros do SIGAA" className="inline-flex flex-wrap items-center gap-1.5">
+              <SeloSigaa className="mr-0.5" />
+              {([['posso', 'Posso pegar', contagemSigaa.posso], ['atrasadas', 'Atrasadas', contagemSigaa.atrasadas]] as const).map(([v, label, n]) => (
+                <button
+                  key={v}
+                  type="button"
+                  aria-pressed={sigaaFiltro === v}
+                  onClick={() => setSigaaFiltro((f) => (f === v ? null : v))}
+                  className={cn(
+                    'inline-flex min-h-10 items-center gap-1.5 rounded-full border-[1.5px] px-3.5 text-xs font-bold transition-colors',
+                    sigaaFiltro === v
+                      ? v === 'atrasadas'
+                        ? 'border-pitanga bg-pitanga text-white'
+                        : 'border-mar bg-mar text-white'
+                      : 'border-foreground/15 text-foreground-2 hover:bg-nevoa hover:text-foreground',
+                  )}
+                >
+                  {label}
+                  {!planejamentoSigaa.isLoading && <span className="font-mono text-[11px] opacity-80">{n}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+          {sigaaLogado && sigaaFiltro && !planejamentoSigaa.isLoading && contagemSigaa[sigaaFiltro] === 0 && (
+            <p className="basis-full text-[13px] font-medium text-foreground-2">
+              {sigaaFiltro === 'posso'
+                ? 'Nenhuma disciplina do seu currículo está ofertada e liberada para você neste período.'
+                : 'Nada atrasado: você está em dia com o semestre ideal.'}
+            </p>
+          )}
         </div>
 
         {/* Semester navigation for semester view */}
@@ -1130,7 +1206,7 @@ const Disciplinas = () => {
               </h3>
               {(() => {
                 const searched = fuzzyFilter<CourseApi>(allCourses, search, ['name', 'code']);
-                let filtered = apply(searched);
+                let filtered = aplicarFiltroSigaa(apply(searched));
                 // Ordenação
                 filtered = [...filtered].sort((a, b) => {
                   if (orderBy === 'sections') {
@@ -1209,7 +1285,7 @@ const Disciplinas = () => {
               const semesterCourses = coursesByLevel[level] || [];
               const searched = fuzzyFilter<CourseApi>(semesterCourses, search, ['name', 'code']);
               // Apply AND filters (favorites, completed, available, etc.)
-              let filteredSemesterCourses = apply(searched);
+              let filteredSemesterCourses = aplicarFiltroSigaa(apply(searched));
               // Apply type group (exclusive)
               if (typeFilter !== 'all') {
                 const matchKey = typeFilter === 'obrigatoria' ? 'obrig' : 'optat';
