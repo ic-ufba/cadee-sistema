@@ -251,6 +251,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         'semesterOutcomes',
         'customCourseWorkload',
         'mySections',
+        'cadee:grades',
         'selectedPrograms',
         'progressData',
         'isOnboarded',

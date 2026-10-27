@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { CalendarDays, ChevronDown, ChevronUp, Download, FileText, Loader2, Mail } from 'lucide-react';
+import { CalendarCheck, CalendarDays, ChevronDown, ChevronUp, Columns3, Download, FileText, List, Loader2, Mail } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   DropdownMenu,
@@ -215,56 +215,266 @@ export function SemestreAtalhos() {
 
 // ------------------------------------------------------------------ conteúdo
 
-function Hoje({ aulas, cores, carregando, erro }: { aulas: AulaGrade[]; cores: Map<string, CorGrade>; carregando: boolean; erro: boolean }) {
+type VisaoAulas = 'hoje' | 'grade' | 'lista';
+const VISAO_KEY = 'cadee:meuSemestreVisao';
+
+function lerVisaoAulas(): VisaoAulas {
+  try {
+    const v = localStorage.getItem(VISAO_KEY);
+    return v === 'grade' || v === 'lista' ? v : 'hoje';
+  } catch {
+    return 'hoje';
+  }
+}
+
+/** Junta horários seguidos da mesma turma no mesmo dia (07:00–07:55 + 07:55–08:50 → 07:00–08:50). */
+function juntarAulas(aulas: AulaGrade[]): AulaGrade[] {
+  const ordenadas = [...aulas].sort((a, b) => a.dia - b.dia || minutos(a.inicio) - minutos(b.inicio));
+  const out: AulaGrade[] = [];
+  for (const a of ordenadas) {
+    const ult = out[out.length - 1];
+    if (ult && ult.dia === a.dia && ult.codigo === a.codigo && ult.fim && ult.fim === a.inicio) out[out.length - 1] = { ...ult, fim: a.fim };
+    else if (!(ult && ult.dia === a.dia && ult.codigo === a.codigo && ult.inicio === a.inicio)) out.push(a);
+  }
+  return out;
+}
+
+const VISOES: Array<{ v: VisaoAulas; rotulo: string; Icone: typeof List }> = [
+  { v: 'hoje', rotulo: 'Hoje', Icone: CalendarCheck },
+  { v: 'grade', rotulo: 'Grade', Icone: Columns3 },
+  { v: 'lista', rotulo: 'Lista', Icone: List },
+];
+
+function SeletorVisao({ visao, onVisao }: { visao: VisaoAulas; onVisao: (v: VisaoAulas) => void }) {
+  return (
+    <div role="group" aria-label="Visualização das aulas" className="flex rounded-full bg-nevoa p-1">
+      {VISOES.map(({ v, rotulo, Icone }) => {
+        const ativo = visao === v;
+        return (
+          <button
+            key={v}
+            type="button"
+            aria-pressed={ativo}
+            onClick={() => onVisao(v)}
+            className={cn(
+              'inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-bold transition-colors',
+              ativo ? 'bg-primary text-primary-foreground' : 'text-foreground-2 hover:text-foreground',
+            )}
+          >
+            <Icone className="h-3.5 w-3.5" />
+            {rotulo}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function CartaoAulaHoje({ a, cores, min }: { a: AulaGrade; cores: Map<string, CorGrade>; min: number }) {
+  const cor = corDe(cores, a.codigo);
+  const ativa = min >= minutos(a.inicio) && min <= minutos(a.fim);
+  return (
+    <div className={cn('grid grid-cols-[6px_minmax(0,1fr)] gap-3.5 rounded-2xl py-3.5 pl-3.5 pr-4', ativa ? 'bg-ouro/15' : 'bg-nevoa')}>
+      <span className="rounded-full" style={{ background: cor.bg }} />
+      <span className="flex min-w-0 flex-col gap-1">
+        <span className="flex items-center justify-between gap-2">
+          <span className="font-mono text-xs font-semibold text-foreground">
+            {a.inicio} – {a.fim}
+          </span>
+          {ativa && <span className="rounded-full bg-dende px-2 py-0.5 text-[10px] font-extrabold tracking-[0.06em] text-foreground">AGORA</span>}
+        </span>
+        <span className="text-sm font-extrabold leading-tight text-foreground">{tituloCurso(a.nome)}</span>
+        <span className="text-xs text-foreground-2">{[a.codigo, a.local].filter(Boolean).join(' · ')}</span>
+      </span>
+    </div>
+  );
+}
+
+function BlocoGrade({ a, cores, hoje }: { a: AulaGrade; cores: Map<string, CorGrade>; hoje: boolean }) {
+  return (
+    <div
+      className={cn('flex flex-col gap-1 rounded-b-[10px] border-t-4 px-2.5 pb-3 pt-2.5', hoje ? 'bg-ouro/15' : 'bg-nevoa')}
+      style={{ borderTopColor: corDe(cores, a.codigo).bg }}
+    >
+      <span className="font-mono text-[11px] text-foreground-2">
+        {a.inicio} – {a.fim}
+      </span>
+      <span className="line-clamp-3 text-[12px] font-extrabold uppercase leading-tight text-foreground">{a.nome}</span>
+      <span className="font-mono text-[11px] text-muted-foreground">{[a.codigo, a.local].filter(Boolean).join(' · ')}</span>
+    </div>
+  );
+}
+
+function Aulas({
+  aulas: brutas,
+  cores,
+  carregando,
+  erro,
+  visao,
+  onVisao,
+}: {
+  aulas: AulaGrade[];
+  cores: Map<string, CorGrade>;
+  carregando: boolean;
+  erro: boolean;
+  visao: VisaoAulas;
+  onVisao: (v: VisaoAulas) => void;
+}) {
+  const aulas = useMemo(() => juntarAulas(brutas), [brutas]);
   const agora = new Date();
-  const diaSigaa = agora.getDay() + 1;
+  const diaSigaa = agora.getDay() + 1; // SIGAA: 1 = domingo … 7 = sábado
   const min = agora.getHours() * 60 + agora.getMinutes();
-  const hoje = aulas.filter((a) => a.dia === diaSigaa).sort((a, b) => minutos(a.inicio) - minutos(b.inicio));
-  const amanha = aulas.filter((a) => a.dia === (diaSigaa % 7) + 1).sort((a, b) => minutos(a.inicio) - minutos(b.inicio));
+  const hoje = aulas.filter((a) => a.dia === diaSigaa);
+  const amanha = aulas.filter((a) => a.dia === (diaSigaa % 7) + 1);
+
+  // Grade: segunda a sábado (domingo só se houver aula)
+  const segunda = new Date(agora);
+  segunda.setDate(agora.getDate() - ((agora.getDay() + 6) % 7));
+  const dias = [2, 3, 4, 5, 6, 7, ...(aulas.some((a) => a.dia === 1) ? [1] : [])].map((dia) => {
+    const data = new Date(segunda);
+    data.setDate(segunda.getDate() + (dia === 1 ? 6 : dia - 2));
+    return { dia, curto: DIAS[dia - 1], data: ddmm(data), hoje: dia === diaSigaa, aulas: aulas.filter((a) => a.dia === dia) };
+  });
+  const [diaMobile, setDiaMobile] = useState<number | null>(null);
+  const diaPadrao = dias.find((d) => d.hoje && d.aulas.length)?.dia ?? dias.find((d) => d.aulas.length)?.dia ?? dias[0].dia;
+  const diaAtivo = dias.find((d) => d.dia === (diaMobile ?? diaPadrao)) ?? dias[0];
+
+  // Lista: uma linha por disciplina
+  const disciplinas = useMemo(() => {
+    const m = new Map<string, { codigo: string; nome: string; turma: string | null; local: string | null; horarios: AulaGrade[] }>();
+    for (const a of aulas) {
+      const chave = a.codigo ?? a.nome;
+      const d = m.get(chave) ?? { codigo: a.codigo ?? '', nome: a.nome, turma: a.turma, local: a.local, horarios: [] };
+      d.horarios.push(a);
+      m.set(chave, d);
+    }
+    return [...m.values()];
+  }, [aulas]);
 
   return (
-    <section aria-labelledby="ms-hoje" className="flex flex-col gap-3 py-6 lg:pr-8">
-      <Titulo id="ms-hoje" extra={`${DIAS_LONGOS[agora.getDay()]}, ${ddmm(agora)}`}>
-        Hoje
-      </Titulo>
+    <section aria-labelledby="ms-aulas" className={cn('flex flex-col gap-3 py-6', visao === 'hoje' && 'lg:pr-8')}>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5">
+        <h2 id="ms-aulas" className="text-xl font-black tracking-[-0.03em] text-foreground lg:text-[22px]">
+          {visao === 'hoje' ? 'Hoje' : 'Aulas da semana'}
+        </h2>
+        <SeletorVisao visao={visao} onVisao={onVisao} />
+      </div>
+
       {carregando || erro ? (
         <Estado carregando={carregando} erro={erro} vazio="" />
-      ) : hoje.length === 0 ? (
-        <p className="rounded-2xl bg-nevoa px-4 py-3.5 text-[13px] font-semibold text-foreground-2">Sem aulas hoje.</p>
-      ) : (
-        hoje.map((a) => {
-          const cor = corDe(cores, a.codigo);
-          const ativa = min >= minutos(a.inicio) && min <= minutos(a.fim);
-          return (
-            <div
-              key={`${a.codigo}-${a.inicio}`}
-              className={cn('grid grid-cols-[6px_minmax(0,1fr)] gap-3.5 rounded-2xl py-3.5 pl-3.5 pr-4', ativa ? 'bg-ouro/15' : 'bg-nevoa')}
-            >
-              <span className="rounded-full" style={{ background: cor.bg }} />
-              <span className="flex min-w-0 flex-col gap-1">
-                <span className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-xs font-semibold text-foreground">
-                    {a.inicio} – {a.fim}
-                  </span>
-                  {ativa && <span className="rounded-full bg-dende px-2 py-0.5 text-[10px] font-extrabold tracking-[0.06em] text-foreground">AGORA</span>}
-                </span>
-                <span className="text-sm font-extrabold leading-tight text-foreground">{tituloCurso(a.nome)}</span>
-                <span className="text-xs text-foreground-2">{[a.codigo, a.local].filter(Boolean).join(' · ')}</span>
-              </span>
+      ) : aulas.length === 0 ? (
+        <p className="rounded-2xl bg-nevoa px-4 py-3.5 text-[13px] font-semibold text-foreground-2">Nenhuma aula com horário no SIGAA.</p>
+      ) : visao === 'hoje' ? (
+        <>
+          <span className="-mt-1 font-mono text-[11.5px] text-foreground-2">
+            {DIAS_LONGOS[agora.getDay()]}, {ddmm(agora)}
+          </span>
+          {hoje.length === 0 ? (
+            <p className="rounded-2xl bg-nevoa px-4 py-3.5 text-[13px] font-semibold text-foreground-2">Sem aulas hoje.</p>
+          ) : (
+            hoje.map((a) => <CartaoAulaHoje key={`${a.codigo}-${a.inicio}`} a={a} cores={cores} min={min} />)
+          )}
+          {amanha.length > 0 && (
+            <span className="text-xs text-foreground-2">
+              Amanhã: {Array.from(new Set(amanha.map((a) => a.codigo))).join(' e ')} a partir das {amanha[0].inicio}
+            </span>
+          )}
+        </>
+      ) : visao === 'grade' ? (
+        <>
+          {/* desktop: semana em colunas */}
+          <div className="hidden overflow-x-auto md:block">
+            <div className="flex min-w-[760px] border-t border-foreground/10">
+              {dias.map((d, i) => (
+                <div key={d.dia} className={cn('flex min-w-0 flex-1 flex-col gap-3 px-3 pb-2 pt-4', i > 0 && 'border-l border-foreground/10')}>
+                  <div className="flex min-h-[22px] items-center justify-between gap-1">
+                    <span className="text-[15px] font-black tracking-[-0.02em] text-foreground">
+                      {d.curto} <span className="font-mono text-[11px] font-medium tracking-normal text-muted-foreground">{d.data}</span>
+                    </span>
+                    {d.hoje && (
+                      <span className="rounded-full bg-dende px-[7px] py-[3px] text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#1C1B19]">Hoje</span>
+                    )}
+                  </div>
+                  {d.aulas.length === 0 ? (
+                    <span className="text-xs font-medium text-muted-foreground/70">Livre</span>
+                  ) : (
+                    d.aulas.map((a) => <BlocoGrade key={`${a.codigo}-${a.inicio}`} a={a} cores={cores} hoje={d.hoje} />)
+                  )}
+                </div>
+              ))}
             </div>
-          );
-        })
-      )}
-      {!carregando && !erro && amanha.length > 0 && (
-        <span className="text-xs text-foreground-2">
-          Amanhã: {Array.from(new Set(amanha.map((a) => a.codigo))).join(' e ')} a partir das {amanha[0].inicio}
-        </span>
+          </div>
+          {/* mobile: dia a dia */}
+          <div className="md:hidden">
+            <div role="tablist" aria-label="Dias" className="flex border-b border-foreground/10">
+              {dias.map((d) => {
+                const ativo = d.dia === diaAtivo.dia;
+                const coresDia = Array.from(new Set(d.aulas.map((a) => corDe(cores, a.codigo).bg))).slice(0, 4);
+                return (
+                  <button
+                    key={d.dia}
+                    type="button"
+                    role="tab"
+                    aria-selected={ativo}
+                    onClick={() => setDiaMobile(d.dia)}
+                    className={cn(
+                      'flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1.5 rounded-t-xl transition-colors',
+                      ativo ? 'bg-primary text-primary-foreground' : 'text-foreground-2',
+                    )}
+                  >
+                    <span className="text-xs font-black">{d.curto}</span>
+                    <span className="flex min-h-[6px] gap-[3px]">
+                      {coresDia.map((c, i) => (
+                        <span key={i} className="h-1.5 w-1.5 rounded-full" style={{ background: c }} />
+                      ))}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex flex-col gap-2.5 pt-3.5">
+              <span className="font-mono text-[11px] text-foreground-2">
+                {diaAtivo.hoje ? 'hoje · ' : ''}
+                {diaAtivo.data} · {diaAtivo.aulas.length} {diaAtivo.aulas.length === 1 ? 'aula' : 'aulas'}
+              </span>
+              {diaAtivo.aulas.length === 0 ? (
+                <p className="py-4 text-center text-sm font-medium text-muted-foreground">Nenhuma aula neste dia</p>
+              ) : (
+                diaAtivo.aulas.map((a) => <CartaoAulaHoje key={`${a.codigo}-${a.inicio}`} a={a} cores={cores} min={diaAtivo.hoje ? min : -1} />)
+              )}
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="flex flex-col border-t border-foreground/10">
+          {disciplinas.map((d) => {
+            const diasCurto = Array.from(new Set(d.horarios.map((h) => DIAS[h.dia - 1])));
+            const quando = `${diasCurto.join(' ')} · ${d.horarios[0].inicio}–${d.horarios[0].fim}`;
+            return (
+              <div
+                key={d.codigo || d.nome}
+                className="flex min-h-[56px] items-center gap-3 border-b border-foreground/10 px-2.5 py-2 md:grid md:min-h-[52px] md:grid-cols-[12px_96px_minmax(0,1fr)_200px_160px] md:gap-4 md:px-3.5 md:py-0"
+              >
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: corDe(cores, d.codigo).bg }} />
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5 md:contents">
+                  <span className="font-mono text-[12px] font-semibold text-foreground md:text-[13px]">
+                    {d.codigo}
+                    <span className="font-normal text-muted-foreground md:hidden"> · {quando}</span>
+                  </span>
+                  <span className="truncate text-[12px] font-extrabold uppercase text-foreground md:text-[13px]">{d.nome}</span>
+                  <span className="hidden truncate font-mono text-[11px] text-foreground-2 md:block">{quando}</span>
+                  <span className="truncate text-xs text-foreground-2">{[d.turma && `Turma ${d.turma}`, d.local].filter(Boolean).join(' · ')}</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
       )}
     </section>
   );
 }
 
-function Prazos() {
+function Prazos({ primeira = false }: { primeira?: boolean }) {
   const avaliacoes = useSigaaAvaliacoes();
   const tarefas = useSigaaTarefas();
   const itens = useMemo(() => {
@@ -298,7 +508,7 @@ function Prazos() {
   const PILL = { Prova: 'bg-foreground text-background', Tarefa: 'bg-dende-claro text-dende-ink', Enviada: 'bg-mar-claro text-mar-ink' };
 
   return (
-    <section aria-labelledby="ms-prazos" className="flex flex-col gap-2 border-foreground/10 py-6 lg:border-l lg:px-8">
+    <section aria-labelledby="ms-prazos" className={cn('flex flex-col gap-2 border-foreground/10 py-6', primeira ? 'lg:pr-8' : 'lg:border-l lg:px-8')}>
       <Titulo id="ms-prazos" extra="provas e tarefas">
         Próximos prazos
       </Titulo>
@@ -514,17 +724,42 @@ export function MeuSemestre() {
     return m;
   }, [aulas, notas.data]);
 
+  const [visao, setVisao] = useState<VisaoAulas>(lerVisaoAulas);
+  const trocarVisao = (v: VisaoAulas) => {
+    setVisao(v);
+    try {
+      localStorage.setItem(VISAO_KEY, v);
+    } catch {
+      /* sem armazenamento: só não lembra a escolha */
+    }
+  };
+  const blocoAulas = (
+    <Aulas aulas={aulas} cores={cores} carregando={grade.isLoading} erro={grade.isError} visao={visao} onVisao={trocarVisao} />
+  );
+
   return (
     <div className="flex flex-col gap-2 pb-10">
-      <div className="grid border-t-2 border-foreground lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(0,1fr)]">
-        <Hoje aulas={aulas} cores={cores} carregando={grade.isLoading} erro={grade.isError} />
-        <div className="border-t-2 border-foreground lg:contents lg:border-0">
-          <Prazos />
+      {visao === 'hoje' ? (
+        <div className="grid border-t-2 border-foreground lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(0,1fr)]">
+          {blocoAulas}
+          <div className="border-t-2 border-foreground lg:contents lg:border-0">
+            <Prazos />
+          </div>
+          <div className="border-t-2 border-foreground lg:contents lg:border-0">
+            <Novidades cores={cores} idParaCodigo={idParaCodigo} />
+          </div>
         </div>
-        <div className="border-t-2 border-foreground lg:contents lg:border-0">
-          <Novidades cores={cores} idParaCodigo={idParaCodigo} />
-        </div>
-      </div>
+      ) : (
+        <>
+          <div className="border-t-2 border-foreground">{blocoAulas}</div>
+          <div className="grid border-t-2 border-foreground lg:grid-cols-2">
+            <Prazos primeira />
+            <div className="border-t-2 border-foreground lg:contents lg:border-0">
+              <Novidades cores={cores} idParaCodigo={idParaCodigo} />
+            </div>
+          </div>
+        </>
+      )}
       <NotasFrequencia cores={cores} />
       <p className="mt-6 flex items-center gap-2.5 border-t border-trilho pt-4 text-xs text-foreground-2">
         <span className="h-[7px] w-[7px] rounded-full bg-mar" />

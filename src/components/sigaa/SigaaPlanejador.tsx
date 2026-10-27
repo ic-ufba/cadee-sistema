@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, ShieldCheck, Sparkles, TrendingUp, X } from 'lucide-react';
-import { useMySections } from '@/hooks/useMySections';
+import { useGrades, useMySections } from '@/hooks/useMySections';
+import { codigoDaTurma } from '@/lib/choques';
+import { findCorrespondingBlockSections } from '@/lib/blockCourses';
+import type { Section } from '@/services/api';
 import { useSections } from '@/hooks/useApi';
 import { SIGAA_USER_KEY, useSigaaAuth, useSigaaPrevisaoOferta } from '@/hooks/useSigaa';
 import { findStaticSection, toEscolhas } from '@/lib/sigaaSync';
@@ -115,7 +118,7 @@ const TURNOS = [
 ];
 
 function Sugestao({ onFechar }: { onFechar: () => void }) {
-  const { mySections, toggleSection, clearSections } = useMySections();
+  const { criar } = useGrades();
   const { data: allSections = [] } = useSections();
   const getPlano = usePlano();
   const [turnos, setTurnos] = useState<string[]>([]);
@@ -144,12 +147,17 @@ function Sugestao({ onFechar }: { onFechar: () => void }) {
   const usar = () => {
     const achadas = itens.filter((i) => i.section);
     if (achadas.length === 0) return;
-    if (mySections.length > 0 && !confirm('Trocar a sua grade pela sugestão do SIGAA?')) return;
-    clearSections();
-    for (const { section } of achadas) toggleSection(section!, allSections);
+    // A sugestão vira uma grade nova: a sua continua do jeito que está, para comparar
+    const secoes: Section[] = [];
+    for (const { section } of achadas) {
+      for (const s of [section!, ...findCorrespondingBlockSections(section!, allSections)]) {
+        if (!secoes.some((x) => codigoDaTurma(x) === codigoDaTurma(s))) secoes.push(s);
+      }
+    }
+    criar(secoes, 'Sugestão do SIGAA');
     toast({
-      title: 'Sugestão aplicada',
-      description: `${achadas.length} turma(s) na grade${achadas.length < itens.length ? `; ${itens.length - achadas.length} fora do catálogo` : ''}.`,
+      title: 'Sugestão salva como nova grade',
+      description: `${achadas.length} turma(s)${achadas.length < itens.length ? `; ${itens.length - achadas.length} fora do catálogo` : ''}. Sua grade anterior continua salva.`,
     });
     onFechar();
   };
@@ -203,7 +211,7 @@ function Sugestao({ onFechar }: { onFechar: () => void }) {
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={usar} className="min-h-10 rounded-full bg-foreground px-4 text-[12.5px] font-extrabold text-background hover:bg-foreground/90">
-              Usar na grade
+              Salvar como nova grade
             </button>
             <button type="button" onClick={onFechar} className="min-h-10 rounded-full border-[1.5px] border-foreground/20 px-4 text-[12.5px] font-bold text-foreground hover:bg-nevoa">
               Manter a minha
@@ -257,7 +265,7 @@ function Previsao() {
 /** Cartão com o resultado da ação escolhida, acima da grade. */
 export function SigaaResultadoPlanejador({ painel, onFechar }: { painel: PainelSigaa; onFechar: () => void }) {
   const { isLoggedIn } = useSigaaAuth();
-  const { mySections } = useMySections();
+  const { mySections } = useMySections('ativa');
   const getPlano = usePlano();
   const previsao = useSigaaPrevisaoOferta(isLoggedIn && painel === 'previsao');
 
