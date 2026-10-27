@@ -1,4 +1,4 @@
-import { X, Check, ChevronDown, ChevronUp, Clock, Star } from 'lucide-react';
+import { X, Check, ChevronDown, ChevronUp, Clock, Star, Lock } from 'lucide-react';
 import { Course, parseSigaaSchedule } from '@/services/api';
 import type { Section } from '@/services/api';
 import { getBlockCourseBaseCode, isBlockCourseCode } from '@/lib/blockCourses';
@@ -75,20 +75,20 @@ function CompletedButton({
       animate={controls}
       whileHover={{ scale: 1.02 }}
       className={cn(
-        'mt-4 inline-flex h-11 origin-center transform-gpu items-center gap-2 rounded-full px-5 text-sm font-bold will-change-transform',
+        'inline-flex h-12 origin-center transform-gpu items-center gap-[9px] rounded-full pl-4 pr-5 text-sm font-extrabold will-change-transform',
         completed 
           ? 'bg-mar text-white' 
           : isAvailable
-          ? 'bg-dende-claro text-dende-ink hover:bg-dende-tint'
+          ? 'bg-dende-claro text-dende-ink shadow-[inset_0_0_0_1.5px_hsl(var(--dende)/0.55)] hover:bg-dende-tint'
           : isBlocked
-          ? 'border-[1.5px] border-dashed border-tracejado bg-nevoa text-foreground-2'
+          ? 'bg-nevoa text-foreground-2 shadow-[inset_0_0_0_1.5px_hsl(var(--foreground)/0.14)]'
           : 'bg-nevoa text-foreground hover:bg-trilho',
       )}
     >
       {completed ? (
         <Check className="w-4 h-4" />
       ) : (
-        <span className="block h-4 w-4 rounded-full border-[1.5px] border-current" />
+        <span className={cn('block h-4 w-4 rounded-full border-2 border-current', isBlocked && 'border-dashed')} />
       )}
       <span>{completed ? 'Cursada' : 'Marcar como cursada'}</span>
     </motion.button>
@@ -352,33 +352,23 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
     open,
     onToggle,
   }: { title: string; count?: number; open: boolean; onToggle: () => void }) => (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <h3
-          className="cursor-pointer select-none text-[13px] font-extrabold uppercase tracking-[0.12em] text-foreground"
-          onClick={onToggle}
-        >
-          {title}
-        </h3>
-        {typeof count === 'number' && (
-          <Badge variant="secondary" className="px-2 py-0.5 font-mono">
-            {count}
-          </Badge>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-sm text-foreground-2 hover:bg-nevoa"
-        aria-label={open ? 'Recolher' : 'Expandir'}
-      >
-        {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      className="flex min-h-[58px] w-full items-center gap-2.5 text-left text-foreground"
+    >
+      <h3 className="text-base font-black tracking-[-0.01em]">{title}</h3>
+      {typeof count === 'number' && (
+        <span className="rounded-full bg-nevoa px-[9px] py-0.5 font-mono text-xs font-semibold">{count}</span>
+      )}
+      <span className="flex-1" />
+      {open ? <ChevronUp className="h-[18px] w-[18px]" strokeWidth={2.2} /> : <ChevronDown className="h-[18px] w-[18px]" strokeWidth={2.2} />}
+    </button>
   );
 
   const CollapseAnimated: React.FC<{ open: boolean; children: React.ReactNode }> = ({ open, children }) => (
-    <>{open ? <div className="pt-2">{children}</div> : null}</>
+    <>{open ? <div className="pb-1.5">{children}</div> : null}</>
   );
 
   
@@ -389,29 +379,36 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-overlay/55 flex items-end sm:items-center justify-center z-50 sm:p-4"
+        className="fixed inset-0 z-50 flex items-end justify-center bg-overlay/55 sm:items-center sm:p-4"
         onClick={onClose}
       >
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
-          className="max-h-[88vh] w-full overflow-y-auto rounded-t-[28px] bg-background p-5 pb-8 shadow-xl sm:my-4 sm:max-w-xl sm:rounded-[28px] sm:p-6 md:max-w-2xl md:p-7"
+          className="max-h-[calc(100vh-64px)] w-full overflow-y-auto rounded-t-[28px] bg-background pb-8 shadow-xl sm:my-4 sm:max-h-[88vh] sm:max-w-xl sm:rounded-[28px] md:max-w-2xl"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="mb-5 flex items-start justify-between gap-4">
-            <div className="flex flex-col gap-1.5">
-              <span className="w-fit font-mono text-sm font-bold text-mar">
+          <span aria-hidden className="mx-auto mt-2.5 block h-1 w-10 rounded-full bg-trilho sm:hidden" />
+          <div className="flex items-start gap-3 pl-6 pr-4 pt-4 sm:px-7 sm:pt-7">
+            <div className="flex flex-1 flex-col gap-2.5">
+              <span
+                className={cn(
+                  'inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[13px] font-semibold',
+                  isCompleted ? 'bg-mar-tint text-mar-ink' : isAvailable ? 'bg-dende-claro text-dende-ink' : 'bg-trilho text-foreground-2'
+                )}
+              >
+                {isBlocked && <Lock className="h-3 w-3" strokeWidth={2.4} />}
                 {currentCode}
               </span>
-              <h3 className="text-[22px] font-black uppercase leading-tight tracking-[-0.03em] sm:text-[26px]">{currentName}</h3>
+              <h2 className="text-[26px] font-black uppercase leading-[1.08] tracking-[-0.03em]">{currentName}</h2>
             </div>
-            <button onClick={onClose} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-nevoa text-foreground-2 hover:text-foreground">
-              <X className="h-[18px] w-[18px]" />
+            <button onClick={onClose} aria-label="Fechar" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-nevoa text-foreground hover:bg-trilho">
+              <X className="h-[18px] w-[18px]" strokeWidth={2.4} />
             </button>
           </div>
 
-          <div className="mb-1 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[13px] font-medium text-muted-foreground">
+          <div className="hidden">
             {typeof (currentDetail as any)?.workload === 'number' && (
               <div className="flex items-center gap-1">
                 <Clock className="w-4 h-4" />
@@ -424,6 +421,7 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
             {(currentDetail as any)?.semester && <span>{(currentDetail as any)?.semester}º Semestre</span>}
           </div>
 
+          <div className="px-6 pb-2 pt-5 sm:px-7">
           <CompletedButton 
             completed={isCompleted} 
             onClick={handleToggleCompletedWithEquivs}
@@ -432,12 +430,13 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
             isAvailable={isAvailable}
             isBlocked={isBlocked}
           />
+          </div>
 
-          <div className="mt-7 space-y-7">
+          <div className="mx-6 border-t-2 border-foreground sm:mx-7 [&>*+*]:border-t [&>*+*]:border-foreground/15">
             {currentDetail?.description && (
-              <div>
+              <div className="py-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <h3 className="rotulo">Ementa</h3>
+                  <h3 className="text-base font-black tracking-[-0.01em] text-foreground">Ementa</h3>
                   {isLive && <LiveDataBadge />}
                 </div>
                 <p className="text-sm font-medium leading-relaxed text-foreground-2">
@@ -446,12 +445,12 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
               </div>
             )}
 
-            <ComponentProgram code={detailCode} />
+            <div className="py-4 empty:hidden"><ComponentProgram code={detailCode} /></div>
 
             {/* Turmas Disponíveis com collapse */}
-            <div className="space-y-3">
+            <div>
               <SectionHeader
-                title="Turmas Disponíveis"
+                title="Turmas disponíveis"
                 count={sections.length}
                 open={openClasses}
                 onToggle={() => handleToggleSection('classes')}
@@ -476,7 +475,7 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
                   ) : sections.length === 0 ? (
                     <p className="text-muted-foreground text-sm">Nenhuma turma disponível para esta disciplina no momento.</p>
                   ) : (
-                    <div className="space-y-3">
+                    <div>
                       {[...sections]
                         .sort((a, b) => getFreeSeats(b) - getFreeSeats(a))
                         .map((section) => {
@@ -498,7 +497,7 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
 
             {/* Pré-requisitos */}
             {(currentDetail?.prerequisites?.length || 0) > 0 && (
-              <div className="space-y-3">
+              <div>
                 <SectionHeader
                   title="Pré-requisitos"
                   count={currentDetail?.prerequisites?.length}
@@ -518,29 +517,37 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
                       });
                       const minRemaining = remainingCounts.length > 0 ? Math.min(...remainingCounts) : 0;
                       return (
-                        <div className="flex items-center gap-2 flex-wrap mb-3">
+                        <>
+                        <div role="tablist" aria-label="Opções de pré-requisito" className="grid flex-1 rounded-full bg-nevoa p-1" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
                           {options.map((_, i) => (
                             <button
                               key={`pr-option-${i}`}
                               className={cn(
-                                'inline-flex h-9 items-center gap-1 rounded-full px-4 text-xs font-bold transition-all',
+                                'inline-flex h-10 items-center justify-center gap-1.5 rounded-full text-[13px] font-extrabold transition-all',
                                 prereqOptionIndex === i
                                   ? 'bg-primary text-primary-foreground'
-                                  : 'bg-nevoa text-foreground-2 hover:bg-trilho',
+                                  : 'text-foreground-2 hover:text-foreground',
                               )}
                               onClick={() => setPrereqOptionIndex(i)}
                             >
                               {`Opção ${i + 1}`}
                               {remainingCounts[i] === minRemaining && (
-                                <Star className="h-3 w-3 fill-current text-ouro" />
+                                <Star className="h-3.5 w-3.5 fill-ouro text-ouro" />
                               )}
                             </button>
                           ))}
                         </div>
+                        {options.length > 1 && remainingCounts[prereqOptionIndex] === minRemaining && (
+                          <span className="mt-2.5 inline-flex items-center gap-1.5 text-[11.5px] font-bold text-muted-foreground">
+                            <Star className="h-3 w-3 fill-ouro text-ouro" />
+                            Melhor opção
+                          </span>
+                        )}
+                        </>
                       );
                     })()}
 
-                    <div className="grid grid-cols-1 gap-3">
+                    <div className="flex flex-col">
                       {(currentDetail!.prerequisites![prereqOptionIndex] || []).map((pr) => {
                         const synced = !!(pr as any).name;
                         const code = pr.code;
@@ -570,7 +577,7 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
 
             {/* Correquisitos */}
             {(currentDetail?.corequisites?.length || 0) > 0 && (
-              <div className="space-y-3">
+              <div>
                 <SectionHeader
                   title="Correquisitos"
                   count={currentDetail?.corequisites?.length}
@@ -598,7 +605,7 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
                       </div>
                     )}
 
-                    <div className="grid grid-cols-1 gap-3">
+                    <div className="flex flex-col">
                       {(currentDetail!.corequisites![coreqOptionIndex] || []).map((co) => {
                         const synced = !!(co as any).name;
                         const code = co.code;
@@ -633,7 +640,7 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
               });
               if (unique.length === 0) return null;
               return (
-                <div className="space-y-3">
+                <div>
                   <SectionHeader
                     title="Equivalentes"
                     count={unique.length}
@@ -641,7 +648,7 @@ export function DisciplineDetail({ discipline, onClose, onRestrictedAction }: Di
                     onToggle={() => handleToggleSection('equiv')}
                   />
                   <CollapseAnimated open={openEquiv}>
-                    <div className="grid grid-cols-1 gap-3">
+                    <div className="flex flex-col">
                       {unique.map((eq) => {
                         const synced = !!(eq as any).name;
                         const code = eq.code;

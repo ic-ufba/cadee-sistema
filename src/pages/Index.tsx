@@ -7,14 +7,16 @@ import { ScheduleSummary } from '@/components/planner/ScheduleSummary';
 import { useCurrentTerm } from '@/hooks/useCurrentTerm';
 import { useSemesterTransition } from '@/hooks/useSemesterTransition';
 import { useOverallProgress } from '@/hooks/useOverallProgress';
-import { Calendar, BookOpen, BarChart3, X, Sparkles, GraduationCap, Clock, AlertTriangle, Plus, TrendingUp } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Calendar, BookOpen, BarChart3, X, Sparkles, GraduationCap, Clock, AlertTriangle, Plus, TrendingUp, ArrowRight, Upload } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ProgressView } from '@/components/progress/ProgressView';
 import { SigaaInsights } from '@/components/sigaa/SigaaInsights';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMode } from '@/hooks/useMode';
 import { usePlannedDisciplineCategories } from '@/hooks/usePlannedDisciplineCategories';
 import { InfoPopup } from '@/components/ui/info-popup';
+import { Mare } from '@/components/brand/Mare';
+import { tituloCurso, descricaoCurso, porcento } from '@/lib/curso-texto';
 
 const Index = () => {
   const { mySections } = useMySections();
@@ -28,6 +30,19 @@ const Index = () => {
   const { setMode, isFull, isSimplified } = useMode();
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [hasImportedHistory, setHasImportedHistory] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [abrirImportacao, setAbrirImportacao] = useState(false);
+
+  // "Atualizar histórico" no menu da conta abre a aba Progresso já com a importação aberta
+  useEffect(() => {
+    if (searchParams.get('importar') === '1') {
+      setActiveTab('progress');
+      setAbrirImportacao(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete('importar');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     const hasVisited = localStorage.getItem('firstVisit');
@@ -48,7 +63,7 @@ const Index = () => {
       return (
         <>
           <SigaaInsights />
-          <ProgressView />
+          <ProgressView abrirImportacao={abrirImportacao} onImportacaoAberta={() => setAbrirImportacao(false)} />
         </>
       );
     }
@@ -59,49 +74,78 @@ const Index = () => {
     <MainLayout>
       <div className="px-5 pt-4 sm:px-[clamp(20px,4vw,56px)] sm:pt-8 animate-fade-in">
         {/* Cabeçalho */}
-        <div className="mb-7 sm:mb-8">
+        <div className="mb-6 sm:mb-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div className="flex min-w-0 flex-col gap-3">
-              <div className="flex min-h-5 items-center gap-2">
-                {myPrograms.length > 0 && (
-                  <span className="rotulo flex min-w-0 items-center gap-2">
-                    <GraduationCap className="hidden h-4 w-4 shrink-0" />
-                    <span className="truncate">UFBA · {myPrograms[0]?.title || 'Seu Curso'}</span>
-                  </span>
-                )}
-                {currentTerm && activeTab === 'schedule' && (
-                  <span className="shrink-0 rounded-full bg-mar px-2.5 py-0.5 font-mono text-xs font-semibold text-white">
-                    {pendingTransition ? planningTerm : currentTerm}
-                  </span>
-                )}
-              </div>
+            <div className="flex min-w-0 flex-col gap-3 sm:gap-3.5">
+              {activeTab === 'schedule' ? (
+                <div className="flex min-h-5 items-center gap-2.5">
+                  {/* mobile: universidade e curso; desktop: semestre letivo */}
+                  {myPrograms.length > 0 && (
+                    <span className="rotulo !text-foreground truncate sm:hidden">UFBA · {tituloCurso(myPrograms[0]?.title)}</span>
+                  )}
+                  <span className="rotulo !text-foreground hidden sm:inline">Semestre letivo</span>
+                  {currentTerm && (
+                    <span className="shrink-0 rounded-full bg-mar px-[11px] py-[3px] font-mono text-xs font-semibold text-white">
+                      {pendingTransition ? planningTerm : currentTerm}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                myPrograms.length > 0 && (
+                  <span className="rotulo !text-foreground truncate">{descricaoCurso(myPrograms[0])}</span>
+                )
+              )}
               <h1 className="text-[30px] font-black leading-[1.05] tracking-[-0.04em] text-foreground sm:text-[clamp(30px,2.8vw,40px)]">
                 {activeTab === 'schedule' ? 'Controle do semestre' : 'Meu progresso'}
               </h1>
+              {activeTab === 'schedule' && myPrograms.length > 0 && (
+                <p className="mt-1.5 hidden text-[15px] font-medium text-foreground-2 sm:block">{descricaoCurso(myPrograms[0])}</p>
+              )}
             </div>
 
-            {/* Abas */}
-            <div className="grid w-full grid-cols-2 rounded-full bg-nevoa p-1 lg:w-[360px]">
+            {/* Abas (+ ações do Progresso no desktop) */}
+            <div className="flex flex-wrap items-center gap-2.5">
+            <div role="group" aria-label="Visão" className="flex w-full rounded-full bg-nevoa p-1 lg:w-auto">
               <button
+                aria-pressed={activeTab === 'schedule'}
                 onClick={() => setActiveTab('schedule')}
-                className={`inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 text-sm transition-all ${activeTab === 'schedule'
-                    ? 'bg-primary font-extrabold text-primary-foreground'
-                    : 'font-bold text-foreground-2 hover:text-foreground'
+                className={`inline-flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-full px-5 text-[13px] transition-all lg:flex-none ${activeTab === 'schedule'
+                    ? 'bg-primary font-bold text-primary-foreground'
+                    : 'font-semibold text-foreground-2 hover:text-foreground'
                   }`}
               >
-                <Calendar className="h-4 w-4" />
                 Planejamento
               </button>
               <button
+                aria-pressed={activeTab === 'progress'}
                 onClick={() => setActiveTab('progress')}
-                className={`inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 text-sm transition-all ${activeTab === 'progress'
-                    ? 'bg-primary font-extrabold text-primary-foreground'
-                    : 'font-bold text-foreground-2 hover:text-foreground'
+                className={`inline-flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-full px-5 text-[13px] transition-all lg:flex-none ${activeTab === 'progress'
+                    ? 'bg-primary font-bold text-primary-foreground'
+                    : 'font-semibold text-foreground-2 hover:text-foreground'
                   }`}
               >
-                <BarChart3 className="h-4 w-4" />
                 Progresso
               </button>
+            </div>
+            {activeTab === 'progress' && (
+              <>
+                <button
+                  onClick={() => setAbrirImportacao(true)}
+                  className="hidden min-h-11 items-center gap-2 rounded-full border-[1.5px] border-foreground/20 px-4 text-xs font-bold text-foreground transition-colors hover:bg-nevoa lg:inline-flex"
+                >
+                  <Upload className="h-3.5 w-3.5" strokeWidth={2.4} />
+                  Importar histórico
+                </button>
+                {hasImportedHistory && (
+                  <button
+                    onClick={() => window.dispatchEvent(new Event('cadee:limpar-progresso'))}
+                    className="hidden min-h-11 items-center rounded-full border border-pitanga/30 px-4 text-xs font-bold text-pitanga transition-colors hover:bg-pitanga-tint lg:inline-flex"
+                  >
+                    Limpar dados
+                  </button>
+                )}
+              </>
+            )}
             </div>
           </div>
         </div>
@@ -152,171 +196,146 @@ const Index = () => {
               </div>
             )}
 
-            <div className={`mb-8 grid border-t-2 border-foreground ${isFull && hasImportedHistory ? 'grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]' : 'grid-cols-1'}`}>
-              <div className="grid min-h-[120px] grid-cols-2 divide-x divide-border">
-                {/* Disciplinas planejadas */}
-                <div className="flex h-full flex-col justify-start gap-3 py-5 pr-4 sm:pr-6">
-                  <div className="flex h-5 items-center gap-2">
-                    <BookOpen className="hidden h-4 w-4 shrink-0" />
-                    <span className="rotulo">Disciplinas</span>
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    <p className="numero text-[38px] text-foreground sm:text-[48px]">{scheduledCount}</p>
-                    <p className="text-xs font-semibold text-muted-foreground sm:text-[13px]">na grade</p>
-                  </div>
-                  <div className="flex h-1.5 gap-[3px]" aria-hidden>
-                    <span className="rounded-full bg-mar" style={{ flex: disciplinesCount.mandatory }} />
-                    <span className="rounded-full bg-dende" style={{ flex: disciplinesCount.elective }} />
-                    <span className="rounded-full bg-ouro" style={{ flex: disciplinesCount.offered }} />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <p className="flex items-center gap-2 text-xs font-semibold text-foreground-2">
-                      <span className="h-2 w-2 shrink-0 rounded-full bg-mar"></span>
-                      Obrigatórias <span className="ml-auto font-black text-foreground">{disciplinesCount.mandatory}</span>
-                    </p>
-                    <p className="flex items-center gap-2 text-xs font-semibold text-foreground-2">
-                      <span className="h-2 w-2 shrink-0 rounded-full bg-dende"></span>
-                      Optativas <span className="ml-auto font-black text-foreground">{disciplinesCount.elective}</span>
-                    </p>
-                    {disciplinesCount.offered > 0 && (
-                      <p className="flex items-center gap-2 text-xs font-semibold text-foreground-2">
-                        <span className="h-2 w-2 shrink-0 rounded-full bg-ouro"></span>
-                        Ofertadas <span className="ml-auto font-black text-foreground">{disciplinesCount.offered}</span>
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Carga horária */}
-                <div className="flex h-full flex-col justify-start gap-3 py-5 pl-4 sm:pl-6 lg:pr-6">
-                  <div className="flex h-5 items-center gap-2">
-                    <Clock className="hidden h-4 w-4 shrink-0" />
-                    <span className="rotulo">Carga horária</span>
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    <p className="numero flex items-baseline text-[38px] text-foreground sm:text-[48px]">
-                      {workloadBreakdown.total}
-                      <span className="ml-0.5 text-lg font-extrabold tracking-normal text-foreground sm:text-2xl">h</span>
-                    </p>
-                    <p className="text-xs font-semibold text-muted-foreground sm:text-[13px]">nesse semestre</p>
-                  </div>
-                  <div className="flex h-1.5 gap-[3px]" aria-hidden>
-                    <span className="rounded-full bg-mar" style={{ flex: workloadBreakdown.mandatory }} />
-                    <span className="rounded-full bg-dende" style={{ flex: workloadBreakdown.elective }} />
-                    <span className="rounded-full bg-ouro" style={{ flex: workloadBreakdown.offered }} />
-                    <span className="rounded-full bg-foreground-2" style={{ flex: workloadBreakdown.complementary }} />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <p className="flex items-center gap-2 text-xs font-semibold text-foreground-2">
-                      <span className="h-2 w-2 shrink-0 rounded-full bg-mar"></span>
-                      Obrigatórias <span className="ml-auto font-mono font-semibold text-foreground">{workloadBreakdown.mandatory}h</span>
-                    </p>
-                    <p className="flex items-center gap-2 text-xs font-semibold text-foreground-2">
-                      <span className="h-2 w-2 shrink-0 rounded-full bg-dende"></span>
-                      Optativas <span className="ml-auto font-mono font-semibold text-foreground">{workloadBreakdown.elective}h</span>
-                    </p>
-                    {workloadBreakdown.offered > 0 && (
-                      <p className="flex items-center gap-2 text-xs font-semibold text-foreground-2">
-                        <span className="h-2 w-2 shrink-0 rounded-full bg-ouro"></span>
-                        Ofertadas <span className="ml-auto font-mono font-semibold text-foreground">{workloadBreakdown.offered}h</span>
-                      </p>
-                    )}
-                    {workloadBreakdown.complementary > 0 && (
-                      <p className="flex items-center gap-2 text-xs font-semibold text-foreground-2">
-                        <span className="h-2 w-2 shrink-0 rounded-full bg-foreground-2"></span>
-                        Comp. <span className="ml-auto font-mono font-semibold text-foreground">{workloadBreakdown.complementary}h</span>
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {isFull && hasImportedHistory && (
-                <div className="flex flex-col gap-4 border-t border-border py-5 lg:border-l lg:border-t-0 lg:pl-6">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="hidden h-4 w-4 shrink-0" />
-                    <span className="text-lg font-black tracking-[-0.03em] text-foreground sm:text-xl">Prévia da progressão</span>
-                    <InfoPopup
-                      iconClassName="w-4 h-4"
-                      content="Estimativa do progresso da sua formação ao concluir com aprovação as disciplinas planejadas na grade deste semestre."
-                    />
-                  </div>
-
-                  {/* Geral */}
-                  <div>
-                    <div className="mb-2 flex items-end justify-between gap-3">
-                      <div className="flex flex-col gap-1">
-                        <span className="rotulo">Geral</span>
-                        <span className="numero text-[38px] text-foreground sm:text-[44px]">{overallProgress.projected.overallProgress.toFixed(1)}%</span>
+            {(() => {
+              const proj = overallProgress.projected;
+              const pctObr = proj.mandatory.total > 0 ? Math.min(100, (proj.mandatory.completed / proj.mandatory.total) * 100) : 0;
+              const pctOpt = proj.electives.total > 0 ? Math.min(100, (proj.electives.completed / proj.electives.total) * 100) : 0;
+              const mostrarPrevia = isFull && hasImportedHistory;
+              return (
+                <section aria-label="Resumo do semestre" className="mb-6 flex flex-col border-t-2 border-foreground lg:flex-row">
+                  <div className="grid grid-cols-2 lg:flex lg:flex-[2_1_480px]">
+                    {/* Disciplinas */}
+                    <div className="flex flex-col gap-2.5 py-[18px] pr-4 sm:gap-4 sm:pb-6 sm:pt-5 sm:pr-7 lg:flex-1">
+                      <span className="rotulo !text-foreground">Disciplinas</span>
+                      <div className="flex items-baseline gap-2.5">
+                        <span className="numero text-[38px] leading-[0.9] text-foreground sm:text-[48px]">{scheduledCount}</span>
+                        <span className="hidden text-sm font-semibold text-foreground-2 sm:inline">na grade</span>
                       </div>
-                      <p className="pb-1 font-mono text-xs text-muted-foreground">
-                        {overallProgress.projected.totalHours}h / {overallProgress.totalRequiredHours}h
-                      </p>
-                    </div>
-                    <div className="h-3 w-full overflow-hidden rounded-full bg-trilho">
-                      <div
-                        className="h-full rounded-full bg-foreground transition-all duration-500"
-                        style={{ width: `${Math.min(overallProgress.projected.overallProgress, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-5">
-                    {/* Obrigatórias */}
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-xs font-bold text-foreground-2">Obrigatórias</span>
-                      <span className="text-[26px] font-black leading-none tracking-[-0.04em] text-mar">
-                        {overallProgress.projected.mandatory.total > 0
-                          ? Math.min(100, (overallProgress.projected.mandatory.completed / overallProgress.projected.mandatory.total) * 100).toFixed(1)
-                          : 0}%
+                      <div className="flex h-1.5 gap-[3px] sm:h-2 sm:gap-1" aria-hidden>
+                        <span className="rounded-full bg-mar" style={{ flex: disciplinesCount.mandatory }} />
+                        <span className="rounded-full bg-dende" style={{ flex: disciplinesCount.elective }} />
+                        <span className="rounded-full bg-ouro" style={{ flex: disciplinesCount.offered }} />
+                      </div>
+                      <span className="font-mono text-[11px] text-foreground-2 sm:hidden">
+                        {disciplinesCount.mandatory} obr · {disciplinesCount.elective} opt{disciplinesCount.offered > 0 ? ` · ${disciplinesCount.offered} ofe` : ''}
                       </span>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-trilho">
-                        <div
-                          className="h-full rounded-full bg-mar transition-all duration-500"
-                          style={{
-                            width: `${Math.min(overallProgress.projected.mandatory.total > 0
-                              ? (overallProgress.projected.mandatory.completed / overallProgress.projected.mandatory.total) * 100
-                              : 0, 100)}%`
-                          }}
-                        />
-                      </div>
-                      <p className="flex flex-wrap justify-between gap-x-2 font-mono text-[11px] text-muted-foreground">
-                        <span>{Math.min(overallProgress.projected.mandatory.completed, overallProgress.projected.mandatory.total)}h / {overallProgress.projected.mandatory.total}h</span>
-                        {overallProgress.projected.mandatory.completed > overallProgress.projected.mandatory.total && (
-                          <span className="font-semibold text-mar-ink">+{overallProgress.projected.mandatory.completed - overallProgress.projected.mandatory.total}h excedentes</span>
+                      <ul className="hidden flex-col gap-1.5 text-[13px] sm:flex">
+                        <li className="flex justify-between"><span className="inline-flex items-center gap-2 text-foreground-2"><span className="h-2 w-2 rounded-full bg-mar" />Obrigatórias</span><span className="font-mono font-semibold text-foreground">{disciplinesCount.mandatory}</span></li>
+                        <li className="flex justify-between"><span className="inline-flex items-center gap-2 text-foreground-2"><span className="h-2 w-2 rounded-full bg-dende" />Optativas</span><span className="font-mono font-semibold text-foreground">{disciplinesCount.elective}</span></li>
+                        {disciplinesCount.offered > 0 && (
+                          <li className="flex justify-between"><span className="inline-flex items-center gap-2 text-foreground-2"><span className="h-2 w-2 rounded-full bg-ouro" />Ofertadas</span><span className="font-mono font-semibold text-foreground">{disciplinesCount.offered}</span></li>
                         )}
-                      </p>
+                      </ul>
                     </div>
 
-                    {/* Optativas */}
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-xs font-bold text-foreground-2">Optativas</span>
-                      <span className="text-[26px] font-black leading-none tracking-[-0.04em] text-dende-ink dark:text-dende">
-                        {overallProgress.projected.electives.total > 0
-                          ? Math.min(100, (overallProgress.projected.electives.completed / overallProgress.projected.electives.total) * 100).toFixed(1)
-                          : 0}%
-                      </span>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-trilho">
-                        <div
-                          className="h-full rounded-full bg-dende transition-all duration-500"
-                          style={{
-                            width: `${Math.min(overallProgress.projected.electives.total > 0
-                              ? (overallProgress.projected.electives.completed / overallProgress.projected.electives.total) * 100
-                              : 0, 100)}%`
-                          }}
-                        />
+                    {/* Carga horária */}
+                    <div className="flex flex-col gap-2.5 border-l border-foreground/10 py-[18px] pl-4 sm:gap-4 sm:pb-6 sm:pt-5 sm:pl-7 lg:flex-1 lg:pr-7">
+                      <span className="rotulo !text-foreground">Carga horária</span>
+                      <div className="flex items-baseline gap-2.5">
+                        <span className="numero text-[38px] leading-[0.9] text-foreground sm:text-[48px]">
+                          {workloadBreakdown.total}<span className="text-lg tracking-[-0.02em] sm:text-[22px]">h</span>
+                        </span>
+                        <span className="hidden text-sm font-semibold text-foreground-2 sm:inline">neste semestre</span>
                       </div>
-                      <p className="flex flex-wrap justify-between gap-x-2 font-mono text-[11px] text-muted-foreground">
-                        <span>{Math.min(overallProgress.projected.electives.completed, overallProgress.projected.electives.total)}h / {overallProgress.projected.electives.total}h</span>
-                        {overallProgress.projected.electives.completed > overallProgress.projected.electives.total && (
-                          <span className="font-semibold text-dende-ink">+{overallProgress.projected.electives.completed - overallProgress.projected.electives.total}h excedentes</span>
+                      <div className="flex h-1.5 gap-[3px] sm:h-2 sm:gap-1" aria-hidden>
+                        <span className="rounded-full bg-mar" style={{ flex: workloadBreakdown.mandatory }} />
+                        <span className="rounded-full bg-dende" style={{ flex: workloadBreakdown.elective }} />
+                        <span className="rounded-full bg-ouro" style={{ flex: workloadBreakdown.offered }} />
+                        <span className="rounded-full bg-pedra" style={{ flex: workloadBreakdown.complementary }} />
+                      </div>
+                      <span className="font-mono text-[11px] text-foreground-2 sm:hidden">
+                        {[workloadBreakdown.mandatory, workloadBreakdown.elective, workloadBreakdown.offered, workloadBreakdown.complementary].filter((h, i) => i < 2 || h > 0).map((h) => `${h}h`).join(' · ')}
+                      </span>
+                      <ul className="hidden flex-col gap-1.5 text-[13px] sm:flex">
+                        <li className="flex justify-between"><span className="inline-flex items-center gap-2 text-foreground-2"><span className="h-2 w-2 rounded-full bg-mar" />Obrigatórias</span><span className="font-mono font-semibold text-foreground">{workloadBreakdown.mandatory}h</span></li>
+                        <li className="flex justify-between"><span className="inline-flex items-center gap-2 text-foreground-2"><span className="h-2 w-2 rounded-full bg-dende" />Optativas</span><span className="font-mono font-semibold text-foreground">{workloadBreakdown.elective}h</span></li>
+                        {workloadBreakdown.offered > 0 && (
+                          <li className="flex justify-between"><span className="inline-flex items-center gap-2 text-foreground-2"><span className="h-2 w-2 rounded-full bg-ouro" />Ofertadas</span><span className="font-mono font-semibold text-foreground">{workloadBreakdown.offered}h</span></li>
                         )}
-                      </p>
+                        {workloadBreakdown.complementary > 0 && (
+                          <li className="flex justify-between"><span className="inline-flex items-center gap-2 text-foreground-2"><span className="h-2 w-2 rounded-full bg-pedra" />Complementares</span><span className="font-mono font-semibold text-foreground">{workloadBreakdown.complementary}h</span></li>
+                        )}
+                      </ul>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
+
+                  {mostrarPrevia && (
+                    <>
+                      {/* Prévia — mobile */}
+                      <div className="flex flex-col gap-[18px] border-t border-foreground/10 pb-[26px] pt-[22px] lg:hidden">
+                        <div className="flex items-center justify-between gap-2">
+                          <h2 className="text-xl font-black tracking-[-0.03em] text-foreground">Prévia da progressão</h2>
+                          <InfoPopup iconClassName="w-4 h-4" content="Estimativa do progresso da sua formação ao concluir com aprovação as disciplinas planejadas na grade deste semestre." />
+                        </div>
+                        <div className="flex flex-col gap-2.5">
+                          <div className="flex items-end justify-between gap-3">
+                            <div className="flex flex-col gap-1">
+                              <span className="rotulo">Geral</span>
+                              <span className="numero text-[40px] leading-[0.9] text-foreground">{porcento(proj.overallProgress)}</span>
+                            </div>
+                            <span className="pb-1 font-mono text-xs text-muted-foreground">{proj.totalHours} / {overallProgress.totalRequiredHours} h</span>
+                          </div>
+                          <div className="h-3 overflow-hidden rounded-full bg-trilho">
+                            <div className="h-full rounded-full bg-foreground transition-all duration-500" style={{ width: `${Math.min(proj.overallProgress, 100)}%` }} />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-5">
+                          <div className="flex flex-col gap-[7px]">
+                            <span className="text-xs font-bold text-foreground-2">Obrigatórias</span>
+                            <span className="text-[26px] font-black leading-none tracking-[-0.04em] text-mar">{porcento(pctObr)}</span>
+                            <div className="h-2 overflow-hidden rounded-full bg-trilho"><div className="h-full rounded-full bg-mar" style={{ width: `${pctObr}%` }} /></div>
+                            <span className="font-mono text-[11px] text-muted-foreground">{Math.min(proj.mandatory.completed, proj.mandatory.total)} / {proj.mandatory.total} h</span>
+                          </div>
+                          <div className="flex flex-col gap-[7px]">
+                            <span className="text-xs font-bold text-foreground-2">Optativas</span>
+                            <span className="text-[26px] font-black leading-none tracking-[-0.04em] text-dende-ink dark:text-dende">{porcento(pctOpt)}</span>
+                            <div className="h-2 overflow-hidden rounded-full bg-trilho"><div className="h-full rounded-full bg-dende" style={{ width: `${pctOpt}%` }} /></div>
+                            <span className="font-mono text-[11px] text-muted-foreground">{Math.min(proj.electives.completed, proj.electives.total)} / {proj.electives.total} h</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Prévia — desktop */}
+                      <div className="hidden flex-col gap-4 border-l border-foreground/10 pb-6 pl-7 pt-5 lg:flex lg:flex-[1.5_1_380px]">
+                        <div className="flex items-center gap-1.5">
+                          <span className="rotulo !text-foreground">Prévia da progressão</span>
+                          <InfoPopup iconClassName="w-3.5 h-3.5" content="Estimativa do progresso da sua formação ao concluir com aprovação as disciplinas planejadas na grade deste semestre." />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-[22px]">
+                          <Mare percent={proj.overallProgress} size={56} ondaAnimada={false} />
+                          <div className="flex flex-col gap-1.5">
+                            <span className="numero text-[40px] leading-[0.9] text-foreground">{porcento(proj.overallProgress)}</span>
+                            <span className="font-mono text-xs text-foreground-2">{proj.totalHours} / {overallProgress.totalRequiredHours} h · se tudo for aprovado</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-7">
+                          <div className="flex min-w-[140px] flex-1 flex-col gap-1.5">
+                            <div className="flex justify-between text-xs"><span className="font-semibold text-foreground-2">Obrigatórias</span><span className="font-extrabold text-mar">{porcento(pctObr)}</span></div>
+                            <div className="h-1.5 rounded-full bg-trilho"><div className="h-1.5 rounded-full bg-mar" style={{ width: `${pctObr}%` }} /></div>
+                            <span className="font-mono text-[11px] text-muted-foreground">{Math.min(proj.mandatory.completed, proj.mandatory.total)} / {proj.mandatory.total} h</span>
+                          </div>
+                          <div className="flex min-w-[140px] flex-1 flex-col gap-1.5">
+                            <div className="flex justify-between text-xs"><span className="font-semibold text-foreground-2">Optativas</span><span className="font-extrabold text-dende-ink dark:text-dende">{porcento(pctOpt)}</span></div>
+                            <div className="h-1.5 rounded-full bg-trilho"><div className="h-1.5 rounded-full bg-dende" style={{ width: `${pctOpt}%` }} /></div>
+                            <span className="font-mono text-[11px] text-muted-foreground">{Math.min(proj.electives.completed, proj.electives.total)} / {proj.electives.total} h</span>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </section>
+              );
+            })()}
+
+            {scheduledCount > 0 && !pendingTransition && (
+              <Link
+                to="/planejador"
+                className="-mt-3 mb-5 inline-flex min-h-10 items-center gap-2 text-[13px] font-extrabold text-mar sm:hidden"
+              >
+                Editar grade no Planejador
+                <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+              </Link>
+            )}
 
             {scheduledCount === 0 ? (
               <div className="rounded-[20px] bg-nevoa px-6 py-10 text-center">
@@ -334,22 +353,7 @@ const Index = () => {
                   Ir para o Planejador
                 </Link>
               </div>
-            ) : (
-              !pendingTransition && (
-                <div className="mb-2 flex justify-end">
-                  <Link
-                    to="/planejador"
-                    className="inline-flex min-h-10 items-center gap-1.5 text-[13px] font-extrabold text-mar hover:text-foreground"
-                  >
-                    Editar grade no Planejador
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M5 12h14" />
-                      <path d="m12 5 7 7-7 7" />
-                    </svg>
-                  </Link>
-                </div>
-              )
-            )}
+            ) : null}
           </>
         )}
 
@@ -382,7 +386,7 @@ const Index = () => {
                   </div>
                   <div>
                     <p className="text-[26px] font-black leading-[1.08] tracking-[-0.035em] text-foreground">Bem-vindo ao CADEE!</p>
-                    <p className="mt-1.5 text-sm font-bold text-foreground-2">Seu controle de planejamento semestral</p>
+                    <p className="mt-2 text-sm font-extrabold text-foreground-2">Seu controle de planejamento semestral</p>
                   </div>
                 </div>
                 <button onClick={() => setShowWelcomeModal(false)} aria-label="Fechar" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-nevoa text-foreground hover:bg-trilho">
@@ -392,7 +396,7 @@ const Index = () => {
 
               <div className="mb-7 space-y-3">
                 <p className="text-sm font-medium leading-relaxed text-foreground">
-                  O CADEE te ajuda a montar e acompanhar sua grade do semestre {currentTerm || 'atual'}.
+                  O CADEE te ajuda a montar e acompanhar sua grade do semestre <strong>{currentTerm || 'atual'}</strong>.
                   Planeje disciplinas, acompanhe carga horária e marque resultados ao final do período.
                 </p>
                 {isFull && (
@@ -403,7 +407,7 @@ const Index = () => {
                 )}
               </div>
 
-              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <div className="flex flex-col-reverse gap-2 sm:flex-row">
                 {isSimplified && (
                   <button
                     onClick={() => {
@@ -421,9 +425,10 @@ const Index = () => {
                     setShowWelcomeModal(false);
                     localStorage.setItem('firstVisit', 'true');
                   }}
-                  className="h-12 rounded-full bg-primary px-6 text-sm font-extrabold text-primary-foreground hover:bg-primary/85"
+                  className="inline-flex h-[52px] flex-1 items-center justify-center gap-2 rounded-full bg-primary px-6 text-[15px] font-extrabold text-primary-foreground hover:bg-primary/85"
                 >
                   Continuar
+                  <ArrowRight className="h-4 w-4" strokeWidth={2.4} />
                 </button>
               </div>
             </motion.div>

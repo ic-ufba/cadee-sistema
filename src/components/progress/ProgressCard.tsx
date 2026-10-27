@@ -25,7 +25,7 @@ const CATEGORY_STYLES: Record<ProgressCategory, { bar: string; excessText: strin
     excessText: 'text-dende-ink',
   },
   complementary: {
-    bar: 'bg-ouro',
+    bar: 'bg-pedra',
     excessText: 'text-foreground-2',
   },
   general: {

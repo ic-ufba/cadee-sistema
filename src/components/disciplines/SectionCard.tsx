@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useMyPrograms } from '@/hooks/useMyPrograms';
 import { Progress } from '@/components/ui/progress';
 import { getReservedUnfilledBonus, getReservedUnfilledForTitles } from '@/lib/utils';
-import { formatTimeCodes } from '@/lib/schedule';
+import { formatTimeCodes, parseTimeCodes } from '@/lib/schedule';
 import { useCourses } from '@/hooks/useApi';
 
 interface SectionCardProps {
@@ -48,75 +48,52 @@ export function SectionCard({ section, isAdded, onAdd, onNavigateCourse }: Secti
   // Create a map of course codes to names for quick lookup
   const coursesByCode = new Map(coursesIndex.map(c => [c.code, c.name]));
 
-  return (
-    <div
-      className={cn(
-        'rounded-[18px] border-[1.5px] p-4 transition-all',
-        isFull
-          ? 'border-transparent bg-pitanga-tint'
-          : isAlmostFull
-          ? 'border-transparent bg-dende-claro'
-          : isAdded
-          ? 'border-mar bg-mar-claro'
-          : 'border-foreground/10 bg-background',
-      )}
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-extrabold uppercase text-foreground">
-              {teachers && teachers.length > 0
-                ? teachers[0]
-                : `Turma ${section.id_ref}`}
-            </span>
-          </div>
+  // Horários agrupados por dia: "SEG 14:50 · 15:45"
+  const DIA_CURTO: Record<string, string> = { Segunda: 'SEG', 'Terça': 'TER', Quarta: 'QUA', Quinta: 'QUI', Sexta: 'SEX', 'Sábado': 'SÁB' };
+  const horariosPorDia = (() => {
+    const timeCodes = Array.isArray(section.time_codes) ? section.time_codes : [];
+    const mapa = new Map<string, string[]>();
+    for (const h of parseTimeCodes(timeCodes)) {
+      const lista = mapa.get(h.dia) ?? [];
+      if (!lista.includes(h.horarioInicio)) lista.push(h.horarioInicio);
+      mapa.set(h.dia, lista);
+    }
+    return Array.from(mapa.entries()).map(([dia, inicios]) => ({ dia: DIA_CURTO[dia] ?? dia, horas: inicios.sort().join(' · ') }));
+  })();
 
-          {/* Tags always below the title (no 'Adicionar' tag) */}
-          <div className="mb-2 flex flex-wrap gap-1 items-center">
-            {isFull && (
-              <span className="rounded-full bg-pitanga px-2.5 py-0.5 text-[11px] font-bold text-white">
-                Lotada
+  const courseCode = section.course?.code;
+  const isCompletedCourse = courseCode ? completedDisciplines.includes(courseCode) : false;
+  const showSwap = !!courseCode && hasSectionOnCourse(courseCode);
+
+  return (
+    <div className={cn('flex flex-col gap-2.5 border-t border-foreground/10 py-4', isAdded && '-mx-3 rounded-2xl border-t-0 bg-mar-claro px-3')}>
+      <div className="flex items-start gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <span className="text-[14.5px] font-extrabold uppercase leading-[1.3] text-foreground">
+            {teachers && teachers.length > 0 ? teachers[0] : `Turma ${section.id_ref}`}
+            {teachers && teachers.length > 1 && (
+              <span className="ml-1.5 text-xs font-semibold normal-case text-foreground-2">
+                + {teachers.length - 1} professor{teachers.length - 1 > 1 ? 'es' : ''}
               </span>
+            )}
+          </span>
+          {(!teachers || teachers.length === 0) && (
+            <span className="text-xs font-semibold text-foreground-2">Professor(es) a definir</span>
+          )}
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            {isFull && (
+              <span className="rounded-full bg-pitanga px-2.5 py-[3px] text-[11px] font-extrabold text-white">Lotada</span>
             )}
             {isAdded && (
-              <span className="rounded-full bg-mar px-2.5 py-0.5 text-[11px] font-bold text-white">
-                Adicionada
-              </span>
+              <span className="rounded-full bg-mar px-2.5 py-[3px] text-[11px] font-extrabold text-white">Na grade</span>
             )}
-            {/* Conflito */}
-            {!isFull && conflicts.length > 0 && (
-              (() => {
-                const currentCourseCode = section.course?.code;
-                const uniqueCodes = Array.from(new Set(
-                  conflicts
-                    .map((c) => c.section.course?.code)
-                    .filter((code): code is string => Boolean(code) && code !== currentCourseCode)
-                ));
-                return (
-                  <div className="flex flex-wrap gap-1 items-center">
-                    {uniqueCodes.map((code) => {
-                      const name = coursesByCode.get(code) || code;
-                      return (
-                        <button
-                          key={`conf-${code}`}
-                          onClick={() => onNavigateCourse?.(code)}
-                          className="inline-flex items-center gap-1 rounded-full bg-pitanga-tint px-2.5 py-0.5 text-[11px] font-bold text-pitanga-ink transition-all hover:bg-pitanga hover:text-white"
-                        >
-                          <AlertTriangle className="w-3 h-3" /> Choque com {code} — {name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                );
-              })()
-            )}
-            {/* Poucas Vagas */}
             {!isFull && isAlmostFull && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="inline-flex cursor-default items-center gap-1 rounded-full bg-dende px-2.5 py-0.5 text-[11px] font-bold text-white">
-                      <Flame className="w-3 h-3" /> Poucas Vagas
+                    <span className="inline-flex cursor-default items-center gap-1 rounded-full bg-dende-tint px-2.5 py-[3px] text-[11px] font-extrabold text-dende-ink">
+                      <Flame className="h-3 w-3" /> Poucas vagas
                     </span>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -125,13 +102,12 @@ export function SectionCard({ section, isAdded, onAdd, onNavigateCourse }: Secti
                 </Tooltip>
               </TooltipProvider>
             )}
-            {/* Reservado */}
             {hasExclusive && reservedRemaining > 0 && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="inline-flex cursor-default items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-bold text-primary-foreground">
-                      <Star className="w-3 h-3" /> Reservado para o curso {reservedRemaining} vagas
+                    <span className="inline-flex cursor-default items-center gap-[5px] rounded-full bg-mar-tint px-2.5 py-[3px] text-[11px] font-extrabold text-mar-ink">
+                      <Star className="h-[11px] w-[11px] fill-current" /> Reservado para o curso · {reservedRemaining} vagas
                     </span>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -140,140 +116,85 @@ export function SectionCard({ section, isAdded, onAdd, onNavigateCourse }: Secti
                 </Tooltip>
               </TooltipProvider>
             )}
-            {/* Sem reservas */}
             {!hasExclusive && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-flex cursor-default items-center gap-1 rounded-full bg-nevoa px-2.5 py-0.5 text-[11px] font-bold text-foreground-2">
-                      Sem reservas para o curso
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <div>Esta turma não possui vagas reservadas para o seu curso.</div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <span className="inline-flex items-center rounded-full bg-nevoa px-2.5 py-[3px] text-[11px] font-extrabold text-foreground-2">
+                Sem reservas para o curso
+              </span>
             )}
           </div>
 
-          {(() => {
-            if (teachers && teachers.length > 1) {
-              const extra = teachers.length - 1;
+          {!isFull && conflicts.length > 0 && (
+            (() => {
+              const currentCourseCode = section.course?.code;
+              const uniqueCodes = Array.from(new Set(
+                conflicts
+                  .map((c) => c.section.course?.code)
+                  .filter((code): code is string => Boolean(code) && code !== currentCourseCode)
+              ));
               return (
-                <div className="mb-2">
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Users className="w-4 h-4" />
-                    <span className="truncate block">+ {extra} professor{extra > 1 ? 'es' : ''}</span>
-                  </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {uniqueCodes.map((code) => {
+                    const name = coursesByCode.get(code) || code;
+                    return (
+                      <button
+                        key={`conf-${code}`}
+                        onClick={() => onNavigateCourse?.(code)}
+                        className="inline-flex items-center gap-1 rounded-full bg-pitanga-tint px-2.5 py-[3px] text-left text-[11px] font-extrabold text-pitanga-ink transition-all hover:bg-pitanga hover:text-white"
+                      >
+                        <AlertTriangle className="h-3 w-3 shrink-0" /> Choque com {code} — {name}
+                      </button>
+                    );
+                  })}
                 </div>
               );
-            }
-            if (!teachers || teachers.length === 0) {
-              return (
-                <div className="mb-2">
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Users className="w-4 h-4" />
-                    <span className="truncate block">Professor(es) a definir</span>
-                  </div>
-                </div>
-              );
-            }
-            return null;
-          })()}
-
-          <div className="mt-2 border-t border-foreground/10 pt-2.5">
-            <div className="space-y-2">
-              <div className="flex items-start gap-1 text-sm text-muted-foreground">
-                <Clock className="w-4 h-4 mt-0.5 shrink-0" />
-                {(() => {
-                  const timeCodes = Array.isArray(section.time_codes) ? section.time_codes : [];
-                  const formattedSchedules = formatTimeCodes(timeCodes);
-                  return (
-                    <div className="grid gap-1" style={{ gridTemplateColumns: formattedSchedules.length <= 4 ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)' }}>
-                      {formattedSchedules.length > 0 ? (
-                        formattedSchedules.map((h, i) => {
-                          const [day, time] = h.split(' ');
-                          return (
-                            <span key={i} className="flex min-h-[44px] flex-col items-center justify-center rounded-xl bg-nevoa px-2 py-1 text-center font-mono text-xs">
-                              <span className="font-sans text-[11px] font-extrabold uppercase">{day}</span>
-                              <span className="text-[10px]">{time}</span>
-                            </span>
-                          );
-                        })
-                      ) : (
-                        <span className="text-xs">Horário a definir</span>
-                      )}
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-          </div>
+            })()
+          )}
         </div>
 
-        {(() => {
-          const courseCode = section.course?.code;
-          const isCompleted = courseCode ? completedDisciplines.includes(courseCode) : false;
-          if (isCompleted || isFull) return null;
-          return (
-        <div className="flex items-center gap-2">
-          {isAdded ? (
+        {!isCompletedCourse && !isFull && (
+          isAdded ? (
             <button
               onClick={() => onAdd(section)}
-              className={cn(
-                'flex h-11 items-center gap-2 rounded-full px-4 text-sm font-bold transition-all',
-                'bg-pitanga text-white hover:bg-pitanga/90'
-              )}
+              aria-label="Remover turma da grade"
+              title="Remover da grade"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-pitanga text-white transition-colors hover:bg-pitanga/90"
             >
-              <Eraser className="w-4 h-4" />
-              <span className="hidden sm:inline">Remover</span>
+              <Trash2 className="h-[18px] w-[18px]" />
             </button>
-          ) : (() => {
-            const code = section.course?.code as string | undefined;
-            const showSwap = !!code && hasSectionOnCourse(code);
-            return showSwap ? (
-              <button
-                onClick={() => onAdd(section)}
-                disabled={isFull}
-                className={cn(
-                  'flex h-11 items-center gap-2 rounded-full px-4 text-sm font-bold transition-all',
-                  isFull
-                    ? 'cursor-not-allowed bg-nevoa text-muted-foreground'
-                    : 'bg-dende text-white hover:bg-dende/90',
-                )}
-              >
-                <ArrowLeftRight className="w-4 h-4" />
-                <span className="hidden sm:inline">Trocar</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => onAdd(section)}
-                disabled={isFull}
-                className={cn(
-                  'flex h-11 items-center gap-2 rounded-full px-4 text-sm font-bold transition-all',
-                  isFull
-                    ? 'cursor-not-allowed bg-nevoa text-muted-foreground'
-                    : conflicts.length > 0
-                      ? 'bg-dende text-white hover:bg-dende/90'
-                      : 'bg-primary text-primary-foreground hover:bg-primary/90',
-                )}
-              >
-                {conflicts.length > 0 ? (
-                  <ArrowLeftRight className="w-4 h-4" />
-                ) : (
-                  <Plus className="w-4 h-4" />
-                )}
-                <span className="hidden sm:inline">{conflicts.length > 0 ? 'Trocar' : 'Adicionar'}</span>
-              </button>
-            );
-          })()}
-        </div>
-          );
-        })()}
+          ) : showSwap || conflicts.length > 0 ? (
+            <button
+              onClick={() => onAdd(section)}
+              aria-label="Trocar pela turma atual"
+              title="Trocar turma"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-dende text-foreground transition-colors hover:bg-dende/90 dark:text-background"
+            >
+              <ArrowLeftRight className="h-[18px] w-[18px]" strokeWidth={2.4} />
+            </button>
+          ) : (
+            <button
+              onClick={() => onAdd(section)}
+              aria-label={`Adicionar turma de ${teachers?.[0] ?? section.id_ref}`}
+              title="Adicionar à grade"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <Plus className="h-[18px] w-[18px]" strokeWidth={2.6} />
+            </button>
+          )
+        )}
       </div>
 
-      {false}
+      <div className="flex flex-wrap gap-2">
+        {horariosPorDia.length > 0 ? (
+          horariosPorDia.map((h) => (
+            <span key={h.dia} className="flex items-baseline gap-2 rounded-xl bg-nevoa px-3 py-2">
+              <span className="text-[11px] font-black tracking-[0.1em] text-foreground">{h.dia}</span>
+              <span className="font-mono text-[12.5px] font-semibold text-foreground">{h.horas}</span>
+            </span>
+          ))
+        ) : (
+          <span className="rounded-xl bg-nevoa px-3 py-2 font-mono text-xs text-foreground-2">Horário a definir</span>
+        )}
+      </div>
     </div>
   );
 }

@@ -11,22 +11,41 @@ import { parseCompleteHistory, type WorkloadData, type SemesterDisciplineData } 
 import { getCourseWorkload, getWorkloadCategory, mergeSemesterOutcomes, sumWorkloadByCategory } from '@/lib/semester';
 import { getBlockCourseBaseCode } from '@/lib/blockCourses';
 import { InfoPopup } from '@/components/ui/info-popup';
-import { Upload, X, Shield, GraduationCap } from 'lucide-react';
+import { Upload, X, Shield, GraduationCap, FileText } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ImportarHistoricoModal } from './ImportarHistoricoModal';
+import { useOverallProgress } from '@/hooks/useOverallProgress';
+import { useSigaaAuth } from '@/hooks/useSigaa';
+import { porcento } from '@/lib/curso-texto';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Mare, PercentAnimado } from '@/components/brand/Mare';
 import { useState, useEffect, useMemo } from 'react';
 
-export function ProgressView() {
+interface ProgressViewProps {
+  /** Abre a importação de histórico assim que a tela monta (vem do menu da conta). */
+  abrirImportacao?: boolean;
+  onImportacaoAberta?: () => void;
+}
+
+export function ProgressView({ abrirImportacao = false, onImportacaoAberta }: ProgressViewProps = {}) {
   const { completedDisciplines, toggleCompletedDiscipline, semesterOutcomes, getDisciplineStatus, customCourseWorkload } = useApp();
   const { myPrograms } = useMyPrograms();
   const { courses, isLoading: coursesLoading } = useMyCourses();
   const { mySections } = useMySections();
   const { currentTerm } = useCurrentTerm();
   const { setMode } = useMode();
+  const overall = useOverallProgress();
+  const { session: sigaaSession } = useSigaaAuth();
   
   // Estados para importação de histórico
   const [showImportModal, setShowImportModal] = useState(false);
+  useEffect(() => {
+    if (abrirImportacao) {
+      setShowImportModal(true);
+      onImportacaoAberta?.();
+    }
+  }, [abrirImportacao, onImportacaoAberta]);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [importText, setImportText] = useState('');
   const [parsedCodes, setParsedCodes] = useState<string[]>([]);
@@ -115,6 +134,19 @@ export function ProgressView() {
     // Disparar evento customizado para notificar mudanças na mesma aba
     window.dispatchEvent(new Event('progressDataUpdated'));
   };
+
+  const pedirLimpeza = () => {
+    if (confirm('Tem certeza que deseja limpar todos os dados importados?')) {
+      clearSavedData();
+    }
+  };
+
+  // "Limpar dados" fica no cabeçalho da tela (Index) e chega aqui por evento
+  useEffect(() => {
+    const onLimpar = () => pedirLimpeza();
+    window.addEventListener('cadee:limpar-progresso', onLimpar);
+    return () => window.removeEventListener('cadee:limpar-progresso', onLimpar);
+  });
 
   const handleParseImport = (text: string) => {
     setImportError('');
@@ -379,366 +411,320 @@ export function ProgressView() {
     ? Math.min(100, (progressData.effectiveTotalHours / totalRequiredHours) * 100)
     : 0;
 
+  // Quanto a grade planejada deste semestre somaria, se tudo for aprovado (parte listrada das barras)
+  const planejadoExtra = {
+    mandatory: Math.max(0, overall.projected.mandatory.completed - overall.mandatory.completed),
+    elective: Math.max(0, overall.projected.electives.completed - overall.electives.completed),
+  };
+
+  const categorias = [
+    {
+      key: 'mandatory' as const,
+      nome: 'Obrigatórias',
+      cor: 'bg-mar',
+      listra: 'bg-[repeating-linear-gradient(135deg,hsl(var(--mar))_0_2px,hsl(var(--mar-tint))_2px_5px)]',
+      completed: progressData.mandatory.completed,
+      total: progressData.mandatory.total,
+      extra: planejadoExtra.mandatory,
+    },
+    {
+      key: 'elective' as const,
+      nome: 'Optativas',
+      cor: 'bg-dende',
+      listra: 'bg-[repeating-linear-gradient(135deg,hsl(var(--dende))_0_2px,hsl(var(--dende-tint))_2px_5px)]',
+      completed: progressData.electives.completed,
+      total: progressData.electives.total,
+      extra: planejadoExtra.elective,
+    },
+    {
+      key: 'complementary' as const,
+      nome: 'Complementares',
+      cor: 'bg-pedra',
+      listra: '',
+      completed: progressData.complementary.completed,
+      total: progressData.complementary.total,
+      extra: 0,
+    },
+  ].map((c) => {
+    const pct = c.total > 0 ? Math.min(100, (c.completed / c.total) * 100) : 0;
+    const pctComGrade = c.total > 0 ? Math.min(100, ((c.completed + c.extra) / c.total) * 100) : 0;
+    return { ...c, pct, listraPct: Math.max(0, pctComGrade - pct) };
+  });
+
+  const faltam = Math.max(0, totalRequiredHours - progressData.effectiveTotalHours);
+  const termoGrade = currentTerm || 'deste semestre';
+
+  // Aproveitamento: totais de todos os semestres
+  const aprovTotais = mergedSemesters.reduce(
+    (acc, s) => ({ aprovadas: acc.aprovadas + s.approved, total: acc.total + s.approved + s.failed + s.dropped + s.notDone }),
+    { aprovadas: 0, total: 0 }
+  );
+  const aprovPct = aprovTotais.total > 0 ? Math.round((aprovTotais.aprovadas / aprovTotais.total) * 100) : 0;
+
+  const pilula = (status: 'approved' | 'failed' | 'dropped' | 'none') =>
+    status === 'approved'
+      ? 'bg-mar'
+      : status === 'failed'
+        ? 'bg-pitanga'
+        : status === 'dropped'
+          ? 'shadow-[inset_0_0_0_1.5px_hsl(var(--foreground))]'
+          : 'shadow-[inset_0_0_0_1.5px_hsl(var(--tracejado))]';
+
+  const Pilula = ({ status, dica }: { status: 'approved' | 'failed' | 'dropped' | 'none'; dica: string }) => (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className={`h-2.5 w-[26px] shrink-0 cursor-default rounded-full ${pilula(status)}`} aria-label={dica} />
+        </TooltipTrigger>
+        <TooltipContent>
+          <p className="text-xs">{dica}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+
+  const fonteTexto = hasImportedData
+    ? sigaaSession?.sincronizadoEm
+      ? `Dados do histórico escolar importado do SIGAA · `
+      : 'Dados do histórico escolar importado'
+    : 'Progresso estimado pela grade do curso. Importe o histórico para dados precisos.';
+
   return (
-    <div className="space-y-10">
-      {/* Header with program info */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[22px] font-black tracking-[-0.035em] text-foreground sm:text-[26px]">Progresso</h1>
+    <div>
+      {/* Aviso sobre necessidade de importar histórico */}
+      {!hasImportedData && (
+        <div className="mb-6 flex flex-col gap-3 rounded-2xl bg-mar-claro p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div className="text-sm">
+            <p className="mb-1 font-extrabold text-mar-ink">Importe seu histórico acadêmico</p>
+            <p className="font-medium text-foreground-2">Os números abaixo são uma estimativa pela grade do curso. Com o histórico, o progresso fica exato.</p>
           </div>
-          <div className="flex items-center gap-2">
-            {hasImportedData && (
-              <button
-                onClick={() => {
-                  if (confirm('Tem certeza que deseja limpar todos os dados importados?')) {
-                    clearSavedData();
-                  }
-                }}
-                className="hidden h-10 items-center gap-2 rounded-full border-[1.5px] border-pitanga/35 px-4 text-[13px] font-bold text-pitanga hover:bg-pitanga-tint sm:inline-flex"
-              >
-                <X className="w-3.5 h-3.5" />
-                <span>Limpar dados</span>
-              </button>
-            )}
-            {hasImportedData && (
-              <button
-                onClick={() => setShowImportModal(true)}
-                className="inline-flex h-10 items-center gap-2 rounded-full bg-nevoa px-3 text-[13px] font-bold text-foreground hover:bg-trilho sm:px-4"
-              >
-                <Upload className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Importar histórico</span>
-              </button>
-            )}
-            {hasImportedData && (
-              <button
-                onClick={() => {
-                  if (confirm('Tem certeza que deseja limpar todos os dados importados?')) {
-                    clearSavedData();
-                  }
-                }}
-                className="inline-flex h-10 items-center gap-1.5 rounded-full border-[1.5px] border-pitanga/35 px-3 text-[13px] font-bold text-pitanga hover:bg-pitanga-tint sm:hidden"
-              >
-                <X className="w-3.5 h-3.5" />
-                <span>Limpar</span>
-              </button>
-            )}
-          </div>
+          <button
+            onClick={() => {
+              setShowWelcomeModal(false);
+              setShowImportModal(true);
+            }}
+            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-5 text-[13px] font-bold text-primary-foreground hover:bg-primary/90"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            Importar histórico
+          </button>
         </div>
-        
-        {/* Aviso sobre necessidade de importar histórico */}
-        {!hasImportedData && (
-          <div className="rounded-2xl bg-mar-claro p-4 sm:p-5">
-            <div className="flex items-start gap-2">
-              <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-mar">
-                <span className="text-white text-xs font-bold">i</span>
-              </div>
-              <div className="text-sm">
-                <p className="mb-1 font-extrabold text-foreground">
-                  Importe seu histórico acadêmico
-                </p>
-                <p className="font-medium text-foreground-2">
-                  Para visualizar seu progresso no curso, 
-                  <button 
-                    onClick={() => {
-                      setShowWelcomeModal(false);
-                      setShowImportModal(true);
-                    }}
-                    className="ml-1 font-extrabold text-mar underline-offset-2 hover:underline"
-                  >
-                    importe seu histórico acadêmico
-                  </button>.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      )}
 
-      {/* Progresso geral: a maré + números + categorias */}
-      <div className="grid grid-cols-1 items-center gap-8 border-t-2 border-foreground pt-6 md:grid-cols-[minmax(0,300px)_minmax(0,1fr)] md:gap-12 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
-        <div className="-ml-[72px] flex justify-start sm:ml-0 md:justify-center">
-          <Mare percent={Math.min(100, overallProgress)} size={232} className="md:hidden" />
-          <Mare percent={Math.min(100, overallProgress)} size={300} className="hidden md:block" />
-        </div>
-
-        <div className="space-y-6">
-          {/* Geral */}
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <h2 className="rotulo">Progresso geral</h2>
-              <InfoPopup 
-                iconClassName="w-4 h-4"
+      {/* VISÃO GERAL */}
+      <section aria-label="Visão geral" className="flex flex-col border-t-2 border-foreground lg:flex-row lg:flex-wrap">
+        <div className="flex items-center gap-[18px] py-6 lg:flex-[1.2_1_380px] lg:gap-7 lg:pb-8 lg:pr-8 lg:pt-7">
+          <Mare percent={Math.min(100, overallProgress)} size={96} className="lg:hidden" />
+          <Mare percent={Math.min(100, overallProgress)} size={132} className="hidden lg:block" />
+          <div className="flex flex-col gap-2">
+            <span className="flex items-center gap-1.5">
+              <span className="rotulo !text-foreground">Progresso geral</span>
+              <InfoPopup
+                iconClassName="w-3.5 h-3.5"
                 content="Progresso total baseado nas horas cursadas em relação às horas exigidas do curso (limitado ao teto de cada categoria)."
               />
-            </div>
-            <span className="numero block text-[48px] text-foreground sm:text-[56px]">
+            </span>
+            <span className="numero text-[44px] leading-[0.9] text-foreground lg:text-[52px]">
               <PercentAnimado value={overallProgress} />
             </span>
-            <div className="mt-2 font-mono text-[13px] text-muted-foreground">
-              <span>{progressData.effectiveTotalHours} / {totalRequiredHours} horas</span>
-            </div>
-            <div className="mt-3 h-3 w-full overflow-hidden rounded-full bg-trilho">
-              <div 
-                className="h-full rounded-full bg-foreground transition-all duration-500"
-                style={{ width: `${Math.min(100, overallProgress)}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Categorias */}
-          <div className="border-t border-border pt-5">
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 sm:gap-6">
-              <ProgressCard 
-                title="Obrigatórias" 
-                current={progressData.mandatory.completed} 
-                total={progressData.mandatory.total}
-                category="mandatory"
-                showInfo
-                isEstimated={usesCurriculumTotals}
-                infoText="Horas de disciplinas obrigatórias do curso."
-              />
-              <ProgressCard 
-                title="Optativas" 
-                current={progressData.electives.completed} 
-                total={progressData.electives.total}
-                category="elective"
-                showInfo
-                isEstimated={usesCurriculumTotals}
-                infoText="Horas de disciplinas optativas."
-              />
-              <ProgressCard 
-                title="Complementares" 
-                current={progressData.complementary.completed} 
-                total={progressData.complementary.total}
-                category="complementary"
-                showInfo
-                isEstimated={usesCurriculumTotals}
-                infoText="Horas de atividades complementares."
-              />
-            </div>
+            <span className="font-mono text-xs text-foreground-2">
+              {progressData.effectiveTotalHours} / {totalRequiredHours} h
+              <span className="hidden lg:inline"> · faltam {faltam} h</span>
+            </span>
           </div>
         </div>
+
+        {categorias.map((c) => (
+          <div
+            key={c.key}
+            className="flex flex-col gap-2.5 border-t border-foreground/10 py-4 lg:flex-[1_1_200px] lg:justify-center lg:gap-3 lg:border-l lg:border-t-0 lg:px-7 lg:pb-8 lg:pt-7 lg:last:pr-0"
+          >
+            <div className="flex items-baseline justify-between gap-3 lg:flex-col lg:items-start lg:gap-3">
+              <span className="inline-flex items-center gap-2 text-sm font-extrabold text-foreground lg:text-[11px] lg:uppercase lg:tracking-[0.12em]">
+                <span className={`h-2 w-2 rounded-full ${c.cor}`} />
+                {c.nome}
+              </span>
+              <span className="numero text-2xl leading-[0.9] text-foreground lg:text-4xl">{porcento(c.pct, c.pct % 1 === 0 ? 0 : 1)}</span>
+            </div>
+            <div className="flex h-1.5 overflow-hidden rounded-full bg-trilho">
+              <span className={c.cor} style={{ width: `${c.pct}%` }} />
+              {c.listraPct > 0 && <span className={c.listra} style={{ width: `${c.listraPct}%` }} />}
+            </div>
+            <span className="font-mono text-[11px] text-foreground-2">
+              {Math.min(c.completed, c.total)} / {c.total} h
+              {c.completed > c.total && <span className="text-mar-ink"> · +{c.completed - c.total} h excedentes</span>}
+              {c.key === 'complementary' && c.completed === 0 && (
+                <>
+                  {' · '}
+                  <Link to="/configuracoes" className="font-semibold text-mar hover:text-foreground">registrar</Link>
+                </>
+              )}
+              {usesCurriculumTotals && <span className="text-dende-ink"> · estimado</span>}
+            </span>
+          </div>
+        ))}
+      </section>
+      <div className="flex flex-wrap gap-x-5 gap-y-1.5 border-t border-foreground/10 pt-3 text-xs text-foreground-2">
+        <span className="hidden items-center gap-2 lg:inline-flex">
+          <span className="h-1.5 w-[18px] rounded-full bg-mar" />
+          Concluído
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <span className="h-1.5 w-[18px] rounded-full bg-[repeating-linear-gradient(135deg,hsl(var(--mar))_0_2px,hsl(var(--mar-tint))_2px_5px)]" />
+          <span className="lg:hidden">Listrado: na grade de {termoGrade}</span>
+          <span className="hidden lg:inline">Na grade de {termoGrade}, se aprovado</span>
+        </span>
       </div>
 
-      {/* Advanced Semester Grid */}
-      <AdvancedSemesterGrid
-        courses={courses}
-        completedDisciplines={completedDisciplines}
-        enrolledCodes={enrolledCodes}
-        courseLevels={courseLevels}
-        currentTerm={currentTerm}
-        showInfo
-        infoText="Progresso real por semestre baseado nas disciplinas obrigatórias do curso e nas que você já concluiu ou planejou."
-      />
-
-      {/* Aproveitamento Section */}
-      <div className="border-t-2 border-foreground pt-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-[22px] font-black tracking-[-0.035em] text-foreground">Aproveitamento</h3>
-            {currentTerm && (
-              <span className="rounded-full bg-nevoa px-2.5 py-1 font-mono text-[11px] font-semibold text-foreground">
-                Vigente: {currentTerm}
-              </span>
-            )}
-            <InfoPopup 
-              iconClassName="w-3.5 h-3.5"
-              content={`Aproveitamento por período letivo. O semestre vigente (${currentTerm || '—'}) é destacado e inclui resultados marcados na tela inicial.`}
-            />
-          </div>
+      {/* DETALHE: por semestre + aproveitamento */}
+      <div className="mt-10 flex flex-col border-t-2 border-foreground lg:flex-row lg:flex-wrap">
+        <div className="min-w-0 pb-8 pt-6 lg:flex-[1_1_400px] lg:pr-8">
+          <AdvancedSemesterGrid
+            courses={courses}
+            completedDisciplines={completedDisciplines}
+            enrolledCodes={enrolledCodes}
+            courseLevels={courseLevels}
+            currentTerm={currentTerm}
+            optativasPct={categorias[1].pct}
+            embutido
+          />
         </div>
 
-        <div className="space-y-3">
-          {mergedSemesters.map(({ term, approved, failed, dropped, notDone, isCurrent }) => {
-            const isCurrentTerm = isCurrent || term === currentTerm;
+        <section
+          aria-labelledby="aprov"
+          className="flex min-w-0 flex-col gap-4 border-t-2 border-foreground pb-8 pt-6 lg:flex-[1.3_1_480px] lg:border-l lg:border-t-0 lg:border-l-border lg:pl-8"
+        >
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="flex items-center gap-2">
+              <h2 id="aprov" className="text-xl font-black tracking-[-0.03em] text-foreground lg:text-2xl">Aproveitamento</h2>
+              <InfoPopup
+                iconClassName="w-3.5 h-3.5"
+                content={`Aproveitamento por período letivo. O semestre vigente (${currentTerm || '—'}) é destacado e inclui resultados marcados na tela inicial.`}
+              />
+            </span>
+            {aprovTotais.total > 0 && (
+              <span className="font-mono text-[11px] text-muted-foreground">
+                <span className="lg:hidden">{aprovTotais.aprovadas} / {aprovTotais.total} · {aprovPct}%</span>
+                <span className="hidden lg:inline">{aprovTotais.aprovadas} de {aprovTotais.total} disciplinas · {aprovPct}%</span>
+              </span>
+            )}
+          </div>
 
-            // Se for o semestre vigente e houver disciplinas planejadas:
-            if (isCurrentTerm && plannedDisciplinesList.length > 0) {
-              const currentItems = plannedDisciplinesList.map((d) => {
-                const rawStatus = getDisciplineStatus(d.baseCode);
-                const isOutcomeApproved = semesterOutcomes[currentTerm || '']?.approved?.includes(d.baseCode);
-                const isOutcomeFailed = semesterOutcomes[currentTerm || '']?.failed?.includes(d.baseCode);
-                const isOutcomeDropped = semesterOutcomes[currentTerm || '']?.dropped?.includes(d.baseCode);
-                const isCompleted = completedDisciplines.includes(d.baseCode);
+          <div className="flex flex-col border-t border-foreground/10">
+            {mergedSemesters.map(({ term, approved, failed, dropped, notDone, isCurrent }) => {
+              const isCurrentTerm = isCurrent || term === currentTerm;
 
-                let status: 'approved' | 'failed' | 'dropped' | 'none' = 'none';
-                if (rawStatus === 'approved' || isOutcomeApproved || isCompleted) {
-                  status = 'approved';
-                } else if (rawStatus === 'failed' || isOutcomeFailed) {
-                  status = 'failed';
-                } else if (rawStatus === 'dropped' || isOutcomeDropped) {
-                  status = 'dropped';
-                }
+              // Semestre vigente com turmas planejadas: uma pílula por disciplina da grade
+              if (isCurrentTerm && plannedDisciplinesList.length > 0) {
+                const currentItems = plannedDisciplinesList.map((d) => {
+                  const rawStatus = getDisciplineStatus(d.baseCode);
+                  const isOutcomeApproved = semesterOutcomes[currentTerm || '']?.approved?.includes(d.baseCode);
+                  const isOutcomeFailed = semesterOutcomes[currentTerm || '']?.failed?.includes(d.baseCode);
+                  const isOutcomeDropped = semesterOutcomes[currentTerm || '']?.dropped?.includes(d.baseCode);
+                  const isCompleted = completedDisciplines.includes(d.baseCode);
 
-                let colorClass = 'border-[1.5px] border-dashed border-tracejado';
-                let title = 'Não finalizado / Em andamento';
+                  let status: 'approved' | 'failed' | 'dropped' | 'none' = 'none';
+                  if (rawStatus === 'approved' || isOutcomeApproved || isCompleted) status = 'approved';
+                  else if (rawStatus === 'failed' || isOutcomeFailed) status = 'failed';
+                  else if (rawStatus === 'dropped' || isOutcomeDropped) status = 'dropped';
 
-                if (status === 'approved') {
-                  colorClass = 'bg-mar';
-                  title = 'Aprovação';
-                } else if (status === 'failed') {
-                  colorClass = 'bg-pitanga';
-                  title = 'Reprovação';
-                } else if (status === 'dropped') {
-                  colorClass = 'border-2 border-foreground';
-                  title = 'Trancamento';
-                }
+                  const titulo = status === 'approved' ? 'Aprovação' : status === 'failed' ? 'Reprovação' : status === 'dropped' ? 'Trancamento' : 'Em curso';
+                  return { code: d.baseCode, status, dica: `${titulo}: ${d.baseCode}${d.name ? ` — ${d.name}` : ''}` };
+                });
+                const aprovadasAtual = currentItems.filter((i) => i.status === 'approved').length;
 
-                return {
-                  code: d.baseCode,
-                  name: d.name,
-                  status,
-                  colorClass,
-                  tooltip: `${title}: ${d.baseCode}${d.name ? ` — ${d.name}` : ''}`,
-                };
+                return (
+                  <div key={term} className="-mx-2.5 grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3 rounded-[10px] bg-nevoa px-2.5 py-[11px] lg:grid-cols-[72px_minmax(0,1fr)_96px] lg:gap-4">
+                    <span className="flex flex-col gap-[3px]">
+                      <span className="font-mono text-xs font-semibold text-foreground">{term}</span>
+                      <span className="self-start rounded-full bg-foreground px-1.5 py-px text-[9px] font-extrabold uppercase tracking-[0.08em] text-background">Atual</span>
+                    </span>
+                    <span className="flex flex-wrap gap-1">
+                      {currentItems.map((item) => <Pilula key={item.code} status={item.status} dica={item.dica} />)}
+                    </span>
+                    <span className="text-right font-mono text-[11px] text-foreground-2">
+                      {aprovadasAtual}/{currentItems.length}<span className="hidden lg:inline"> · em curso</span>
+                    </span>
+                  </div>
+                );
+              }
+
+              const total = approved + failed + dropped + notDone;
+              const semesterDisciplines = disciplinesBySemester.get(term);
+              const itens = Array.from({ length: total }).map((_, index) => {
+                if (index < approved) return { status: 'approved' as const, dica: `Aprovação${semesterDisciplines?.approved[index] ? `: ${semesterDisciplines.approved[index]}` : ''}` };
+                if (index < approved + failed) return { status: 'failed' as const, dica: `Reprovação${semesterDisciplines?.failed[index - approved] ? `: ${semesterDisciplines.failed[index - approved]}` : ''}` };
+                if (index < approved + failed + dropped) return { status: 'dropped' as const, dica: `Trancamento${semesterDisciplines?.dropped[index - approved - failed] ? `: ${semesterDisciplines.dropped[index - approved - failed]}` : ''}` };
+                return { status: 'none' as const, dica: isCurrentTerm ? 'Em curso' : 'Não concluída' };
               });
-
-              const currentApprovedCount = currentItems.filter((i) => i.status === 'approved').length;
-              const currentTotalCount = currentItems.length;
 
               return (
                 <div
                   key={term}
-                  className="space-y-2.5 rounded-2xl bg-nevoa px-3 py-3 -mx-3"
+                  className={`grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3 py-[11px] lg:grid-cols-[72px_minmax(0,1fr)_96px] lg:gap-4 ${isCurrentTerm ? '-mx-2.5 rounded-[10px] bg-nevoa px-2.5' : 'border-b border-foreground/10'}`}
                 >
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-[13px] font-semibold text-foreground">
-                        {term}
-                      </span>
-                      <span className="rounded-full bg-dende px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.08em] text-foreground">
-                        Atual
-                      </span>
-                    </div>
-                    <span className="font-mono text-xs font-semibold text-foreground-2">
-                      {currentApprovedCount}/{currentTotalCount} disciplinas
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-[5px]">
-                    {currentItems.map((item, index) => (
-                      <TooltipProvider key={index}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div
-                              className={`h-[11px] w-[26px] rounded-full ${item.colorClass} cursor-pointer hover:opacity-80 transition-opacity`}
-                            />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs">{item.tooltip}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ))}
-                  </div>
+                  <span className="flex flex-col gap-[3px]">
+                    <span className="font-mono text-xs font-semibold text-foreground">{term}</span>
+                    {isCurrentTerm && (
+                      <span className="self-start rounded-full bg-foreground px-1.5 py-px text-[9px] font-extrabold uppercase tracking-[0.08em] text-background">Atual</span>
+                    )}
+                  </span>
+                  <span className="flex flex-wrap gap-1">
+                    {itens.map((it, i) => <Pilula key={i} status={it.status} dica={it.dica} />)}
+                  </span>
+                  <span className="text-right font-mono text-[11px] text-foreground-2">{approved}/{total}</span>
                 </div>
               );
-            }
+            })}
 
-            // Para semestres passados ou quando não há turmas planejadas:
-            const total = approved + failed + dropped + notDone;
-            const semesterDisciplines = disciplinesBySemester.get(term);
-
-            return (
-              <div
-                key={term}
-                className={`space-y-2.5 border-b border-border py-3 ${isCurrentTerm ? 'rounded-2xl border-b-0 bg-nevoa px-3 -mx-3' : ''}`}
-              >
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className={isCurrentTerm ? 'font-mono text-[13px] font-semibold text-foreground' : 'font-mono text-[13px] font-semibold text-foreground-2'}>
-                      {term}
-                    </span>
-                    {isCurrentTerm && (
-                      <span className="rounded-full bg-dende px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.08em] text-foreground">
-                        Atual
-                      </span>
-                    )}
-                  </div>
-                  <span className="font-mono text-xs font-semibold text-foreground-2">
-                    {approved}/{total} disciplinas
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-[5px]">
-                  {Array.from({ length: total }).map((_, index) => {
-                    let colorClass: string;
-                    let title: string;
-                    let disciplineCode: string | undefined;
-
-                    if (index < approved) {
-                      colorClass = 'bg-mar';
-                      title = 'Aprovação';
-                      disciplineCode = semesterDisciplines?.approved[index];
-                    } else if (index < approved + failed) {
-                      colorClass = 'bg-pitanga';
-                      title = 'Reprovação';
-                      disciplineCode = semesterDisciplines?.failed[index - approved];
-                    } else if (index < approved + failed + dropped) {
-                      colorClass = 'border-2 border-foreground';
-                      title = 'Trancamento';
-                      disciplineCode = semesterDisciplines?.dropped[index - approved - failed];
-                    } else {
-                      colorClass = 'border-[1.5px] border-dashed border-tracejado';
-                      title = 'Não feito';
-                    }
-
-                    const tooltipContent = disciplineCode ? `${title}: ${disciplineCode}` : title;
-
-                    return (
-                      <TooltipProvider key={index}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div
-                              className={`h-[11px] w-[26px] rounded-full ${colorClass} cursor-pointer hover:opacity-80 transition-opacity`}
-                            />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs">{tooltipContent}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    );
-                  })}
-                </div>
+            {mergedSemesters.length === 0 && (
+              <div className="py-8 text-center">
+                <p className="mb-1 text-sm font-bold text-foreground">Nenhum dado de aproveitamento encontrado</p>
+                <p className="text-[13px] text-muted-foreground">Importe seu histórico para ver o aproveitamento por semestre.</p>
               </div>
-            );
-          })}
-
-          {mergedSemesters.length === 0 && (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                <GraduationCap className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <p className="text-muted-foreground mb-2">Nenhum dado de aproveitamento encontrado</p>
-              <p className="text-sm text-muted-foreground">Importe seu histórico para visualizar seu aproveitamento por semestre</p>
-            </div>
-          )}
-          
-          {/* Estatísticas gerais */}
-          <div className="pt-4">
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs font-semibold sm:flex sm:flex-wrap">
-              <div className="flex items-center gap-2">
-                <div className="h-[9px] w-[22px] rounded-full bg-mar" />
-                <span className="text-muted-foreground">Aprovação/Dispensa</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-[9px] w-[22px] rounded-full bg-pitanga" />
-                <span className="text-muted-foreground">Reprovação</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-[9px] w-[22px] rounded-full border-2 border-foreground" />
-                <span className="text-muted-foreground">Trancamento</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-[9px] w-[22px] rounded-full border-[1.5px] border-dashed border-tracejado" />
-                <span className="text-muted-foreground">Não feito</span>
-              </div>
-            </div>
+            )}
           </div>
+
+          <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs text-foreground-2">
+            <span className="inline-flex items-center gap-2"><span className="h-2 w-5 rounded-full bg-mar" />Aprovação / dispensa</span>
+            <span className="inline-flex items-center gap-2"><span className="h-2 w-5 rounded-full bg-pitanga" />Reprovação</span>
+            <span className="inline-flex items-center gap-2"><span className="h-2 w-5 rounded-full shadow-[inset_0_0_0_1.5px_hsl(var(--foreground))]" />Trancamento</span>
+            <span className="inline-flex items-center gap-2"><span className="h-2 w-5 rounded-full shadow-[inset_0_0_0_1.5px_hsl(var(--tracejado))]" />Em curso</span>
+          </div>
+        </section>
+      </div>
+
+      {/* FONTE DOS DADOS */}
+      <div className="flex flex-col gap-3 border-t-2 border-foreground pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <span className="hidden items-center gap-2.5 text-[13px] text-foreground-2 sm:inline-flex">
+          <FileText className="h-4 w-4 text-mar" strokeWidth={2.4} />
+          <span>
+            {fonteTexto}
+            {hasImportedData && sigaaSession?.sincronizadoEm && (
+              <span className="font-mono text-xs">{new Date(sigaaSession.sincronizadoEm).toLocaleDateString('pt-BR')}</span>
+            )}
+          </span>
+        </span>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          {hasImportedData && (
+            <button
+              onClick={pedirLimpeza}
+              className="order-2 inline-flex min-h-10 items-center justify-center gap-2 rounded-full px-4 text-xs font-bold text-pitanga hover:bg-pitanga-tint sm:order-1 lg:hidden"
+            >
+              Limpar dados importados
+            </button>
+          )}
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="order-1 inline-flex h-[52px] items-center justify-center gap-2 rounded-full bg-primary px-5 text-[15px] font-extrabold text-primary-foreground hover:bg-primary/90 sm:order-2 sm:h-11 sm:text-xs sm:font-bold"
+          >
+            <Upload className="h-4 w-4 sm:h-3.5 sm:w-3.5" strokeWidth={2.4} />
+            {hasImportedData ? 'Atualizar histórico' : 'Importar histórico'}
+          </button>
         </div>
       </div>
 
-      {/* Modal de Boas-vindas/Importação Obrigatória */}
+      {/* Boas-vindas da tela de Progresso */}
       <AnimatePresence>
         {showWelcomeModal && (
           <motion.div
@@ -749,341 +735,72 @@ export function ProgressView() {
             onClick={() => setShowWelcomeModal(false)}
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 16 }}
               transition={{ duration: 0.18 }}
-              className="w-full max-w-md bg-background rounded-t-3xl sm:rounded-3xl shadow-xl p-6 space-y-4"
+              className="w-full max-w-md rounded-t-[28px] bg-background px-6 pb-7 pt-3 sm:rounded-[28px] sm:p-7"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 mx-auto rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                  <Upload className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-                </div>
-                
-                <div>
-                  <h3 className="text-xl font-semibold text-foreground mb-2">
-                    Bem-vindo à tela de Progresso
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Para visualizar seu progresso acadêmico com dados precisos, 
-                    você precisa importar seu histórico acadêmico.
-                  </p>
-                </div>
-
-                <div className="rounded-2xl bg-mar-claro p-4 sm:p-5">
-                  <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-2">
-                    📊 O que será extraído:
-                  </div>
-                  <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
-                    <div>• Horas obrigatórias concluídas</div>
-                    <div>• Horas optativas concluídas</div>
-                    <div>• Horas complementares concluídas</div>
-                    <div>• Semestres cursados</div>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button
-                    onClick={() => {
-                      setShowWelcomeModal(false);
-                      localStorage.setItem('firstVisitProgresso', 'true');
-                    }}
-                    className="flex-1 h-12 px-5 rounded-full border-[1.5px] border-foreground/20 text-sm font-bold text-foreground hover:bg-nevoa"
-                  >
-                    Agora não
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowWelcomeModal(false);
-                      localStorage.setItem('firstVisitProgresso', 'true');
-                      setShowImportModal(true);
-                    }}
-                    className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
-                  >
-                    Importar histórico
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Modal de Importar Histórico */}
-      <AnimatePresence>
-        {showImportModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end justify-center bg-overlay/55 sm:items-center sm:p-4"
-            onClick={() => setShowImportModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              transition={{ duration: 0.18 }}
-              className="max-h-[92vh] w-full max-w-2xl space-y-5 overflow-y-auto rounded-t-[28px] bg-background p-6 pb-8 shadow-xl sm:rounded-[28px] sm:pb-6"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="hidden">
-                    <Upload className="w-5 h-5 text-mar" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[22px] font-black leading-tight tracking-[-0.03em] text-foreground">Importar histórico para progresso</p>
-                    <p className="mt-1 text-sm font-medium text-muted-foreground">
-                      Envie o PDF ou cole o texto do histórico para calcular seu progresso real no curso.
-                    </p>
-                  </div>
-                </div>
-                <button onClick={() => setShowImportModal(false)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-nevoa text-foreground-2 hover:text-foreground">
-                  <X className="h-[18px] w-[18px]" />
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                <label className="flex h-[88px] cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[18px] border-[1.5px] border-dashed border-tracejado bg-nevoa px-4 transition-colors hover:bg-trilho">
-                  <Upload className="h-5 w-5 shrink-0 text-foreground" />
-                  <span className="text-sm font-bold text-foreground">Selecionar PDF</span>
-                  <input type="file" accept=".pdf,text/plain" className="hidden" onChange={handleFileChange} />
-                </label>
-
-                <div className="rounded-[18px] bg-mar-claro p-4 text-xs font-medium leading-relaxed text-mar-ink">
-                  <p className="mb-1 flex items-center gap-1.5 text-[13px] font-extrabold">
-                    <Shield className="w-3 h-3" />
-                    Privacidade
-                  </p>
-                  <p>Seu histórico não é armazenado em nenhum local. É utilizado apenas para extração de texto sobre as disciplinas e progresso, sendo automaticamente descartado após a extração.</p>
-                </div>
-
-                {isParsing && <p className="text-sm text-muted-foreground">Lendo PDF...</p>}
-                {importError && <p className="text-sm text-destructive">{importError}</p>}
-
-                {/* Retorno visual simples (as métricas do curso ficam ocultas no novo visual) */}
-                {parsedCodes.length > 0 && (
-                  <div className="flex items-center gap-2 rounded-[14px] bg-nevoa px-4 py-3 text-sm font-semibold text-foreground">
-                    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-mar" />
-                    {parsedCodes.length} disciplina{parsedCodes.length > 1 ? 's' : ''} aprovada{parsedCodes.length > 1 ? 's' : ''} detectada{parsedCodes.length > 1 ? 's' : ''}
-                  </div>
-                )}
-
-                {/* Métricas de Progresso do Curso - só mostra quando há dados importados */}
-                {(parsedWorkload || parsedCodes.length > 0) && (
-                  <div className="hidden">
-                    <p className="text-sm font-medium text-foreground">
-                      Métricas do Curso
-                    </p>
-                    
-                    {/* Se encontrou dados de carga horária do histórico, mostra os dados reais */}
-                    {parsedWorkload ? (
-                      <div className="space-y-3">
-                        <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
-                          <div className="text-xs text-green-600 dark:text-green-400 font-medium mb-3">
-                            Dados Extraídos do Histórico
-                          </div>
-                          <div className="grid grid-cols-1 gap-3">
-                            {/* Obrigatórias */}
-                            <div className="space-y-1">
-                              <div className="flex justify-between items-center text-sm">
-                                <span className="font-medium text-blue-700 dark:text-blue-300">Obrigatórias</span>
-                                <span className="font-semibold text-blue-700 dark:text-blue-300">
-                                  {parsedWorkload.mandatory.required > 0 
-                                    ? Math.min(100, Math.round((parsedWorkload.mandatory.completed / parsedWorkload.mandatory.required) * 100)) 
-                                    : 0}%
-                                </span>
-                              </div>
-                              <div className="h-1.5 w-full bg-blue-100 dark:bg-blue-950 rounded-full overflow-hidden">
-                                <div 
-                                  className="h-full bg-blue-500 rounded-full transition-all duration-500"
-                                  style={{ width: `${Math.min(100, parsedWorkload.mandatory.required > 0 ? (parsedWorkload.mandatory.completed / parsedWorkload.mandatory.required) * 100 : 0)}%` }}
-                                />
-                              </div>
-                              <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                <span>{Math.min(parsedWorkload.mandatory.completed, parsedWorkload.mandatory.required)}h / {parsedWorkload.mandatory.required}h</span>
-                                {parsedWorkload.mandatory.completed > parsedWorkload.mandatory.required && (
-                                  <span className="text-blue-600 dark:text-blue-400 font-medium">
-                                    +{parsedWorkload.mandatory.completed - parsedWorkload.mandatory.required}h excedentes
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            
-                            {/* Optativas */}
-                            <div className="space-y-1">
-                              <div className="flex justify-between items-center text-sm">
-                                <span className="font-medium text-purple-700 dark:text-purple-300">Optativas</span>
-                                <span className="font-semibold text-purple-700 dark:text-purple-300">
-                                  {parsedWorkload.elective.required > 0 
-                                    ? Math.min(100, Math.round((parsedWorkload.elective.completed / parsedWorkload.elective.required) * 100)) 
-                                    : 0}%
-                                </span>
-                              </div>
-                              <div className="h-1.5 w-full bg-purple-100 dark:bg-purple-950 rounded-full overflow-hidden">
-                                <div 
-                                  className="h-full bg-purple-500 rounded-full transition-all duration-500"
-                                  style={{ width: `${Math.min(100, parsedWorkload.elective.required > 0 ? (parsedWorkload.elective.completed / parsedWorkload.elective.required) * 100 : 0)}%` }}
-                                />
-                              </div>
-                              <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                <span>{Math.min(parsedWorkload.elective.completed, parsedWorkload.elective.required)}h / {parsedWorkload.elective.required}h</span>
-                                {parsedWorkload.elective.completed > parsedWorkload.elective.required && (
-                                  <span className="text-purple-600 dark:text-purple-400 font-medium">
-                                    +{parsedWorkload.elective.completed - parsedWorkload.elective.required}h excedentes
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            
-                            {/* Complementares */}
-                            <div className="space-y-1">
-                              <div className="flex justify-between items-center text-sm">
-                                <span className="font-medium text-green-700 dark:text-green-300">Complementares</span>
-                                <span className="font-semibold text-green-700 dark:text-green-300">
-                                  {parsedWorkload.complementary.required > 0 
-                                    ? Math.min(100, Math.round((parsedWorkload.complementary.completed / parsedWorkload.complementary.required) * 100)) 
-                                    : 0}%
-                                </span>
-                              </div>
-                              <div className="h-1.5 w-full bg-green-100 dark:bg-green-950 rounded-full overflow-hidden">
-                                <div 
-                                  className="h-full bg-green-500 rounded-full transition-all duration-500"
-                                  style={{ width: `${Math.min(100, parsedWorkload.complementary.required > 0 ? (parsedWorkload.complementary.completed / parsedWorkload.complementary.required) * 100 : 0)}%` }}
-                                />
-                              </div>
-                              <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                <span>{Math.min(parsedWorkload.complementary.completed, parsedWorkload.complementary.required)}h / {parsedWorkload.complementary.required}h</span>
-                                {parsedWorkload.complementary.completed > parsedWorkload.complementary.required && (
-                                  <span className="text-green-600 dark:text-green-400 font-medium">
-                                    +{parsedWorkload.complementary.completed - parsedWorkload.complementary.required}h excedentes
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            
-                            {/* Total */}
-                            <div className="border-t pt-3 mt-1 space-y-1">
-                              {(() => {
-                                const cappedTotal = Math.min(parsedWorkload.mandatory.completed, parsedWorkload.mandatory.required) +
-                                  Math.min(parsedWorkload.elective.completed, parsedWorkload.elective.required) +
-                                  Math.min(parsedWorkload.complementary.completed, parsedWorkload.complementary.required);
-                                const totalReq = parsedWorkload.mandatory.required + parsedWorkload.elective.required + parsedWorkload.complementary.required;
-                                const totalPct = totalReq > 0 ? Math.min(100, Math.round((cappedTotal / totalReq) * 100)) : 0;
-                                return (
-                                  <>
-                                    <div className="flex justify-between items-center text-sm">
-                                      <span className="font-semibold text-foreground">Progresso Geral</span>
-                                      <span className="font-bold text-foreground">{totalPct}%</span>
-                                    </div>
-                                    <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                                      <div 
-                                        className="h-full bg-green-500 rounded-full transition-all duration-500"
-                                        style={{ width: `${totalPct}%` }}
-                                      />
-                                    </div>
-                                    <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                      <span>{cappedTotal}h / {totalReq}h exigidas</span>
-                                      <span>{totalPct}% concluído</span>
-                                    </div>
-                                  </>
-                                );
-                              })()}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      /* Se não encontrou dados de carga horária, mostra estimativa baseada em disciplinas */
-                      <div className="space-y-3">
-                        <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                          <div className="text-xs text-amber-600 dark:text-amber-400 font-medium mb-2">
-                            Estimativa Baseada em Disciplinas
-                          </div>
-                          <div className="text-xs text-amber-700 dark:text-amber-300 mb-2">
-                            Tabela de carga horária não encontrada. Calculando com base nas disciplinas aprovadas.
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="rounded-2xl bg-mar-claro p-4 sm:p-5">
-                            <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">
-                              Horas Obrigatórias
-                            </div>
-                            <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                              {Math.floor(parsedCodes.length * 0.7 * 60)}h
-                            </div>
-                          </div>
-                          
-                          <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
-                            <div className="text-xs text-purple-600 dark:text-purple-400 font-medium mb-1">
-                              Horas Optativas
-                            </div>
-                            <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">
-                              {Math.floor(parsedCodes.length * 0.2 * 60)}h
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
-                            <div className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">
-                              Horas Complementares
-                            </div>
-                            <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                              {Math.floor(parsedCodes.length * 0.1 * 60)}h
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Taxa de Aproveitamento */}
-                        {parsedCodes.length > 0 && (
-                          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                            <div className="text-xs text-amber-600 dark:text-amber-400 font-medium mb-1">
-                              Aproveitamento Estimado
-                            </div>
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-2xl font-bold text-amber-700 dark:text-amber-300">
-                                {Math.round((parsedCodes.length / (parsedSemesters.size * 6 || 1)) * 100)}%
-                              </span>
-                              <span className="text-xs text-amber-600 dark:text-amber-400">
-                                ({parsedCodes.length} disciplinas em {parsedSemesters.size} semestres)
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
+              <span aria-hidden className="mx-auto mb-4 block h-1 w-10 rounded-full bg-trilho sm:hidden" />
+              <span className="rotulo !text-foreground">Progresso</span>
+              <h3 className="mt-2 text-[26px] font-black leading-[1.08] tracking-[-0.035em] text-foreground">Veja quanto do curso você já fez</h3>
+              <p className="mt-3 text-sm font-medium leading-relaxed text-foreground-2">
+                Para ver seu progresso com dados precisos, importe o histórico escolar do SIGAA. Dele saem:
+              </p>
+              <ul className="mt-3 flex flex-col gap-1.5 text-[13px] font-semibold text-foreground">
+                <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-mar" />Horas obrigatórias concluídas</li>
+                <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-dende" />Horas optativas concluídas</li>
+                <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-pedra" />Horas complementares concluídas</li>
+                <li className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-foreground" />Semestres cursados</li>
+              </ul>
+              <div className="mt-7 flex gap-2.5">
                 <button
                   onClick={() => {
-                    setShowImportModal(false);
-                    // Mantém dados já importados; limpa apenas campos temporários
-                    setImportText('');
-                    setImportError('');
+                    setShowWelcomeModal(false);
+                    localStorage.setItem('firstVisitProgresso', 'true');
                   }}
-                  className="h-12 px-5 rounded-full border-[1.5px] border-foreground/20 text-sm font-bold text-foreground hover:bg-nevoa"
+                  className="h-12 flex-1 rounded-full border-[1.5px] border-foreground/20 px-5 text-sm font-bold text-foreground hover:bg-nevoa"
                 >
-                  Cancelar
+                  Agora não
                 </button>
                 <button
-                  onClick={handleApplyImport}
-                  className="h-12 px-6 rounded-full bg-primary text-primary-foreground text-sm font-extrabold hover:bg-primary/85"
-                  disabled={isParsing}
+                  onClick={() => {
+                    setShowWelcomeModal(false);
+                    localStorage.setItem('firstVisitProgresso', 'true');
+                    setShowImportModal(true);
+                  }}
+                  className="h-12 flex-1 rounded-full bg-primary px-5 text-sm font-extrabold text-primary-foreground hover:bg-primary/90"
                 >
-                  Aplicar
+                  Importar histórico
                 </button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ImportarHistoricoModal
+        open={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        titulo={hasImportedData ? 'Atualizar histórico' : 'Importar histórico para progresso'}
+        descricao="Envie o PDF do SIGAA ou cole o texto do histórico para recalcular seu progresso real no curso."
+        onFileChange={handleFileChange}
+        texto={importText}
+        onTextoChange={setImportText}
+        onTextoPronto={handleParseImport}
+        isParsing={isParsing}
+        erro={importError}
+        detectadas={parsedCodes.length}
+        onCancelar={() => {
+          setShowImportModal(false);
+          // Mantém dados já importados; limpa apenas campos temporários
+          setImportText('');
+          setImportError('');
+        }}
+        onAplicar={handleApplyImport}
+        rotuloAplicar="Aplicar"
+      />
     </div>
   );
 }

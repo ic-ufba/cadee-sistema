@@ -84,6 +84,7 @@ export default {
         mar: { DEFAULT: c("mar"), tint: c("mar-tint"), ink: c("mar-ink"), claro: c("mar-claro") },
         dende: { DEFAULT: c("dende"), tint: c("dende-tint"), ink: c("dende-ink"), claro: c("dende-claro") },
         ouro: c("ouro"),
+        pedra: c("pedra"),
         pitanga: { DEFAULT: c("pitanga"), tint: c("pitanga-tint"), ink: c("pitanga-ink") },
         dock: { DEFAULT: c("dock"), ativo: c("dock-ativo"), "ativo-fg": c("dock-ativo-fg"), icone: c("dock-icone") },
         overlay: c("overlay"),

@@ -3,6 +3,12 @@ import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { Search, AlertCircle, X, BookOpen, Upload, ChevronLeft, ChevronRight, ChevronDown, Shield } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { reduce, append } from 'ramda'
+import { Mare, SemestreCirculo } from '@/components/brand/Mare';
+import { StatusMarca } from '@/components/disciplines/StatusMarca';
+import { useOverallProgress } from '@/hooks/useOverallProgress';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { tituloCurso, porcento } from '@/lib/curso-texto';
+import { ImportarHistoricoModal } from '@/components/progress/ImportarHistoricoModal';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { DisciplineCard } from '@/components/disciplines/DisciplineCard';
 import { DisciplineDetail } from '@/components/disciplines/DisciplineDetail';
@@ -28,6 +34,8 @@ import { parseCompleteHistory, type WorkloadData, codeRegex } from '@/utils/hist
 const Disciplinas = () => {
   const { completedDisciplines, toggleCompletedDiscipline, getDisciplineStatus, setDisciplineStatus, clearDisciplineStatus } = useApp();
   const { myPrograms } = useMyPrograms();
+  const overall = useOverallProgress();
+  const isMobile = useIsMobile();
   const { courses, isLoading, levels } = useMyCourses();
   const { isSimplified, isFull, setMode } = useMode();
   const { isFavorite, favoriteCodes, toggleFavorite } = useFavoriteCourses();
@@ -876,117 +884,121 @@ const Disciplinas = () => {
   return (
     <MainLayout>
       <div className="px-5 pt-4 sm:px-[clamp(20px,4vw,56px)] sm:pt-8 animate-fade-in">
-        <div className="mb-7">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <h1 className="text-[30px] font-black leading-[1.05] tracking-[-0.04em] text-foreground sm:text-[clamp(30px,2.8vw,40px)]">Catálogo de disciplinas</h1>
-          </div>
-          <div className="mt-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        {/* HERO */}
+        <section className="flex flex-col gap-5 pb-4 sm:pb-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-7">
+          <div className="flex min-w-0 flex-col gap-3.5">
             {myPrograms.length > 0 ? (
-              <div className="flex flex-wrap gap-2 items-center justify-between w-full">
-                <div className="flex flex-wrap gap-2 items-center">
-                  {myPrograms.map((p) => (
-                    <span
-                      key={p.id_ref}
-                      className="rotulo inline-flex items-center"
-                    >
-                      {p.title}
-                    </span>
-                  ))}
-                </div>
-                <button
-                  onClick={() => setShowImportModal(true)}
-                  className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-extrabold text-primary-foreground hover:bg-primary/85"
-                >
-                  <Upload className="h-4 w-4" />
-                  Importar histórico
-                </button>
-              </div>
+              <span className="rotulo !text-foreground">
+                {tituloCurso(myPrograms[0]?.title)}{courses.length > 0 ? ` · ${courses.length} disciplinas` : ''}
+              </span>
             ) : (
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
-                <div className="flex items-center gap-2 text-warning">
-                  <AlertCircle className="w-4 h-4" />
-                  <p className="text-muted-foreground">
-                    Selecione um curso nas configurações para ver apenas as disciplinas do seu curso
-                  </p>
+              <span className="flex items-center gap-2 text-[13px] font-semibold text-dende-ink">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                Selecione um curso em Ajustes para ver só as disciplinas do seu curso
+              </span>
+            )}
+            <h1 className="text-[30px] font-black leading-[1.05] tracking-[-0.04em] text-foreground sm:text-[clamp(30px,2.8vw,40px)]">
+              Catálogo de disciplinas
+            </h1>
+          </div>
+          <div className="flex flex-wrap items-center gap-5">
+            {myPrograms.length > 0 && (
+              <div className="hidden items-center gap-3.5 sm:flex">
+                <Mare percent={Math.min(100, overall.overallProgress)} size={52} ondaAnimada={false} />
+                <div className="flex flex-col gap-1">
+                  <span className="rotulo !text-foreground">Progresso geral</span>
+                  <span className="numero text-[30px] leading-[0.95] text-foreground">{porcento(overall.overallProgress)}</span>
+                  <span className="font-mono text-[11px] text-foreground-2">{overall.totalHours} / {overall.totalRequiredHours} h</span>
                 </div>
-                <button
-                  onClick={() => setShowImportModal(true)}
-                  className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-extrabold text-primary-foreground hover:bg-primary/85"
-                >
-                  <Upload className="h-4 w-4" />
-                  Importar histórico
-                </button>
               </div>
             )}
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="hidden min-h-12 items-center gap-2 rounded-full bg-primary px-5 text-[13px] font-bold text-primary-foreground hover:bg-primary/90 sm:inline-flex"
+            >
+              <Upload className="h-4 w-4" />
+              Importar histórico
+            </button>
           </div>
-        </div>
+        </section>
 
-        <div className="relative mb-3">
-          <Search className="absolute left-[18px] top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-foreground-2" />
-          <input
-            type="text"
-            placeholder="Pesquise por nome ou código..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-[52px] w-full rounded-full border-0 bg-nevoa pl-12 pr-5 text-sm font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-mar transition-all"
-          />
-        </div>
+        {/* FERRAMENTAS */}
+        <div className="flex flex-wrap items-center gap-2.5 border-t-2 border-foreground pb-3.5 pt-5">
+          <div className="relative min-w-0 flex-[1_1_320px]">
+            <Search className="absolute left-[18px] top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-2" />
+            <input
+              type="search"
+              aria-label="Pesquisar disciplina"
+              placeholder={isMobile ? 'Nome ou código…' : 'Pesquise por nome ou código…'}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-12 w-full rounded-full border-0 bg-nevoa pl-11 pr-5 text-sm font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/15"
+            />
+          </div>
 
-        <div className="mb-6">
-          <div className="flex flex-wrap items-center gap-2 max-w-[100vw] overflow-x-auto">
-            {/* Filtros button */}
-            <Collapsible defaultOpen={false}>
-              <CollapsibleTrigger className={cn(
-                'inline-flex h-11 items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-transparent px-4 text-[13px] font-bold hover:bg-nevoa'
-              )}>
-                <span>Filtros</span>
-                <Badge variant={isAll ? 'outline' : 'secondary'}>
-                  {activeIds.length}
-                </Badge>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="flex flex-wrap gap-2 mt-2 p-1 max-w-[100vw]">
-                  {filters.map((f) => (
-                    <button
-                      key={f.id}
-                      type="button"
-                      onClick={() => toggle(f.id)}
-                      className={cn(
-                        "h-10 rounded-full px-4 text-[13px] font-bold transition-all",
-                        isActive(f.id)
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-nevoa text-foreground-2 hover:bg-trilho hover:text-foreground"
-                      )}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-            
-            {/* Ordem button */}
-            <Select value={orderBy} onValueChange={(v: 'name' | 'sections') => setOrderBy(v)}>
-              <SelectTrigger className="inline-flex h-11 w-auto items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-transparent px-4 text-[13px] font-bold hover:bg-nevoa">
-                <span>Ordem</span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sections">Por Turmas</SelectItem>
-                <SelectItem value="name">Por Nome</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {/* Visualização button */}
-            <Select value={viewMode} onValueChange={(v: 'all' | 'semester' | 'electives') => setViewMode(v)}>
-              <SelectTrigger className="inline-flex h-11 w-auto items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-transparent px-4 text-[13px] font-bold hover:bg-nevoa">
-                <span>Visualização</span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tudo</SelectItem>
-                <SelectItem value="semester">Por Semestre</SelectItem>
-                <SelectItem value="electives">Optativas</SelectItem>
-              </SelectContent>
-            </Select>
+          <Collapsible defaultOpen={false} className="contents">
+            <CollapsibleTrigger className="inline-flex min-h-12 items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-background px-[18px] text-[13px] font-bold text-foreground hover:bg-nevoa data-[state=open]:bg-nevoa">
+              Filtros
+              <span className={cn('inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 font-mono text-[11px] font-semibold', isAll ? 'bg-nevoa text-foreground-2' : 'bg-primary text-primary-foreground')}>
+                {activeIds.length}
+              </span>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="order-last w-full">
+              <div className="flex flex-wrap gap-2 pt-1">
+                {filters.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => toggle(f.id)}
+                    aria-pressed={isActive(f.id)}
+                    className={cn(
+                      'h-10 rounded-full px-4 text-[13px] font-bold transition-all',
+                      isActive(f.id) ? 'bg-primary text-primary-foreground' : 'bg-nevoa text-foreground-2 hover:bg-trilho hover:text-foreground'
+                    )}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          <Select value={orderBy} onValueChange={(v: 'name' | 'sections') => setOrderBy(v)}>
+            <SelectTrigger className="inline-flex min-h-12 w-auto items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-background px-[18px] text-[13px] font-bold hover:bg-nevoa">
+              <span className="sm:hidden">Ordem</span>
+              <span className="hidden sm:inline">Ordem: {orderBy === 'sections' ? 'turmas' : 'nome'}</span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="sections">Por turmas</SelectItem>
+              <SelectItem value="name">Por nome</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={viewMode} onValueChange={(v: 'all' | 'semester' | 'electives') => setViewMode(v)}>
+            <SelectTrigger className="inline-flex min-h-12 w-auto items-center gap-2 rounded-full border-[1.5px] border-foreground/20 bg-background px-[18px] text-[13px] font-bold hover:bg-nevoa sm:hidden">
+              <span>{viewMode === 'all' ? 'Tudo' : viewMode === 'semester' ? 'Semestre' : 'Optativas'}</span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tudo</SelectItem>
+              <SelectItem value="semester">Por semestre</SelectItem>
+              <SelectItem value="electives">Optativas</SelectItem>
+            </SelectContent>
+          </Select>
+          <div role="group" aria-label="Visualização" className="hidden rounded-full bg-nevoa p-1 sm:inline-flex">
+            {([['all', 'Tudo'], ['semester', 'Semestre'], ['electives', 'Optativas']] as const).map(([v, label]) => (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={viewMode === v}
+                onClick={() => setViewMode(v)}
+                className={cn(
+                  'min-h-10 rounded-full px-4 text-xs transition-colors',
+                  viewMode === v ? 'bg-primary font-bold text-primary-foreground' : 'font-semibold text-foreground-2 hover:text-foreground'
+                )}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -1065,24 +1077,20 @@ const Disciplinas = () => {
         )}
 
         {!isSimplified && (
-          <div className="mb-6 flex flex-wrap gap-x-4 gap-y-2.5 text-xs font-bold">
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-[5px] border-[1.5px] border-mar bg-mar-claro" />
-              <span className="text-foreground-2">Cursada</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-[5px] border-[1.5px] border-dende bg-dende-claro" />
-              <span className="text-foreground-2">Disponível</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-[5px] border-[1.5px] border-dashed border-tracejado bg-nevoa" />
-              <span className="text-foreground-2">Bloqueada</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-[5px] border-2 border-foreground bg-background" />
-              <span className="text-foreground-2">Selecionada nesse semestre</span>
-            </div>
+          <>
+          <div className="flex flex-wrap gap-x-3.5 gap-y-2 pb-5 text-xs font-semibold text-foreground-2 sm:hidden">
+            <span className="inline-flex items-center gap-2"><span className="h-4 w-4 rounded-[5px] border-[1.5px] border-mar bg-mar-claro" />Cursada</span>
+            <span className="inline-flex items-center gap-2"><span className="h-4 w-4 rounded-[5px] border-[1.5px] border-dende bg-dende-claro" />Disponível</span>
+            <span className="inline-flex items-center gap-2"><span className="h-4 w-4 rounded-[5px] border-[1.5px] border-dashed border-tracejado bg-nevoa" />Bloqueada</span>
+            <span className="inline-flex items-center gap-2"><span className="h-4 w-4 rounded-[5px] border-2 border-foreground" />Na grade</span>
           </div>
+          <div className="hidden flex-wrap gap-x-[22px] gap-y-2 pb-7 text-xs font-semibold text-foreground-2 sm:flex">
+            <span className="inline-flex items-center gap-2"><StatusMarca tipo="cursada" />Cursada</span>
+            <span className="inline-flex items-center gap-2"><StatusMarca tipo="disponivel" />Disponível · pré-requisitos ok</span>
+            <span className="inline-flex items-center gap-2"><StatusMarca tipo="bloqueada" />Bloqueada · falta pré-requisito</span>
+            <span className="inline-flex items-center gap-2"><StatusMarca tipo="grade" />Na grade deste semestre</span>
+          </div>
+          </>
         )}
 
         {(isPrereqsLoading || showLoadComplete) && (
@@ -1135,7 +1143,7 @@ const Disciplinas = () => {
                 const total = filtered.length;
                 const items = filtered.slice(0, globalLimit);
                 return (
-                  <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">
+                  <div className="grid grid-cols-2 content-start gap-2.5 sm:grid-cols-[repeat(auto-fill,minmax(196px,1fr))]">
                     <AnimatePresence mode="popLayout">
                       {items.map((course) => (
                         <motion.div
@@ -1179,7 +1187,7 @@ const Disciplinas = () => {
             </motion.div>
           </div>
         ) : courses.length > 0 ? (
-          <div className="space-y-10">
+          <div>
             <AnimatePresence initial={false}>
             {(() => {
               const optCheck = (l: string) => /optat/i.test(l);
@@ -1228,13 +1236,36 @@ const Disciplinas = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 16 }}
                   transition={{ duration: 0.3, ease: 'easeOut' }}
-                  className="border-t-2 border-foreground pt-3 sm:grid sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-6"
+                  className="border-t-2 border-foreground pb-7 pt-[18px] sm:grid sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-0"
                 >
-                  <h3 className="mb-4 text-[24px] font-black leading-tight tracking-[-0.04em] text-foreground sm:text-[28px]">
-                    {getSemesterTitle(level)}
-                  </h3>
+                  {(() => {
+                    const titulo = getSemesterTitle(level);
+                    const numero = titulo.match(/^\s*(\d+\s*º)/)?.[1]?.replace(/\s+/g, '');
+                    const ehOptativa = /optat/i.test(level);
+                    const feitas = semesterCourses.filter((c) => completedDisciplines.includes(c.code)).length;
+                    const pctSem = semesterCourses.length > 0 ? Math.round((feitas / semesterCourses.length) * 100) : 0;
+                    const pctOpt = overall.electives.total > 0 ? Math.min(100, (overall.electives.completed / overall.electives.total) * 100) : 0;
+                    return (
+                      <div className="mb-3.5 flex items-baseline justify-between gap-4 sm:mb-0 sm:flex-col sm:items-start sm:justify-start sm:gap-1.5 sm:pb-4 sm:pr-6">
+                        <div className="flex items-baseline gap-2 sm:flex-col sm:gap-1.5">
+                          <h3 className="text-[28px] font-black leading-[0.9] tracking-[-0.05em] text-foreground sm:text-4xl">
+                            {numero ?? titulo}
+                          </h3>
+                          <span className="text-[13px] font-semibold text-foreground-2">{numero ? 'semestre' : 'componentes'}</span>
+                        </div>
+                        <div className="flex items-center gap-2.5 sm:mt-2.5">
+                          <span className="hidden sm:inline-flex"><SemestreCirculo percent={ehOptativa ? Math.round(pctOpt) : pctSem} size={32} /></span>
+                          <span className="font-mono text-[11px] text-foreground-2">
+                            {ehOptativa
+                              ? `${Math.min(overall.electives.completed, overall.electives.total)} / ${overall.electives.total} h`
+                              : `${feitas}/${semesterCourses.length} · ${pctSem}%`}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                   
-                  <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">
+                  <div className="grid grid-cols-2 content-start gap-2.5 sm:grid-cols-[repeat(auto-fill,minmax(196px,1fr))]">
                     <AnimatePresence mode="popLayout">
                     {filteredSemesterCourses.map((course) => {
                       const completed = completedDisciplines.includes(course.code);
@@ -1294,223 +1325,44 @@ const Disciplinas = () => {
         )}
 
         {/* Modal de Importar Histórico */}
-        <AnimatePresence>
-          {showImportModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-end justify-center bg-overlay/55 sm:items-center sm:p-4"
-              onClick={() => setShowImportModal(false)}
-            >
-              <motion.div
-                initial={{ scale: 0.95, opacity: 0, y: 10 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.95, opacity: 0, y: 10 }}
-                transition={{ duration: 0.18 }}
-                className="max-h-[92vh] w-full max-w-2xl space-y-5 overflow-y-auto rounded-t-[28px] bg-background p-6 pb-8 shadow-xl sm:rounded-[28px] sm:pb-6"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="hidden">
-                      <Upload className="w-5 h-5 text-mar" />
-                    </div>
-                    <div>
-                      <p className="text-[22px] font-black leading-tight tracking-[-0.03em] text-foreground">Importar histórico</p>
-                      <p className="mt-1 text-sm font-medium text-muted-foreground">
-                        Envie o PDF ou cole o texto do histórico para marcar disciplinas cursadas.
-                      </p>
-                    </div>
-                  </div>
-                  <button onClick={() => setShowImportModal(false)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-nevoa text-foreground-2 hover:text-foreground">
-                    <X className="h-[18px] w-[18px]" />
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  <label className="flex h-[88px] cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[18px] border-[1.5px] border-dashed border-tracejado bg-nevoa px-4 transition-colors hover:bg-trilho">
-                    <Upload className="h-5 w-5 text-foreground" />
-                    <span className="text-sm font-bold text-foreground">Selecionar PDF</span>
-                    <input type="file" accept=".pdf,text/plain" className="hidden" onChange={handleFileChange} />
-                  </label>
-
-                  <div className="rounded-[18px] bg-mar-claro p-4 text-xs font-medium leading-relaxed text-mar-ink">
-                    <p className="mb-1 flex items-center gap-1.5 text-[13px] font-extrabold">
-                      <Shield className="w-3 h-3" />
-                      Privacidade
-                    </p>
-                    <p>Seu histórico não é armazenado em nenhum local. É utilizado apenas para extração de texto sobre as disciplinas e progresso, sendo automaticamente descartado após a extração.</p>
-                  </div>
-
-                  {isParsing && <p className="text-sm text-muted-foreground">Lendo PDF...</p>}
-                  {importError && <p className="text-sm text-destructive">{importError}</p>}
-
-                  {/* Métricas de Progresso do Curso - mostra quando há dados importados */}
-                  {parsedWorkload && (
-                    <div className="hidden">
-                      <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
-                        <div className="text-xs text-green-600 dark:text-green-400 font-medium mb-3">
-                          Dados de Carga Horária Extraídos
-                        </div>
-                        <div className="grid grid-cols-1 gap-3">
-                          {/* Obrigatórias */}
-                          <div className="space-y-1">
-                            <div className="flex justify-between items-center text-sm">
-                              <span className="font-medium text-blue-700 dark:text-blue-300">Obrigatórias</span>
-                              <span className="font-semibold text-blue-700 dark:text-blue-300">
-                                {parsedWorkload.mandatory.required > 0 
-                                  ? Math.min(100, Math.round((parsedWorkload.mandatory.completed / parsedWorkload.mandatory.required) * 100)) 
-                                  : 0}%
-                              </span>
-                            </div>
-                            <div className="h-1.5 w-full bg-blue-100 dark:bg-blue-950 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-blue-500 rounded-full transition-all duration-500"
-                                style={{ width: `${Math.min(100, parsedWorkload.mandatory.required > 0 ? (parsedWorkload.mandatory.completed / parsedWorkload.mandatory.required) * 100 : 0)}%` }}
-                              />
-                            </div>
-                            <div className="flex justify-between items-center text-xs text-muted-foreground">
-                              <span>{Math.min(parsedWorkload.mandatory.completed, parsedWorkload.mandatory.required)}h / {parsedWorkload.mandatory.required}h</span>
-                              {parsedWorkload.mandatory.completed > parsedWorkload.mandatory.required && (
-                                <span className="text-blue-600 dark:text-blue-400 font-medium">
-                                  +{parsedWorkload.mandatory.completed - parsedWorkload.mandatory.required}h excedentes
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* Optativas */}
-                          <div className="space-y-1">
-                            <div className="flex justify-between items-center text-sm">
-                              <span className="font-medium text-purple-700 dark:text-purple-300">Optativas</span>
-                              <span className="font-semibold text-purple-700 dark:text-purple-300">
-                                {parsedWorkload.elective.required > 0 
-                                  ? Math.min(100, Math.round((parsedWorkload.elective.completed / parsedWorkload.elective.required) * 100)) 
-                                  : 0}%
-                              </span>
-                            </div>
-                            <div className="h-1.5 w-full bg-purple-100 dark:bg-purple-950 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-purple-500 rounded-full transition-all duration-500"
-                                style={{ width: `${Math.min(100, parsedWorkload.elective.required > 0 ? (parsedWorkload.elective.completed / parsedWorkload.elective.required) * 100 : 0)}%` }}
-                              />
-                            </div>
-                            <div className="flex justify-between items-center text-xs text-muted-foreground">
-                              <span>{Math.min(parsedWorkload.elective.completed, parsedWorkload.elective.required)}h / {parsedWorkload.elective.required}h</span>
-                              {parsedWorkload.elective.completed > parsedWorkload.elective.required && (
-                                <span className="text-purple-600 dark:text-purple-400 font-medium">
-                                  +{parsedWorkload.elective.completed - parsedWorkload.elective.required}h excedentes
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* Complementares */}
-                          <div className="space-y-1">
-                            <div className="flex justify-between items-center text-sm">
-                              <span className="font-medium text-green-700 dark:text-green-300">Complementares</span>
-                              <span className="font-semibold text-green-700 dark:text-green-300">
-                                {parsedWorkload.complementary.required > 0 
-                                  ? Math.min(100, Math.round((parsedWorkload.complementary.completed / parsedWorkload.complementary.required) * 100)) 
-                                  : 0}%
-                              </span>
-                            </div>
-                            <div className="h-1.5 w-full bg-green-100 dark:bg-green-950 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-green-500 rounded-full transition-all duration-500"
-                                style={{ width: `${Math.min(100, parsedWorkload.complementary.required > 0 ? (parsedWorkload.complementary.completed / parsedWorkload.complementary.required) * 100 : 0)}%` }}
-                              />
-                            </div>
-                            <div className="flex justify-between items-center text-xs text-muted-foreground">
-                              <span>{Math.min(parsedWorkload.complementary.completed, parsedWorkload.complementary.required)}h / {parsedWorkload.complementary.required}h</span>
-                              {parsedWorkload.complementary.completed > parsedWorkload.complementary.required && (
-                                <span className="text-green-600 dark:text-green-400 font-medium">
-                                  +{parsedWorkload.complementary.completed - parsedWorkload.complementary.required}h excedentes
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* Total */}
-                          <div className="border-t pt-3 mt-1 space-y-1">
-                            {(() => {
-                              const cappedTotal = Math.min(parsedWorkload.mandatory.completed, parsedWorkload.mandatory.required) +
-                                Math.min(parsedWorkload.elective.completed, parsedWorkload.elective.required) +
-                                Math.min(parsedWorkload.complementary.completed, parsedWorkload.complementary.required);
-                              const totalReq = parsedWorkload.mandatory.required + parsedWorkload.elective.required + parsedWorkload.complementary.required;
-                              const totalPct = totalReq > 0 ? Math.min(100, Math.round((cappedTotal / totalReq) * 100)) : 0;
-                              return (
-                                <>
-                                  <div className="flex justify-between items-center text-sm">
-                                    <span className="font-semibold text-foreground">Progresso Geral</span>
-                                    <span className="font-bold text-foreground">{totalPct}%</span>
-                                  </div>
-                                  <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                                    <div 
-                                      className="h-full bg-green-500 rounded-full transition-all duration-500"
-                                      style={{ width: `${totalPct}%` }}
-                                    />
-                                  </div>
-                                  <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                    <span>{cappedTotal}h / {totalReq}h exigidas</span>
-                                    <span>{totalPct}% concluído</span>
-                                  </div>
-                                </>
-                              );
-                            })()}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <p className="rotulo">
-                      Disciplinas aprovadas detectadas: {parsedCodes.length}
-                    </p>
-                    <div className="flex max-h-36 flex-wrap gap-1.5 overflow-auto rounded-[18px] border-[1.5px] border-foreground/10 p-3">
-                      {parsedCodes.length === 0 ? (
-                        <span className="text-xs text-muted-foreground">Nenhuma encontrada ainda.</span>
-                      ) : (
-                        parsedCodes.map(code => (
-                          <span key={code} className="rounded-full bg-mar-claro px-2.5 py-1 font-mono text-xs font-bold text-mar-ink">
-                            {code}
-                          </span>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
-                  <button
-                    onClick={() => {
-                      setShowImportModal(false);
-                      setParsedCodes([]);
-                      setParsedSemesters(new Map());
-                      setParsedWorkload(null);
-                      setDisciplinesBySemester(new Map());
-                      setImportText('');
-                      setImportError('');
-                      localStorage.removeItem('progressData');
-                    }}
-                    className="h-12 px-5 rounded-full border-[1.5px] border-foreground/20 text-sm font-bold text-foreground hover:bg-nevoa"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={handleApplyImport}
-                    className="h-12 px-6 rounded-full bg-primary text-primary-foreground text-sm font-extrabold hover:bg-primary/85"
-                    disabled={isParsing}
-                  >
-                    Aplicar e marcar cursadas
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
+        <ImportarHistoricoModal
+          open={showImportModal}
+          onClose={() => setShowImportModal(false)}
+          titulo="Importar histórico"
+          descricao="Envie o PDF ou cole o texto do histórico para marcar as disciplinas cursadas."
+          onFileChange={handleFileChange}
+          texto={importText}
+          onTextoChange={setImportText}
+          onTextoPronto={handleParseImport}
+          isParsing={isParsing}
+          erro={importError}
+          detectadas={0}
+          onCancelar={() => {
+            setShowImportModal(false);
+            setParsedCodes([]);
+            setParsedSemesters(new Map());
+            setParsedWorkload(null);
+            setDisciplinesBySemester(new Map());
+            setImportText('');
+            setImportError('');
+            localStorage.removeItem('progressData');
+          }}
+          onAplicar={handleApplyImport}
+          rotuloAplicar="Aplicar e marcar cursadas"
+        >
+          {parsedCodes.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <span className="rotulo">Disciplinas aprovadas detectadas: {parsedCodes.length}</span>
+              <div className="flex max-h-36 flex-wrap gap-1.5 overflow-auto">
+                {parsedCodes.map((code) => (
+                  <span key={code} className="rounded-full bg-mar-claro px-2.5 py-1 font-mono text-xs font-bold text-mar-ink">
+                    {code}
+                  </span>
+                ))}
+              </div>
+            </div>
           )}
-        </AnimatePresence>
+        </ImportarHistoricoModal>
 
         {/* Modal de Boas-Vindas da tela Disciplinas */}
         <AnimatePresence>

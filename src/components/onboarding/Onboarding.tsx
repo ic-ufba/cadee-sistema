@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { Check, GraduationCap, Search, Loader2, MapPin, ChevronDown, Filter, X, School, BookOpen, Sun, Sunset, Moon, Clock } from 'lucide-react';
+import { Check, GraduationCap, Search, Loader2, MapPin, ChevronDown, Filter, X, School, BookOpen, Sun, Sunset, Moon, Clock, ArrowRight, Lock } from 'lucide-react';
+import { detalheCurso } from '@/lib/curso-texto';
 import { AnimatePresence, motion, AnimatePresence as MotionPresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
@@ -357,7 +358,7 @@ export function Onboarding() {
             </div>
 
             {/* Course List */}
-            <div className="-mx-1 min-h-0 flex-1 overflow-y-auto border-t-2 border-foreground px-1 pb-4 pt-3">
+            <div className="-mx-3 min-h-0 flex-1 overflow-y-auto px-3 pb-4 pt-1">
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center h-full py-12 space-y-3">
                   <Loader2 className="w-8 h-8 animate-spin text-mar" />
@@ -369,7 +370,7 @@ export function Onboarding() {
                   <p className="text-sm text-muted-foreground mt-1">Tente novamente mais tarde</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="flex flex-col">
                   <AnimatePresence mode="popLayout">
                     {filteredPrograms.length === 0 ? (
                       <motion.div
@@ -401,11 +402,10 @@ export function Onboarding() {
                             }}
                             whileTap={{ scale: 0.98 }}
                             className={cn(
-                              "flex w-full items-start rounded-[18px] p-4 text-left transition-all",
-                              "border-[1.5px]",
+                              "flex w-full items-center rounded-[14px] px-3 py-3.5 text-left transition-all",
                               isSelected
-                                ? "border-foreground bg-nevoa"
-                                : "border-foreground/10 bg-background hover:bg-nevoa"
+                                ? "my-1 border-2 border-mar bg-mar-claro"
+                                : "rounded-none border-b border-foreground/10 bg-background hover:bg-nevoa/60"
                             )}
                           >
                             <div className="flex-1 min-w-0">
@@ -424,27 +424,27 @@ export function Onboarding() {
                               </div>
                               <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
                                 {program.program_type && (
-                                  <span className="inline-flex items-center text-xs text-muted-foreground">
+                                  <span className={cn("inline-flex items-center text-[11px] font-bold uppercase tracking-[0.04em]", isSelected ? "text-mar-ink" : "text-foreground-2")}>
                                     {program.program_type === 'BACHARELADO' ? (
-                                      <GraduationCap className="w-3 h-3 mr-1.5 text-muted-foreground/70" />
+                                      <GraduationCap className="mr-1.5 h-3 w-3" />
                                     ) : program.program_type === 'LICENCIATURA' ? (
-                                      <School className="w-3 h-3 mr-1.5 text-muted-foreground/70" />
+                                      <School className="mr-1.5 h-3 w-3" />
                                     ) : (
-                                      <BookOpen className="w-3 h-3 mr-1.5 text-muted-foreground/70" />
+                                      <BookOpen className="mr-1.5 h-3 w-3" />
                                     )}
                                     {program.program_type}
                                   </span>
                                 )}
                                 {program.time_code && (program.time_code === 'MT' || program.time_code === 'N' || program.time_code === 'T' || program.time_code === 'M' || program.time_code === 'I' || program.time_code === 'MN' || program.time_code === 'TN' || program.time_code === 'MTN') && (
-                                  <span className="inline-flex items-center text-xs text-muted-foreground">
+                                  <span className={cn("inline-flex items-center text-[11px] font-bold uppercase tracking-[0.04em]", isSelected ? "text-mar-ink" : "text-foreground-2")}>
                                     {program.time_code === 'M' || program.time_code === 'MT' ? (
-                                      <Sun className="w-3 h-3 mr-1.5 text-muted-foreground/70" />
+                                      <Sun className="mr-1.5 h-3 w-3" />
                                     ) : program.time_code === 'T' ? (
-                                      <Sunset className="w-3 h-3 mr-1.5 text-muted-foreground/70" />
+                                      <Sunset className="mr-1.5 h-3 w-3" />
                                     ) : program.time_code === 'N' ? (
-                                      <Moon className="w-3 h-3 mr-1.5 text-muted-foreground/70" />
+                                      <Moon className="mr-1.5 h-3 w-3" />
                                     ) : (
-                                      <Clock className="w-3 h-3 mr-1.5 text-muted-foreground/70" />
+                                      <Clock className="mr-1.5 h-3 w-3" />
                                     )}
                                     {getTurnoNome(program.time_code)}
                                   </span>
@@ -452,7 +452,7 @@ export function Onboarding() {
                               </div>
                             </div>
                             
-                            <div className="flex-shrink-0 ml-3 flex items-center h-5">
+                            <div className="ml-3 flex flex-shrink-0 items-center">
                               <div className={cn(
                                 "flex h-6 w-6 items-center justify-center rounded-full border-[1.5px] transition-colors",
                                 isSelected 
@@ -486,22 +486,15 @@ export function Onboarding() {
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="relative mb-3 rounded-[18px] bg-mar-claro p-3.5"
+                  className="relative mb-3 flex items-center gap-3 py-1"
                 >
-                  <button
-                    onClick={clearSelection}
-                    className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-background/70 text-foreground-2 transition-colors hover:text-foreground"
-                    aria-label="Remover seleção"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                  <h3 className="rotulo mb-1.5 !text-mar-ink">Curso selecionado</h3>
-                  <div className="flex items-start">
-                    <div className="mr-2.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-mar">
-                      <GraduationCap className="h-4 w-4 text-white" />
-                    </div>
+                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-mar-tint">
+                    <GraduationCap className="h-[18px] w-[18px] text-mar-ink" />
+                  </div>
+                  <div className="flex min-w-0 flex-1 items-start">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-extrabold uppercase text-foreground">{selectedProgram.title}</p>
+                      <h3 className="rotulo">Curso selecionado</h3>
+                      <p className="truncate text-[15px] font-black uppercase text-foreground">{selectedProgram.title}</p>
                       {selectedProgram.program_type === 'BACHARELADO' && 
                        selectedProgram.time_code && 
                        !['MT', 'N', 'T', 'M', 'I', 'MN', 'TN', 'MTN'].includes(selectedProgram.time_code) && (
@@ -509,14 +502,18 @@ export function Onboarding() {
                           {selectedProgram.time_code}
                         </p>
                       )}
-                      <p className="text-xs text-muted-foreground">
-                        {selectedProgram.program_type}
-                        {selectedProgram.time_code && (selectedProgram.time_code === 'MT' || selectedProgram.time_code === 'N' || selectedProgram.time_code === 'T' || selectedProgram.time_code === 'M' || selectedProgram.time_code === 'I' || selectedProgram.time_code === 'MN' || selectedProgram.time_code === 'TN' || selectedProgram.time_code === 'MTN') && (
-                          ` • ${getTurnoNome(selectedProgram.time_code)}`
-                        )}
+                      <p className="text-xs font-bold text-foreground-2">
+                        {detalheCurso(selectedProgram) || selectedProgram.program_type}
                       </p>
                     </div>
                   </div>
+                  <button
+                    onClick={clearSelection}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-nevoa text-foreground transition-colors hover:bg-trilho"
+                    aria-label="Remover seleção"
+                  >
+                    <X className="h-4 w-4" strokeWidth={2.4} />
+                  </button>
                 </motion.div>
               )}
 
@@ -537,11 +534,12 @@ export function Onboarding() {
               >
                 {selectedId ? 'Continuar' : 'Selecione um curso'}
                 {selectedId && (
-                  <Check className="w-4 h-4" />
+                  <ArrowRight className="h-4 w-4" strokeWidth={2.4} />
                 )}
               </motion.button>
 
-              <p className="text-[11px] sm:text-xs text-center text-muted-foreground mt-2 sm:mt-3">
+              <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-foreground-2">
+                <Lock className="h-3 w-3" />
                 Seus dados são salvos localmente no navegador
               </p>
             </div>
@@ -579,9 +577,9 @@ export function Onboarding() {
                 </button>
               </div>
 
-              <div className="mb-5 grid gap-2.5 sm:grid-cols-2">
+              <div className="mb-5 grid gap-2.5">
                 <label className={cn(
-                  "flex cursor-pointer items-start gap-3 rounded-[18px] border-[1.5px] p-4 transition-colors",
+                  "flex cursor-pointer flex-row-reverse items-center gap-3 rounded-[18px] border-[1.5px] p-4 transition-colors",
                   modalExperienceMode === 'simplificada' ? "border-foreground bg-nevoa" : "border-foreground/10 hover:bg-nevoa"
                 )}>
                   <input
@@ -590,16 +588,16 @@ export function Onboarding() {
                     value="simplificada"
                     checked={modalExperienceMode === 'simplificada'}
                     onChange={() => setModalExperienceMode('simplificada')}
-                    className="mt-1 accent-mar"
+                    className="h-[22px] w-[22px] shrink-0 accent-mar"
                   />
-                  <div className="text-sm">
+                  <div className="flex-1 text-sm">
                     <p className="font-extrabold text-foreground">Versão simplificada</p>
                     <p className="text-muted-foreground text-xs mt-0.5">Ir direto para o Planejador. Ideal para começar rápido.</p>
                   </div>
                 </label>
 
                 <label className={cn(
-                  "flex cursor-pointer items-start gap-3 rounded-[18px] border-[1.5px] p-4 transition-colors",
+                  "flex cursor-pointer flex-row-reverse items-center gap-3 rounded-[18px] border-[1.5px] p-4 transition-colors",
                   modalExperienceMode === 'completa' ? "border-foreground bg-nevoa" : "border-foreground/10 hover:bg-nevoa"
                 )}>
                   <input
@@ -608,16 +606,16 @@ export function Onboarding() {
                     value="completa"
                     checked={modalExperienceMode === 'completa'}
                     onChange={() => setModalExperienceMode('completa')}
-                    className="mt-1 accent-mar"
+                    className="h-[22px] w-[22px] shrink-0 accent-mar"
                   />
-                  <div className="text-sm">
+                  <div className="flex-1 text-sm">
                     <p className="font-extrabold text-foreground">Versão completa</p>
                     <p className="text-muted-foreground text-xs mt-0.5">Acesso a todos os recursos. Sempre pode mudar depois.</p>
                   </div>
                 </label>
               </div>
 
-              <div className="flex gap-3 justify-end">
+              <div className="flex gap-2.5">
                 <button
                   onClick={() => setShowExperienceModal(false)}
                   className="h-12 px-5 rounded-full border-[1.5px] border-foreground/20 text-sm font-bold text-foreground hover:bg-nevoa"
@@ -628,7 +626,7 @@ export function Onboarding() {
                   onClick={() => modalExperienceMode && finalizeExperience(modalExperienceMode)}
                   disabled={!modalExperienceMode}
                   className={cn(
-                    "h-12 rounded-full px-6 text-sm font-extrabold",
+                    "h-12 flex-1 rounded-full px-6 text-sm font-extrabold",
                     modalExperienceMode
                       ? "bg-primary text-primary-foreground hover:bg-primary/90"
                       : "cursor-not-allowed bg-nevoa text-muted-foreground"

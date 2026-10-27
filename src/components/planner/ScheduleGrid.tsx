@@ -6,7 +6,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import type { Section } from '@/services/api';
 import { AlertTriangle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { CORES_GRADE_FUNDOS, textoDaCor } from '@/lib/grade-cores';
+import { CORES_GRADE_FUNDOS, textoDaCor, mapaDeCores, corDaGrade } from '@/lib/grade-cores';
+import { getBlockCourseBaseCode } from '@/lib/blockCourses';
 
 const days = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
 const hours = ['07:00', '07:55', '08:50', '09:45', '10:40', '11:35', '13:00', '13:55', '14:50', '15:45', '16:40', '17:35', '18:30', '19:25', '20:20', '21:15'];
@@ -58,6 +59,11 @@ export function ScheduleGrid({ onSectionClick }: ScheduleGridProps = {}) {
   const hourToIndex = new Map<string, number>();
   hours.forEach((h, i) => hourToIndex.set(h, i));
 
+  // Uma cor diferente para cada disciplina, na ordem em que foram adicionadas (igual a "Minhas turmas")
+  const coresPorDisciplina = mapaDeCores(
+    mySections.map((s) => getBlockCourseBaseCode(s.course?.code || (s as { course_code?: string }).course_code || ''))
+  );
+
   const scheduledItems: ScheduledItem[] = [];
   for (const s of mySections) {
     const disciplineCode = (s as any)?.course?.code || (s as any)?.course_code || '';
@@ -98,7 +104,7 @@ export function ScheduleGrid({ onSectionClick }: ScheduleGridProps = {}) {
         disciplineName,
         classCode,
         professor,
-        color: colorFor(disciplineCode),
+        color: (coresPorDisciplina.get(getBlockCourseBaseCode(disciplineCode)) ?? corDaGrade(0)).bg,
         day,
         startTime,
         endTime,
@@ -164,169 +170,146 @@ export function ScheduleGrid({ onSectionClick }: ScheduleGridProps = {}) {
     return false;
   };
 
+  // ---------- Blocos: junta períodos seguidos da mesma turma no mesmo dia ----------
+  type Bloco = { item: ScheduledItem; inicio: number; fim: number; faixa: number; faixas: number };
+  const blocosPorDia = new Map<string, Bloco[]>();
+  for (const day of days) {
+    const doDia = scheduledItems
+      .filter((it) => it.day === day && hourToIndex.has(it.startTime))
+      .map((it) => ({ it, s: hourToIndex.get(it.startTime)!, e: hourToIndex.get(it.startTime)! + getItemDurationInSlots(it) }))
+      .sort((x, y) => x.s - y.s);
+    const juntos: { item: ScheduledItem; inicio: number; fim: number }[] = [];
+    for (const d of doDia) {
+      const ultimo = [...juntos].reverse().find((j) => j.item.section.id_ref === d.it.section.id_ref);
+      if (ultimo && ultimo.fim === d.s) ultimo.fim = d.e;
+      else juntos.push({ item: d.it, inicio: d.s, fim: d.e });
+    }
+    // faixas lado a lado quando há choque de horário
+    const faixasFim: number[] = [];
+    const comFaixa = juntos
+      .sort((x, y) => x.inicio - y.inicio)
+      .map((j) => {
+        let f = faixasFim.findIndex((fim) => fim <= j.inicio);
+        if (f === -1) { f = faixasFim.length; faixasFim.push(j.fim); } else faixasFim[f] = j.fim;
+        return { ...j, faixa: f, faixas: 1 };
+      });
+    comFaixa.forEach((b) => {
+      const sobrepostos = comFaixa.filter((o) => o.inicio < b.fim && b.inicio < o.fim);
+      b.faixas = Math.max(...sobrepostos.map((o) => o.faixa)) + 1;
+    });
+    blocosPorDia.set(day, comFaixa);
+  }
+
+  const hojeIdx = new Date().getDay(); // 1 = segunda
+  const alturaLinha = isMobile ? 28 : 30;
+  const rotuloDia: Record<string, string> = { SEG: 'SEG', TER: 'TER', QUA: 'QUA', QUI: 'QUI', SEX: 'SEX', SAB: 'SÁB' };
+
   return (
     <TooltipProvider>
       <div className="w-full">
-        <div className={cn(
-          "calendar-grid mobile-compact responsive-grade max-w-full mx-auto",
-          isMobile ? "" : "md:max-w-4xl",
-        )} style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(7, minmax(0, 1fr))`,
-          gap: 0,
-          border: '1.5px solid hsl(var(--foreground) / 0.12)',
-          borderRadius: '1.125rem',
-          overflow: 'hidden',
-          backgroundColor: 'hsl(var(--background))',
-        }}>
-          {/* Linha 1 - Cabeçalho superior */}
-          <div className="day-header border-b border-r border-foreground/10 bg-nevoa p-2 md:p-3" style={{ gridColumn: '1' }}>
-            <div className={cn("responsive-text-sm text-center text-[10px] font-extrabold uppercase tracking-[0.12em] text-foreground-2", isMobile ? "text-[9px]" : "", isMobile ? "block" : "md:block")}>
-              Período
-            </div>
-            <div className={cn("mt-0.5 text-center font-mono text-muted-foreground", isMobile ? "text-[9px]" : "text-[11px]", isMobile ? "block" : "md:block")}>
-              Horário
-            </div>
-          </div>
-          {days.map((day) => (
-            <div
-              key={day}
-              className={cn(
-                "day-header flex items-center justify-center border-b border-r border-foreground/10 bg-nevoa p-2 md:p-3",
-                day === 'SAB' && "border-r-0"
+        {/* Cabeçalho dos dias */}
+        <div className={cn('grid', isMobile ? 'grid-cols-[42px_repeat(6,minmax(0,1fr))]' : 'grid-cols-[56px_repeat(6,minmax(0,1fr))]')}>
+          <span />
+          {days.map((day, i) => (
+            <div key={day} className="flex h-9 items-center justify-center gap-1.5">
+              <span className={cn('font-black tracking-[0.06em] text-foreground', isMobile ? 'text-[11px]' : 'text-[13px]')}>{rotuloDia[day]}</span>
+              {!isMobile && hojeIdx === i + 1 && (
+                <span className="rounded-full bg-dende px-1.5 py-px text-[9px] font-extrabold uppercase tracking-[0.08em] text-[#1C1B19]">Hoje</span>
               )}
-            >
-              <div className={cn(
-                "responsive-text-sm text-center text-[11px] font-extrabold tracking-[0.12em] text-foreground",
-                isMobile ? "text-[10px]" : ""
-              )}>
-                {day}
-              </div>
             </div>
           ))}
+        </div>
 
-          {/* Linhas - Horários */}
-          {hours.map((hour, rowIdx) => (
-            <Fragment key={`row-${hour}`}>
-              {/* Coluna do horário */}
-              <div
-                key={`time-${hour}`}
-                className={cn(
-                  "calendar-cell flex items-center justify-center border-r border-foreground/10 p-1.5 md:p-2",
-                  rowIdx !== hours.length - 1 && "border-b"
-                )}
+        {/* Corpo: horários + colunas dos dias */}
+        <div className={cn('grid', isMobile ? 'grid-cols-[42px_repeat(6,minmax(0,1fr))]' : 'grid-cols-[56px_repeat(6,minmax(0,1fr))]')}>
+          <div className="flex flex-col">
+            {hours.map((hour) => (
+              <span
+                key={hour}
+                className={cn('flex items-start font-mono text-muted-foreground', isMobile ? 'text-[10px]' : 'text-[11px]')}
+                style={{ height: alturaLinha }}
               >
-                <div className={cn(
-                  "time-slot responsive-text-sm text-center font-mono font-medium text-muted-foreground",
-                  isMobile ? "text-[9px]" : "text-xs"
-                )}>
-                  {hour}
-                </div>
+                <span className="-translate-y-[7px]">{hour}</span>
+              </span>
+            ))}
+          </div>
+
+          {days.map((day) => {
+            const blocos = blocosPorDia.get(day) ?? [];
+            return (
+              <div key={day} className="relative" style={{ height: alturaLinha * hours.length }}>
+                {/* linhas de cada período; linha mais forte na virada de turno */}
+                {hours.map((hour, rowIdx) => (
+                  <span
+                    key={hour}
+                    aria-hidden
+                    className={cn('absolute inset-x-0 border-t', rowIdx === 6 || rowIdx === 12 ? 'border-foreground/25' : 'border-foreground/10')}
+                    style={{ top: rowIdx * alturaLinha }}
+                  />
+                ))}
+
+                {blocos.map((b) => {
+                  const item = b.item;
+                  const conflicts = getConflictsForSection(item.section);
+                  const hasItemConflict = conflicts.length > 0 || b.faixas > 1;
+                  const conflictMessage = getConflictMessage(conflicts);
+                  const largura = 100 / b.faixas;
+                  return (
+                    <Tooltip key={`${item.section.id_ref}-${day}-${b.inicio}`}>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onSectionClick) onSectionClick(item.section);
+                          }}
+                          className={cn(
+                            'event-block absolute flex flex-col overflow-hidden text-left transition-[filter] hover:z-10 hover:brightness-95',
+                            isMobile ? 'gap-0 rounded-lg px-1 py-1' : 'gap-0.5 rounded-[10px] px-2 py-1.5',
+                            hasItemConflict && 'ring-2 ring-pitanga ring-offset-1 ring-offset-background'
+                          )}
+                          style={{
+                            top: b.inicio * alturaLinha + 2,
+                            height: (b.fim - b.inicio) * alturaLinha - 4,
+                            left: `calc(${b.faixa * largura}% + 2px)`,
+                            width: `calc(${largura}% - 4px)`,
+                            backgroundColor: item.color,
+                            color: textoDaCor(item.color),
+                          }}
+                        >
+                          <span className={cn('flex items-center gap-1 font-mono font-semibold leading-tight', isMobile ? 'break-all text-[9px]' : 'text-[11px]')}>
+                            {hasItemConflict && <AlertTriangle className="h-3 w-3 shrink-0" />}
+                            {item.disciplineCode}
+                          </span>
+                          {!isMobile && (b.fim - b.inicio) >= 2 && item.disciplineName && (
+                            <span className="line-clamp-3 text-[11px] font-extrabold leading-[1.2] [overflow-wrap:anywhere]">{item.disciplineName}</span>
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="z-50 max-w-xs">
+                        <div className="space-y-1">
+                          <p className="text-sm font-extrabold">{item.disciplineName}</p>
+                          <p className="font-mono text-xs opacity-75">
+                            {item.disciplineCode} • Turma {item.classCode} • {hours[b.inicio]}–{item.endTime && hours[b.fim] ? hours[b.fim] : ''}
+                          </p>
+                          <p className="truncate text-xs opacity-75">{item.professor}</p>
+                          {hasItemConflict && (
+                            <div className="my-1.5 border-t border-background/20 pt-1.5">
+                              <p className="flex items-center gap-1 text-xs font-bold text-red-300">
+                                <AlertTriangle className="h-3 w-3" />
+                                Conflito de horário
+                              </p>
+                              {conflictMessage && <p className="mt-0.5 text-xs opacity-75">{conflictMessage}</p>}
+                            </div>
+                          )}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })}
               </div>
-
-              {/* Colunas dos dias */}
-              {days.map((day, dayIdx) => {
-                const startingItems = getStartingItemsForSlot(day, hour);
-                const cellConflict = hasAnyConflictInCell(day, hour);
-                return (
-                  <div
-                    key={`${day}-${hour}`}
-                    className={cn(
-                      "calendar-cell relative p-0.5 md:p-1",
-                      dayIdx !== days.length - 1 && "border-r border-foreground/[0.07]",
-                      rowIdx !== hours.length - 1 && "border-b border-foreground/[0.07]",
-                      cellConflict && "bg-pitanga-tint/60"
-                    )}
-                    style={{
-                      minHeight: isMobile ? '2.5rem' : '3.25rem',
-                    }}
-                  >
-                    <div className="flex flex-col gap-1 w-full h-full">
-                      {startingItems.map((item) => {
-                        const durationSlots = getItemDurationInSlots(item);
-                        const conflicts = getConflictsForSection(item.section);
-                        const hasItemConflict = cellConflict || conflicts.length > 0;
-                        const conflictMessage = getConflictMessage(conflicts);
-
-                        return (
-                          <Tooltip key={`${item.disciplineCode}-${item.classCode}-${day}-${hour}`}>
-                            <TooltipTrigger asChild>
-                              <div
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (onSectionClick) onSectionClick(item.section);
-                                }}
-                                className={cn(
-                                  "event-block relative flex w-full cursor-pointer flex-col items-center justify-center text-center font-extrabold transition-all hover:z-10 hover:brightness-95",
-                                  isMobile ? "rounded-[7px] text-[9px]" : "rounded-[10px] text-xs",
-                                  hasItemConflict && "ring-2 ring-pitanga ring-offset-1 ring-offset-background"
-                                )}
-                                style={{
-                                  backgroundColor: item.color,
-                                  color: textoDaCor(item.color),
-                                  padding: isMobile ? '0.15rem 0' : '0.4rem 0.25rem',
-                                  minHeight: isMobile ? '1.25rem' : '2rem',
-                                }}
-                              >
-                                {hasItemConflict && (
-                                  <AlertTriangle className={cn(
-                                    "absolute right-0.5 top-0.5 flex-shrink-0 text-current",
-                                    isMobile ? "w-2.5 h-2.5" : "w-3 h-3"
-                                  )} />
-                                )}
-                                <div className={cn(
-                                  "w-full truncate px-1 text-center font-mono",
-                                  hasItemConflict && (isMobile ? "pr-3" : "pr-4")
-                                )}>
-                                  {item.disciplineCode}
-                                </div>
-                                {!isMobile && item.disciplineName && durationSlots >= 2 && (
-                                  <div className="mt-0.5 hidden w-full truncate px-1 text-center text-[10px] font-semibold uppercase opacity-90 lg:block">
-                                    {item.disciplineName}
-                                  </div>
-                                )}
-                                {!isMobile && durationSlots >= 3 && (
-                                  <div className="mt-0.5 hidden truncate px-1 text-center text-[9px] font-medium opacity-80 lg:block">
-                                    {item.classCode} • {item.professor}
-                                  </div>
-                                )}
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom" className="max-w-xs z-50">
-                              <div className="space-y-1">
-                                <p className="text-sm font-extrabold">{item.disciplineName}</p>
-                                <p className="font-mono text-xs opacity-75">
-                                  {item.disciplineCode} • Turma {item.classCode}
-                                </p>
-                                <p className="truncate text-xs opacity-75">
-                                  {item.professor}
-                                </p>
-                                {hasItemConflict && (
-                                  <>
-                                    <div className="my-1.5 border-t border-background/20 pt-1.5">
-                                      <p className="flex items-center gap-1 text-xs font-bold text-red-300">
-                                        <AlertTriangle className="w-3 h-3" />
-                                        Conflito de Horário
-                                      </p>
-                                      {conflictMessage && (
-                                        <p className="mt-0.5 text-xs opacity-75">
-                                          {conflictMessage}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </Fragment>
-          ))}
+            );
+          })}
         </div>
       </div>
     </TooltipProvider>

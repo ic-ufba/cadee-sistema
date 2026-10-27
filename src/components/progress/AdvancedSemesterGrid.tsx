@@ -27,6 +27,10 @@ interface AdvancedSemesterGridProps {
   currentTerm?: string | null;
   showInfo?: boolean;
   infoText?: string;
+  /** Percentual das optativas, mostrado como a última célula ("Optativos") */
+  optativasPct?: number;
+  /** Quando a seção já está dentro de outra com linha de abertura */
+  embutido?: boolean;
 }
 
 function SemesterDetailContent({
@@ -78,6 +82,8 @@ export function AdvancedSemesterGrid({
   currentTerm,
   showInfo = false,
   infoText = '',
+  optativasPct,
+  embutido = false,
 }: AdvancedSemesterGridProps) {
   const isMobile = useIsMobile();
   const [selectedSemester, setSelectedSemester] = useState<SemesterData | null>(null);
@@ -161,46 +167,27 @@ export function AdvancedSemesterGrid({
   const getLevelName = (semesterNumber: number) =>
     courseLevels[semesterNumber - 1] || `${semesterNumber}º Semestre`;
 
-  const renderSemesterCell = (semester: SemesterData) => {
-    const colorClass = getColorByPercentage(semester.percentage);
-    const borderClass = getBorderColorByPercentage(semester.percentage);
-    const levelName = getLevelName(semester.semester);
+  const rotuloPct = (p: number) => (p > 0 && p < 100 ? `${p}%` : null);
 
-    const cell = (
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => isMobile && setSelectedSemester(semester)}
-        onKeyDown={(e) => {
-          if (isMobile && (e.key === 'Enter' || e.key === ' ')) {
-            e.preventDefault();
-            setSelectedSemester(semester);
-          }
-        }}
-        className={`flex cursor-pointer flex-col items-center gap-2 rounded-2xl py-1 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-mar ${
-          isMobile ? 'active:scale-95' : 'hover:scale-[1.04]'
-        }`}
-      >
-        <SemestreCirculo percent={semester.percentage} size={isMobile ? 64 : 72} />
-        <span className="text-[15px] font-black text-foreground">{semester.semester}º</span>
-      </div>
-    );
-
-    if (isMobile) {
-      return cell;
-    }
-
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>{cell}</TooltipTrigger>
-          <TooltipContent className="max-w-[280px]">
-            <SemesterDetailContent semester={semester} levelName={levelName} />
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  };
+  const renderSemesterCell = (semester: SemesterData) => (
+    <button
+      type="button"
+      onClick={() => setSelectedSemester(semester)}
+      aria-label={`${semester.semester}º semestre, ${semester.percentage}%`}
+      className="flex flex-col items-center gap-2 py-1 outline-none transition-transform hover:scale-[1.04] focus-visible:ring-2 focus-visible:ring-mar sm:border-b sm:border-r sm:border-foreground/10 sm:px-2 sm:py-4 sm:hover:scale-100 sm:hover:bg-nevoa/60"
+    >
+      <SemestreCirculo percent={semester.percentage} size={isMobile ? 44 : 56} />
+      <span className="flex flex-col items-center gap-1 sm:gap-1.5">
+        <span className="text-[13px] font-black text-foreground sm:text-[15px]">
+          {semester.semester}º
+          {isMobile && rotuloPct(semester.percentage) && (
+            <span className="ml-1 font-mono text-[10px] font-medium text-muted-foreground">{rotuloPct(semester.percentage)}</span>
+          )}
+        </span>
+        <span className="hidden font-mono text-[11px] text-muted-foreground sm:block">{semester.percentage}%</span>
+      </span>
+    </button>
+  );
 
   if (courseLevels.length === 0) {
     return (
@@ -218,77 +205,58 @@ export function AdvancedSemesterGrid({
 
   return (
     <>
-      <div className="border-t-2 border-foreground pt-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-[22px] font-black tracking-[-0.035em] text-foreground">Por semestre</h3>
-            {currentTerm && (
-              <span className="rounded-full bg-nevoa px-2.5 py-1 font-mono text-[11px] font-semibold text-foreground">
-                Letivo {currentTerm}
-              </span>
-            )}
-            {showInfo && (
-              <InfoPopup
-                iconClassName="w-3.5 h-3.5"
-                content={infoText}
-              />
-            )}
-          </div>
+      <div className={embutido ? 'flex flex-col gap-4' : 'flex flex-col gap-4 border-t-2 border-foreground pt-5'}>
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="flex items-center gap-2">
+            <h2 className="text-xl font-black tracking-[-0.03em] text-foreground lg:text-2xl">
+              Por semestre<span className="hidden lg:inline"> do curso</span>
+            </h2>
+            {showInfo && <InfoPopup iconClassName="w-3.5 h-3.5" content={infoText} />}
+          </span>
+          {semesterArray.length > 0 && (
+            <span className="font-mono text-[11px] text-muted-foreground">
+              {semesterArray.filter((s) => s.percentage === 100).length} de {semesterArray.length} completos
+            </span>
+          )}
         </div>
+        <p className="hidden text-[13px] leading-relaxed text-foreground-2 sm:block">
+          O nível do mar mostra quanto de cada semestre já foi concluído. Toque em um semestre para ver as disciplinas.
+        </p>
 
-        <div className="hidden">
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-green-500" />
-            <span>100%</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-green-400" />
-            <span>75%</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-yellow-400" />
-            <span>50%</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-orange-400" />
-            <span>25%</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-red-400" />
-            <span>&lt;25%</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-muted" />
-            <span>0%</span>
-          </div>
-        </div>
-
-        {isMobile && (
-          <p className="mb-4 text-[13px] font-medium text-foreground-2">
-            Toque em um semestre para ver o detalhamento
-          </p>
-        )}
-
-        <div className="grid grid-cols-3 gap-x-2 gap-y-5 sm:grid-cols-5 lg:grid-cols-6">
+        <div className="grid grid-cols-5 gap-x-1 gap-y-4 sm:gap-0 sm:border-l sm:border-t sm:border-foreground/10">
           {semesterArray.map((semester) => (
-            <div key={semester.semester} className="space-y-1">
+            <div key={semester.semester} className="contents">
               {renderSemesterCell(semester)}
-              <div className="text-center font-mono text-xs text-muted-foreground">
-                {semester.percentage}%
-              </div>
             </div>
           ))}
+          {typeof optativasPct === 'number' && (
+            <div
+              className="flex flex-col items-center gap-2 py-1 sm:justify-center sm:border-b sm:border-r sm:border-foreground/10 sm:px-2 sm:py-4"
+              aria-label={`Optativos, ${Math.round(optativasPct)}%`}
+            >
+              <SemestreCirculo percent={Math.round(optativasPct)} size={isMobile ? 44 : 56} />
+              <span className="flex flex-col items-center gap-1 sm:gap-1.5">
+                <span className="text-[13px] font-black text-foreground">
+                  <span className="sm:hidden">Opt.</span>
+                  <span className="hidden sm:inline">Optativos</span>
+                </span>
+                <span className="hidden font-mono text-[11px] text-muted-foreground sm:block">
+                  {optativasPct.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%
+                </span>
+              </span>
+            </div>
+          )}
         </div>
 
         {semesterArray.length === 0 && (
-          <div className="text-center py-4 text-xs text-muted-foreground">
+          <div className="py-4 text-center text-xs text-muted-foreground">
             Nenhuma disciplina obrigatória encontrada para os semestres deste curso
           </div>
         )}
       </div>
 
       <AnimatePresence>
-        {isMobile && selectedSemester && (
+        {selectedSemester && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
