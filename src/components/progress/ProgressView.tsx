@@ -178,7 +178,7 @@ export function ProgressView({ abrirImportacao = false, onImportacaoAberta }: Pr
     });
     
     if (result.codes.length === 0 && !result.workload) {
-      setImportError('Não foi possível encontrar disciplinas com status aprovado ou tabela de carga horária. Confira o texto ou tente outro arquivo.');
+      setImportError('Não encontramos disciplinas aprovadas nem a tabela de carga horária neste arquivo. Confira se é o histórico escolar emitido pelo SIGAA, em PDF.');
     }
   };
   
@@ -219,7 +219,7 @@ export function ProgressView({ abrirImportacao = false, onImportacaoAberta }: Pr
       }
     } catch (err) {
       console.error('Erro ao processar PDF:', err);
-      setImportError('Não foi possível ler o PDF. Tente copiar e colar o texto do histórico como alternativa.');
+      setImportError('Não foi possível ler este PDF. Baixe o histórico escolar de novo no SIGAA e tente outra vez.');
     } finally {
       setIsParsing(false);
       if (event.target) event.target.value = '';
@@ -814,7 +814,7 @@ export function ProgressView({ abrirImportacao = false, onImportacaoAberta }: Pr
         open={showImportModal}
         onClose={() => setShowImportModal(false)}
         titulo={hasImportedData ? 'Atualizar histórico' : 'Importar histórico para progresso'}
-        descricao="Envie o PDF do SIGAA ou cole o texto do histórico para recalcular seu progresso real no curso."
+        descricao="Envie o PDF do histórico escolar do SIGAA para recalcular seu progresso real no curso."
         onFileChange={handleFileChange}
         texto={importText}
         onTextoChange={setImportText}

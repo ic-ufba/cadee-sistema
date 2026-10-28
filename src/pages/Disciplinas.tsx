@@ -610,7 +610,7 @@ const Disciplinas = () => {
     localStorage.setItem('progressData', JSON.stringify(dataToSave));
 
     if (result.codes.length === 0 && !result.workload) {
-      setImportError('Não foi possível encontrar disciplinas com status aprovado ou tabela de carga horária. Confira o texto ou tente outro arquivo.');
+      setImportError('Não encontramos disciplinas aprovadas nem a tabela de carga horária neste arquivo. Confira se é o histórico escolar emitido pelo SIGAA, em PDF.');
     }
   };
 
@@ -650,7 +650,7 @@ const Disciplinas = () => {
       }
     } catch (err) {
       console.error('Erro ao processar PDF:', err);
-      setImportError('Não foi possível ler o PDF. Tente copiar e colar o texto do histórico como alternativa.');
+      setImportError('Não foi possível ler este PDF. Baixe o histórico escolar de novo no SIGAA e tente outra vez.');
     } finally {
       setIsParsing(false);
       if (event.target) event.target.value = '';
@@ -1413,7 +1413,7 @@ const Disciplinas = () => {
           open={showImportModal}
           onClose={() => setShowImportModal(false)}
           titulo="Importar histórico"
-          descricao="Envie o PDF ou cole o texto do histórico para marcar as disciplinas cursadas."
+          descricao="Envie o PDF do histórico escolar do SIGAA para marcar as disciplinas cursadas."
           onFileChange={handleFileChange}
           texto={importText}
           onTextoChange={setImportText}
