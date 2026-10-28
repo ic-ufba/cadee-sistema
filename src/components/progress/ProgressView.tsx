@@ -112,13 +112,21 @@ export function ProgressView({ abrirImportacao = false, onImportacaoAberta }: Pr
     return () => window.removeEventListener('progressDataUpdated', load);
   }, []);
 
-  // Função para salvar dados no localStorage
-  const saveToLocalStorage = () => {
+  // Função para salvar dados no localStorage. Quem acabou de ler um histórico passa os dados novos direto:
+  // o estado do React só muda no próximo render, e salvar o estado antigo aqui faria o 'progressDataUpdated'
+  // recarregar dados velhos por cima da leitura (era o que zerava as disciplinas antes de "Aplicar").
+  const saveToLocalStorage = (dados?: {
+    codes: string[];
+    semesters: typeof parsedSemesters;
+    workload: WorkloadData | null;
+    disciplinesBySemester: typeof disciplinesBySemester;
+  }) => {
+    const d = dados ?? { codes: parsedCodes, semesters: parsedSemesters, workload: parsedWorkload, disciplinesBySemester };
     const dataToSave = {
-      codes: parsedCodes,
-      semesters: Array.from(parsedSemesters.entries()),
-      workload: parsedWorkload,
-      disciplinesBySemester: Array.from(disciplinesBySemester.entries())
+      codes: d.codes,
+      semesters: Array.from(d.semesters.entries()),
+      workload: d.workload,
+      disciplinesBySemester: Array.from(d.disciplinesBySemester.entries())
     };
     localStorage.setItem('progressData', JSON.stringify(dataToSave));
     // Disparar evento customizado para notificar mudanças na mesma aba
@@ -161,8 +169,13 @@ export function ProgressView({ abrirImportacao = false, onImportacaoAberta }: Pr
     setDisciplinesBySemester(result.disciplinesBySemester);
     setImportText(text);
     
-    // Salvar após atualizar o estado
-    setTimeout(() => saveToLocalStorage(), 0);
+    // Salva o que acabou de ser lido (não o estado anterior)
+    saveToLocalStorage({
+      codes: result.codes,
+      semesters: result.semesters,
+      workload: result.workload,
+      disciplinesBySemester: result.disciplinesBySemester,
+    });
     
     if (result.codes.length === 0 && !result.workload) {
       setImportError('Não foi possível encontrar disciplinas com status aprovado ou tabela de carga horária. Confira o texto ou tente outro arquivo.');
