@@ -212,7 +212,6 @@ export function ScheduleGrid({ onSectionClick, onSlotClick, slotSelecionado = nu
     blocosPorDia.set(day, comFaixa);
   }
 
-  const hojeIdx = new Date().getDay(); // 1 = segunda
   const alturaLinha = isMobile ? 28 : 30;
 
   // ---------- Linhas visíveis (semana completa ou compacta) ----------
@@ -245,12 +244,9 @@ export function ScheduleGrid({ onSectionClick, onSlotClick, slotSelecionado = nu
         {/* Cabeçalho dos dias */}
         <div className={cn('grid', colunas)}>
           <span />
-          {days.map((day, i) => (
+          {days.map((day) => (
             <div key={day} className="flex h-9 items-center justify-center gap-1.5">
               <span className={cn('font-black tracking-[0.06em] text-foreground', isMobile ? 'text-[11px]' : 'text-[13px]')}>{rotuloDia[day]}</span>
-              {!isMobile && hojeIdx === i + 1 && (
-                <span className="rounded-full bg-dende px-1.5 py-px text-[9px] font-extrabold uppercase tracking-[0.08em] text-[#1C1B19]">Hoje</span>
-              )}
             </div>
           ))}
         </div>
@@ -329,8 +325,10 @@ export function ScheduleGrid({ onSectionClick, onSlotClick, slotSelecionado = nu
                             if (onSectionClick) onSectionClick(item.section);
                           }}
                           className={cn(
-                            'event-block absolute flex flex-col overflow-hidden text-left transition-[filter] hover:z-10 hover:brightness-95',
-                            isMobile ? 'gap-0 rounded-lg px-1 py-1' : 'gap-0.5 rounded-[10px] px-2 py-1.5',
+                            'event-block absolute flex overflow-hidden text-left transition-[filter] hover:z-10 hover:brightness-95',
+                            isMobile
+                              ? 'rounded-[7px] border border-black/10 dark:border-white/15 shadow-[0_1px_2px_rgba(0,0,0,0.06)]'
+                              : 'flex-col gap-0.5 rounded-[10px] px-2 py-1.5',
                             hasItemConflict && 'ring-2 ring-pitanga ring-offset-1 ring-offset-background'
                           )}
                           style={{
@@ -342,12 +340,23 @@ export function ScheduleGrid({ onSectionClick, onSlotClick, slotSelecionado = nu
                             color: textoDaCor(item.color),
                           }}
                         >
-                          <span className={cn('flex items-center gap-1 font-mono font-semibold leading-tight', isMobile ? 'break-all text-[9px]' : 'text-[11px]')}>
-                            {hasItemConflict && <AlertTriangle className="h-3 w-3 shrink-0" />}
-                            {item.disciplineCode}
-                          </span>
-                          {!isMobile && (b.fim - b.inicio) >= 2 && item.disciplineName && (
-                            <span className="line-clamp-3 text-[11px] font-extrabold leading-[1.2] [overflow-wrap:anywhere]">{item.disciplineName}</span>
+                          {isMobile ? (
+                            <div className="relative flex h-full w-full items-center justify-center p-1 text-center">
+                              <span className="max-w-full truncate font-mono text-[10.5px] font-black leading-none tracking-tight">
+                                {item.disciplineCode}
+                              </span>
+                              {hasItemConflict && (
+                                <span
+                                  className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-pitanga ring-1 ring-white"
+                                  title="Choque de horário"
+                                />
+                              )}
+                            </div>
+                          ) : (
+                            <span className="flex items-center gap-1 font-mono text-[11px] font-bold leading-tight">
+                              {hasItemConflict && <AlertTriangle className="h-3 w-3 shrink-0" />}
+                              {item.disciplineCode}
+                            </span>
                           )}
                         </button>
                       </TooltipTrigger>

@@ -152,18 +152,20 @@ const Disciplinas = () => {
         queryFn: () => fetchCourseByCode(k),
         staleTime: 1000 * 60 * 60,
       });
-      if (data) {
-        const eqs = extractEquivalentBaseCodes(data as CourseApi);
+      // fetchCourseByCode devolve CourseDetail; o cache local trabalha com CourseApi
+      const course = data ? (data as unknown as CourseApi) : null;
+      if (course) {
+        const eqs = extractEquivalentBaseCodes(course);
         if (eqs.size > 0) persistEquivalences(k, Array.from(eqs));
         
         setDetailsCache(prev => {
           const next = new Map(prev);
-          next.set(k, data as CourseApi);
+          next.set(k, course);
           return next;
         });
       }
       setAttemptedCodes(prev => { const next = new Set(prev); next.add(k); return next; });
-      return (data as CourseApi) || null;
+      return course;
     } catch {
       setAttemptedCodes(prev => { const next = new Set(prev); next.add(k); return next; });
       return null;
@@ -1312,7 +1314,7 @@ const Disciplinas = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 16 }}
                   transition={{ duration: 0.3, ease: 'easeOut' }}
-                  className="border-t-2 border-foreground pb-7 pt-[18px] sm:grid sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-0"
+                  className="border-t-2 border-foreground pb-7 pt-[18px] sm:grid sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-4 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-6"
                 >
                   {(() => {
                     const titulo = getSemesterTitle(level);
@@ -1322,12 +1324,18 @@ const Disciplinas = () => {
                     const pctSem = semesterCourses.length > 0 ? Math.round((feitas / semesterCourses.length) * 100) : 0;
                     const pctOpt = overall.electives.total > 0 ? Math.min(100, (overall.electives.completed / overall.electives.total) * 100) : 0;
                     return (
-                      <div className="mb-3.5 flex items-baseline justify-between gap-4 sm:mb-0 sm:flex-col sm:items-start sm:justify-start sm:gap-1.5 sm:pb-4 sm:pr-6">
-                        <div className="flex items-baseline gap-2 sm:flex-col sm:gap-1.5">
-                          <h3 className="text-[28px] font-black leading-[0.9] tracking-[-0.05em] text-foreground sm:text-4xl">
+                      <div className="mb-3.5 flex min-w-0 max-w-full items-baseline justify-between gap-4 overflow-hidden sm:mb-0 sm:flex-col sm:items-start sm:justify-start sm:gap-1.5 sm:pb-4 sm:pr-2">
+                        <div className="flex min-w-0 max-w-full flex-col gap-1 sm:gap-1.5">
+                          <h3
+                            className={
+                              numero
+                                ? 'text-[28px] font-black leading-[0.9] tracking-[-0.05em] text-foreground sm:text-4xl'
+                                : 'break-words text-lg font-black leading-tight tracking-[-0.03em] text-foreground sm:text-xl'
+                            }
+                          >
                             {numero ?? titulo}
                           </h3>
-                          <span className="text-[13px] font-semibold text-foreground-2">{numero ? 'semestre' : 'componentes'}</span>
+                          {numero && <span className="text-[13px] font-semibold text-foreground-2">semestre</span>}
                         </div>
                         <div className="flex items-center gap-2.5 sm:mt-2.5">
                           <span className="hidden sm:inline-flex"><SemestreCirculo percent={ehOptativa ? Math.round(pctOpt) : pctSem} size={32} /></span>

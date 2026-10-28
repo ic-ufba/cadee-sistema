@@ -89,7 +89,7 @@ export function AbasGrades({ comparando, onComparar }: { comparando: boolean; on
 
 // ------------------------------------------------------------------ resumo e ações
 
-export function AcoesGrade({ cargaHoraria }: { cargaHoraria: number }) {
+export function AcoesGrade(_props: { cargaHoraria?: number }) {
   const { lista, ativa, favoritaId, favoritar, duplicar, renomear, excluir } = useGrades();
   const [nome, setNome] = useState(ativa.nome);
   const [renomeando, setRenomeando] = useState(false);
@@ -101,9 +101,6 @@ export function AcoesGrade({ cargaHoraria }: { cargaHoraria: number }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2.5">
       <span className="inline-flex flex-wrap items-center gap-2.5">
-        <span className="font-mono text-xs text-foreground-2">
-          {disciplinas} disciplina{disciplinas !== 1 ? 's' : ''} · {cargaHoraria} h
-        </span>
         {disciplinas > 0 && (
           <span
             className={cn(

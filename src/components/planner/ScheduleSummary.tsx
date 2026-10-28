@@ -138,8 +138,8 @@ export function ScheduleSummary() {
   const [selectedDiscipline, setSelectedDiscipline] = useState<Course | null>(null);
   const [expandedStatus, setExpandedStatus] = useState<Set<string>>(new Set());
   const [visao, setVisao] = useState<Visao>(lerVisao);
-  // undefined = automático (abre a primeira pendente na virada de semestre); null = nenhuma aberta
-  const [aberta, setAberta] = useState<string | null | undefined>(undefined);
+  // null = nenhuma aberta; só abre quando o usuário escolhe uma disciplina
+  const [aberta, setAberta] = useState<string | null>(null);
   const [diaAtivo, setDiaAtivo] = useState<string | null>(null);
 
   const trocarVisao = (v: Visao) => {
@@ -343,9 +343,7 @@ export function ScheduleSummary() {
   });
 
   const comResultado = discs.filter((d) => d.status).length;
-  const autoAberta = (pendingTransition ? discs.find((d) => !d.status)?.baseCode : discs[0]?.baseCode) ?? null;
-  const abertaKey = aberta === undefined ? autoAberta : aberta;
-  const sel = discs.find((d) => d.baseCode === abertaKey) || null;
+  const sel = discs.find((d) => d.baseCode === aberta) || null;
   const escolher = (key: string) => setAberta(sel?.baseCode === key ? null : key);
 
   const hojeIdx = new Date().getDay(); // 0 = domingo

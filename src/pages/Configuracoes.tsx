@@ -338,41 +338,48 @@ const Configuracoes = () => {
             </div>
           </Linha>
 
-          {/* Modo de experiência */}
-          <Linha titulo="Modo de experiência" descricao="Troque quando quiser, sem perder dados.">
-            <div role="radiogroup" aria-label="Modo de experiência" className="flex flex-col md:flex-row">
-              {([
-                { valor: 'simplified', titulo: 'Versão simplificada', texto: 'Direto para o Planejador. Ideal para começar rápido.', curto: 'Direto para o Planejador.' },
-                { valor: 'full', titulo: 'Versão completa', texto: 'Histórico, progresso, pré-requisitos e semestres futuros.', curto: 'Histórico, progresso e pré-requisitos.' },
-              ] as const).map((op, i) => {
-                const ativo = mode === op.valor;
-                return (
-                  <button
-                    key={op.valor}
-                    type="button"
-                    role="radio"
-                    aria-checked={ativo}
-                    onClick={() => setMode(op.valor)}
-                    className={`flex flex-1 items-start gap-3.5 py-4 text-left md:px-6 md:py-1 ${i > 0 ? 'border-t border-foreground/10 md:border-l md:border-t-0' : 'md:pl-2.5'}`}
-                  >
-                    <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${ativo ? 'border-foreground' : 'border-foreground/25'}`}>
-                      {ativo && <span className="h-2.5 w-2.5 rounded-full bg-foreground" />}
-                    </span>
-                    <span className="flex flex-col gap-1">
-                      <span className="flex items-center gap-2 text-[15px] font-extrabold text-foreground md:text-base">
-                        {op.titulo}
-                        {ativo && <span className="rounded-full bg-dende px-1.5 py-px text-[9.5px] font-extrabold uppercase tracking-[0.08em] text-[#1C1B19]">Ativa</span>}
+          {/* Modo de experiência — só na versão simplificada; a completa não tem volta */}
+          {mode === 'simplified' && (
+            <Linha titulo="Modo de experiência" descricao="Você pode passar para a versão completa quando quiser, sem perder dados. Depois disso, não é possível voltar.">
+              <div role="radiogroup" aria-label="Modo de experiência" className="flex flex-col md:flex-row">
+                {([
+                  { valor: 'simplified', titulo: 'Versão simplificada', texto: 'Direto para o Planejador. Ideal para começar rápido.', curto: 'Direto para o Planejador.' },
+                  { valor: 'full', titulo: 'Versão completa', texto: 'Histórico, progresso, pré-requisitos e semestres futuros.', curto: 'Histórico, progresso e pré-requisitos.' },
+                ] as const).map((op, i) => {
+                  const ativo = mode === op.valor;
+                  return (
+                    <button
+                      key={op.valor}
+                      type="button"
+                      role="radio"
+                      aria-checked={ativo}
+                      onClick={() => {
+                        if (op.valor !== 'full') return;
+                        if (confirm('Mudar para a versão completa? Depois disso não será possível voltar para a versão simplificada.')) {
+                          setMode('full');
+                        }
+                      }}
+                      className={`flex flex-1 items-start gap-3.5 py-4 text-left md:px-6 md:py-1 ${i > 0 ? 'border-t border-foreground/10 md:border-l md:border-t-0' : 'md:pl-2.5'}`}
+                    >
+                      <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${ativo ? 'border-foreground' : 'border-foreground/25'}`}>
+                        {ativo && <span className="h-2.5 w-2.5 rounded-full bg-foreground" />}
                       </span>
-                      <span className="text-[13px] leading-relaxed text-foreground-2">
-                        <span className="md:hidden">{op.curto}</span>
-                        <span className="hidden md:inline">{op.texto}</span>
+                      <span className="flex flex-col gap-1">
+                        <span className="flex items-center gap-2 text-[15px] font-extrabold text-foreground md:text-base">
+                          {op.titulo}
+                          {ativo && <span className="rounded-full bg-dende px-1.5 py-px text-[9.5px] font-extrabold uppercase tracking-[0.08em] text-[#1C1B19]">Ativa</span>}
+                        </span>
+                        <span className="text-[13px] leading-relaxed text-foreground-2">
+                          <span className="md:hidden">{op.curto}</span>
+                          <span className="hidden md:inline">{op.texto}</span>
+                        </span>
                       </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </Linha>
+                    </button>
+                  );
+                })}
+              </div>
+            </Linha>
+          )}
 
           {/* Aparência */}
           <Linha titulo="Aparência" descricao="O tema escuro mantém as mesmas cores da grade.">
@@ -596,7 +603,10 @@ const Configuracoes = () => {
             <a href="https://github.com/FormigTeen" target="_blank" rel="noopener noreferrer" className="text-foreground-2 hover:text-mar">Matheus Freitas</a>
             {' · '}
             <a href="https://github.com/adaah" target="_blank" rel="noopener noreferrer" className="text-foreground-2 hover:text-mar">Eduarda Almeida</a>
-            {' · '}orientação Rodrigo Rocha
+            {' · '}
+            <a href="https://github.com/caioalcarria" target="_blank" rel="noopener noreferrer" className="text-foreground-2 hover:text-mar">Caio Alcarria</a>
+            {' · '}orientação{' '}
+            <a href="https://rodrigorgs.github.io/" target="_blank" rel="noopener noreferrer" className="text-foreground-2 hover:text-mar">Rodrigo Rocha</a>
           </span>
         </footer>
       </div>

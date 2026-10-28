@@ -1655,7 +1655,7 @@ const Planejador = () => {
         {telaLarga ? (
           <div className="grid grid-cols-[minmax(340px,440px)_minmax(0,1fr)] border-t-2 border-foreground pt-6">
             {colunaDisciplinas}
-            <div className="sticky top-24 self-start pl-8">{colunaGrade}</div>
+            <div className="sticky top-20 self-start pl-8 max-h-[calc(100vh-5.5rem)] overflow-y-auto overscroll-contain pr-2 pb-8 [scrollbar-width:thin]">{colunaGrade}</div>
           </div>
         ) : (
           <>
