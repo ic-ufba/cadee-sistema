@@ -34,6 +34,9 @@ export function SigaaLoginDialog() {
   const [verSenha, setVerSenha] = useState(false);
   const [lembrar, setLembrar] = useState(false);
 
+  // Login visualmente desativado (retornará no futuro)
+  if (true) return null;
+
   const busy = login.isPending || sync.isPending;
 
   const handleSubmit = async (e: FormEvent) => {

@@ -245,10 +245,7 @@ const Index = () => {
                         <span className="rounded-full bg-dende" style={{ flex: disciplinesCount.elective }} />
                         <span className="rounded-full bg-ouro" style={{ flex: disciplinesCount.offered }} />
                       </div>
-                      <span className="font-mono text-[11px] text-foreground-2 sm:hidden">
-                        {disciplinesCount.mandatory} obr · {disciplinesCount.elective} opt{disciplinesCount.offered > 0 ? ` · ${disciplinesCount.offered} ofe` : ''}
-                      </span>
-                      <ul className="hidden flex-col gap-1.5 text-[13px] sm:flex">
+                      <ul className="flex flex-col gap-1.5 text-xs sm:text-[13px]">
                         <li className="flex justify-between"><span className="inline-flex items-center gap-2 text-foreground-2"><span className="h-2 w-2 rounded-full bg-mar" />Obrigatórias</span><span className="font-mono font-semibold text-foreground">{disciplinesCount.mandatory}</span></li>
                         <li className="flex justify-between"><span className="inline-flex items-center gap-2 text-foreground-2"><span className="h-2 w-2 rounded-full bg-dende" />Optativas</span><span className="font-mono font-semibold text-foreground">{disciplinesCount.elective}</span></li>
                         {disciplinesCount.offered > 0 && (
@@ -272,10 +269,7 @@ const Index = () => {
                         <span className="rounded-full bg-ouro" style={{ flex: workloadBreakdown.offered }} />
                         <span className="rounded-full bg-pedra" style={{ flex: workloadBreakdown.complementary }} />
                       </div>
-                      <span className="font-mono text-[11px] text-foreground-2 sm:hidden">
-                        {[workloadBreakdown.mandatory, workloadBreakdown.elective, workloadBreakdown.offered, workloadBreakdown.complementary].filter((h, i) => i < 2 || h > 0).map((h) => `${h}h`).join(' · ')}
-                      </span>
-                      <ul className="hidden flex-col gap-1.5 text-[13px] sm:flex">
+                      <ul className="flex flex-col gap-1.5 text-xs sm:text-[13px]">
                         <li className="flex justify-between"><span className="inline-flex items-center gap-2 text-foreground-2"><span className="h-2 w-2 rounded-full bg-mar" />Obrigatórias</span><span className="font-mono font-semibold text-foreground">{workloadBreakdown.mandatory}h</span></li>
                         <li className="flex justify-between"><span className="inline-flex items-center gap-2 text-foreground-2"><span className="h-2 w-2 rounded-full bg-dende" />Optativas</span><span className="font-mono font-semibold text-foreground">{workloadBreakdown.elective}h</span></li>
                         {workloadBreakdown.offered > 0 && (

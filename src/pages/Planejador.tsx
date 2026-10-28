@@ -538,7 +538,7 @@ const Planejador = () => {
     [mySections],
   );
   const { completedDisciplines } = useApp();
-  const { data: allSections = [] } = useSections();
+  const { data: allSections = [], fonte: fonteOfertas, buscandoAoVivo } = useSections();
   const { currentTerm } = useCurrentTerm();
 
   const { curriculumMandatorySet, curriculumElectiveSet } = useMemo(() => {
@@ -1233,6 +1233,21 @@ const Planejador = () => {
             <h3 className="text-2xl font-black tracking-[-0.035em] text-foreground">Disciplinas do curso</h3>
             <p className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-foreground-2">
               {currentTerm && <span>Ofertas do semestre {currentTerm}</span>}
+              {fonteOfertas === 'sigaa' ? (
+                <span
+                  title="Turmas atualizadas agora pelo SIGAA"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-mar-claro px-2.5 py-0.5 text-[11px] font-extrabold text-mar-ink"
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-mar" />
+                  SIGAA ao vivo
+                </span>
+              ) : (
+                buscandoAoVivo && (
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-foreground-2">
+                    <Loader2 className="h-3 w-3 animate-spin" /> atualizando pelo SIGAA…
+                  </span>
+                )
+              )}
               <span className="rounded-full bg-nevoa px-2.5 py-0.5 text-[11px] font-extrabold text-foreground">
                 {disciplinasAgrupadas.length} disciplinas · {totalTurmasSemestre} turmas
               </span>
@@ -1640,7 +1655,7 @@ const Planejador = () => {
         {telaLarga ? (
           <div className="grid grid-cols-[minmax(340px,440px)_minmax(0,1fr)] border-t-2 border-foreground pt-6">
             {colunaDisciplinas}
-            <div className="sticky top-24 self-start pl-8">{colunaGrade}</div>
+            <div className="sticky top-20 self-start pl-8 max-h-[calc(100vh-5.5rem)] overflow-y-auto overscroll-contain pr-2 pb-8 [scrollbar-width:thin]">{colunaGrade}</div>
           </div>
         ) : (
           <>

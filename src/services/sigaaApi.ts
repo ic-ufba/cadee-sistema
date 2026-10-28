@@ -429,6 +429,20 @@ export async function fetchGradeIcs(): Promise<Blob> {
 export const fetchComponentePublico = (codigo: string) =>
   get<ComponenteCurricular>(`/v1/publico/componentes/codigo/${encodeURIComponent(codigo)}`);
 
+/** Cursos de graduação do SIGAA (público). Itens crus: o CADEE só precisa do id e do nome para casar com o curso. */
+export const fetchCursosPublicos = (nome: string) =>
+  get<{ itens: Record<string, unknown>[] }>('/v1/publico/cursos', {
+    params: { nivel: 'G', nome, por_pagina: 100 },
+    timeout: 30_000,
+  });
+
+/** Turmas do período com vaga reservada pro curso (público). Itens crus, convertidos em lib/ofertaAoVivo. */
+export const fetchTurmasDoCursoPublico = (cursoId: number, ano: number, periodo: number) =>
+  get<Record<string, unknown>[] | { itens: Record<string, unknown>[] }>(`/v1/publico/cursos/${cursoId}/turmas`, {
+    params: { ano, periodo },
+    timeout: 45_000,
+  });
+
 export async function fetchProgramaComponente(codigo: string): Promise<ProgramaComponente | null> {
   try {
     return await get<ProgramaComponente>(`/v1/publico/componentes/codigo/${encodeURIComponent(codigo)}/programa`);
