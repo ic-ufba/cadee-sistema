@@ -409,12 +409,12 @@ const Configuracoes = () => {
             </div>
           </Linha>
 
-          {/* Conta SIGAA (só quando a API está configurada) */}
-          {sigaaConfigurado && (
+          {/* Conta SIGAA — temporariamente oculto (login desativado visualmente) */}
+          {/* {sigaaConfigurado && (
             <Linha titulo="Conta SIGAA" descricao="Sincronize histórico e turmas direto da sua conta.">
               <SigaaSettingsCard />
             </Linha>
-          )}
+          )} */}
 
           {/* Carga horária */}
           <Linha

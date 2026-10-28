@@ -283,7 +283,7 @@ export function Onboarding() {
   };
 
   const selectedProgram = (programs as Program[]).find((p) => p.id_ref === selectedId);
-  const tituloLista = isLoggedIn ? 'Confira o curso' : isConfigured ? 'Ou escolha o curso' : 'Escolha o curso';
+  const tituloLista = 'Escolha o curso';
 
   return (
     <>
@@ -309,6 +309,7 @@ export function Onboarding() {
                 seu semestre
               </motion.h2>
 
+              {/* Login do SIGAA temporariamente oculto
               {isConfigured && !isLoggedIn && (
                 <section
                   aria-label="Entrar com o SIGAA"
@@ -343,7 +344,7 @@ export function Onboarding() {
                     </span>
                   </div>
                 </section>
-              )}
+              )} */}
 
               {isConfigured && isLoggedIn && (
                 <section

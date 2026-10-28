@@ -309,21 +309,7 @@ export function SigaaPlannerPanel() {
   const { openLogin } = useSigaaLoginDialog();
   const [tab, setTab] = useState('validar');
 
-  if (!isConfigured) return null;
-
-  if (!isLoggedIn) {
-    return (
-      <div className="flex flex-col gap-2 rounded-[18px] bg-mar-claro p-4 text-sm sm:flex-row sm:items-center">
-        <ShieldCheck className="hidden h-6 w-6 shrink-0 text-mar sm:block" />
-        <p className="flex-1 text-muted-foreground">
-          Entre com o SIGAA para validar esta grade com as regras oficiais, receber uma sugestão automática e ver a previsão de oferta.
-        </p>
-        <button onClick={openLogin} className="h-9 rounded-full bg-primary px-4 text-xs font-bold text-primary-foreground hover:bg-primary/90">
-          Entrar
-        </button>
-      </div>
-    );
-  }
+  if (!isConfigured || !isLoggedIn) return null;
 
   return (
     <div className="rounded-[22px] border-[1.5px] border-foreground/10 bg-background p-4">

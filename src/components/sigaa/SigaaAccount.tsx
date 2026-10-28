@@ -24,26 +24,8 @@ function primeiroNome(nome?: string, fallback?: string) {
 
 /** Monta o diálogo de login e avisa quando a sessão do SIGAA expira. Fica uma vez no topo do app. */
 export function SigaaRoot() {
-  const { isConfigured } = useSigaaAuth();
-  const { openLogin } = useSigaaLoginDialog();
-
-  useEffect(() => {
-    const onExpired = () =>
-      toast({
-        title: 'Sua sessão do SIGAA expirou',
-        description: 'O CADEE continua funcionando com os dados já importados.',
-        action: (
-          <ToastAction altText="Entrar de novo" onClick={openLogin}>
-            Entrar de novo
-          </ToastAction>
-        ),
-      });
-    window.addEventListener(SIGAA_SESSION_EXPIRED_EVENT, onExpired);
-    return () => window.removeEventListener(SIGAA_SESSION_EXPIRED_EVENT, onExpired);
-  }, [openLogin]);
-
-  if (!isConfigured) return null;
-  return <SigaaLoginDialog />;
+  // Login visualmente desativado
+  return null;
 }
 
 interface SigaaAccountButtonProps {
@@ -57,7 +39,7 @@ export function SigaaAccountButton({ collapsed = false, variant = 'sidebar' }: S
   const { openLogin } = useSigaaLoginDialog();
   const sync = useSigaaSync();
 
-  if (!isConfigured) return null;
+  if (!isConfigured || !isLoggedIn) return null;
 
   const compact = collapsed || variant === 'icon';
   const baseClass =
@@ -67,15 +49,6 @@ export function SigaaAccountButton({ collapsed = false, variant = 'sidebar' }: S
           'flex w-full items-center rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors',
           compact ? 'justify-center p-2' : 'gap-2 px-3 py-2',
         );
-
-  if (!isLoggedIn) {
-    return (
-      <button type="button" onClick={openLogin} className={baseClass} title="Entrar com o SIGAA" aria-label="Entrar com o SIGAA">
-        <LogIn className="h-5 w-5 shrink-0" />
-        {!compact && <span className="text-sm font-medium whitespace-nowrap">Entrar com SIGAA</span>}
-      </button>
-    );
-  }
 
   const nome = primeiroNome(session?.nome, session?.usuario);
 

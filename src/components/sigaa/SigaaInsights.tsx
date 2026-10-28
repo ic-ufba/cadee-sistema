@@ -83,8 +83,7 @@ export function SigaaInsights() {
   const sync = useSigaaSync();
   const [showAllPendentes, setShowAllPendentes] = useState(false);
 
-  if (!isConfigured) return null;
-  if (!isLoggedIn) return <ConnectCta />;
+  if (!isConfigured || !isLoggedIn) return null;
 
   const evolucao = (indices.data?.evolucao ?? []).filter((p) => p.cr_acumulado !== null || p.cr_periodo !== null);
   const pendentes = (integralizacao.data?.obrigatorios_pendentes ?? []).filter((p) => p.codigo.toUpperCase() !== 'ENADE');

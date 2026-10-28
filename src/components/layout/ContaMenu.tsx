@@ -114,12 +114,13 @@ export function ContaMenu() {
           <ArrowLeftRight className="h-4 w-4" />
           Mudar de curso
         </DropdownMenuItem>
+        {/* Login do SIGAA temporariamente oculto
         {isConfigured && !logado && (
           <DropdownMenuItem className={itemClass} onSelect={openLogin}>
             <LogIn className="h-4 w-4" />
             Entrar com o SIGAA
           </DropdownMenuItem>
-        )}
+        )} */}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild className={cn(itemClass, 'text-foreground-2')}>
           <a href="https://github.com/FormigTeen/sigaa-static" target="_blank" rel="noopener noreferrer">
