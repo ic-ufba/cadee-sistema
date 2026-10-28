@@ -34,9 +34,9 @@ export function AppSidebar({ isCollapsed = false, toggleCollapse }: AppSidebarPr
 
   return (
     <header className="sticky top-0 z-40 hidden w-full border-b border-border bg-background/95 backdrop-blur-sm md:block">
-      <div className="mx-auto flex max-w-[1328px] flex-wrap items-center justify-between gap-x-6 gap-y-3 px-[clamp(20px,4vw,56px)] py-3.5">
-        <NavLink to="/" className="flex min-h-11 items-center" aria-label="cadee — início">
-          <Logo size={28} />
+      <div className="mx-auto flex max-w-[1328px] flex-wrap items-center justify-between gap-x-4 gap-y-2 px-[clamp(16px,3vw,48px)] py-2.5">
+        <NavLink to="/" className="flex min-h-9 items-center" aria-label="cadee — início">
+          <Logo size={26} />
         </NavLink>
 
         <nav aria-label="Principal">
@@ -46,7 +46,7 @@ export function AppSidebar({ isCollapsed = false, toggleCollapse }: AppSidebarPr
                 <NavLink
                   to={item.url}
                   end={item.url === '/'}
-                  className="flex h-11 items-center gap-2 rounded-full px-[18px] text-[13px] font-semibold text-foreground-2 transition-colors hover:text-foreground"
+                  className="flex h-9 lg:h-10 items-center gap-2 rounded-full px-3.5 lg:px-[16px] text-[12.5px] lg:text-[13px] font-semibold text-foreground-2 transition-colors hover:text-foreground"
                   activeClassName="bg-primary font-bold text-primary-foreground hover:text-primary-foreground"
                 >
                   <item.icon className="h-4 w-4 shrink-0" />

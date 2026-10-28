@@ -28,6 +28,7 @@ import {
 } from '@/lib/choques';
 import { cn } from '@/lib/utils';
 import { tituloCurso } from '@/lib/curso-texto';
+import { parseTimeCodes } from '@/lib/schedule';
 
 const basesDe = (secoes: Section[]) => Array.from(new Set(secoes.map((s) => getBlockCourseBaseCode(codigoDaTurma(s))).filter(Boolean)));
 
@@ -412,7 +413,16 @@ export function CompararGrades({ cargaDe, onAbrir }: { cargaDe: (codigo: string)
       {lista.map((g: GradeSalva) => {
         const choques = encontrarChoques(g.secoes);
         const bases = basesDe(g.secoes);
-        const ch = bases.reduce((t, b) => t + (cargaDe(b) || 0), 0);
+        const ch = bases.reduce((t, b) => {
+          const val = cargaDe(b);
+          if (typeof val === 'number' && val > 0) return t + val;
+          const secoesDoBase = g.secoes.filter((s) => getBlockCourseBaseCode(codigoDaTurma(s)) === b);
+          const slots = secoesDoBase.reduce((acc, s) => {
+            const tc = Array.isArray(s.time_codes) ? s.time_codes : [];
+            return acc + parseTimeCodes(tc).length;
+          }, 0);
+          return t + (slots > 0 ? slots * 17 : 68);
+        }, 0);
         const fav = g.id === favoritaId;
         const cores = mapaDeCores(bases);
         const linhas = [

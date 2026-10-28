@@ -334,7 +334,10 @@ export function ScheduleSummary() {
       name,
       status,
       course: course as Course | undefined,
-      workload: (course as { workload?: number } | undefined)?.workload,
+      workload:
+        (course as { workload?: number } | undefined)?.workload ??
+        info?.workload ??
+        (turmas.reduce((acc, t) => acc + parseTimeCodes(Array.isArray(t.section.time_codes) ? t.section.time_codes : []).length, 0) * 17 || 68),
       tipo: !info ? null : info.isEquivalent ? 'Equivalente' : info.category === 'mandatory' ? 'Obrigatória' : info.category === 'elective' ? 'Optativa' : 'Ofertada',
       cor: cores.get(baseCode)!,
       conflitos: Array.from(conflictsByBaseCode.get(baseCode) || []),
