@@ -910,14 +910,64 @@ const Planejador = () => {
   // Carga horária da grade aberta (pela carga de cada disciplina)
   const cargaPorBase = useMemo(() => {
     const m = new Map<string, number>();
-    for (const c of [...plannerCourses, ...(myCourses ?? []), ...coursesIndex]) {
-      const w = (c as { workload?: number }).workload;
+
+    // 1. Cursos do programa selecionado / myCourses / viewProgramDetail / plannerCourses
+    for (const c of [...(courses ?? []), ...plannerCourses, ...(myCourses ?? [])]) {
       const b = getBlockCourseBaseCode(c.code);
-      if (w && !m.has(b)) m.set(b, w);
+      if (!b) continue;
+      const w = (c as { workload?: number }).workload;
+      if (typeof w === 'number' && w > 0 && !m.has(b)) {
+        m.set(b, w);
+      } else if (!m.has(b)) {
+        const cr = (c as { credits?: number }).credits;
+        if (typeof cr === 'number' && cr > 0) {
+          m.set(b, cr * 17);
+        }
+      }
     }
+
+    // 2. Extrai carga de allSections a partir dos horários semanais (time_codes)
+    // No padrão UFBA, cada horário semanal equivale a 1 crédito (17 horas no semestre)
+    const slotsPorSubcodigo = new Map<string, number>();
+    for (const s of allSections) {
+      const cod = codigoDaTurma(s);
+      if (!cod || slotsPorSubcodigo.has(cod)) continue;
+      const tc = Array.isArray(s.time_codes) ? s.time_codes : [];
+      if (!tc.length) continue;
+      const slots = parseTimeCodes(tc).length;
+      if (slots > 0) slotsPorSubcodigo.set(cod, slots);
+    }
+
+    const slotsPorBase = new Map<string, number>();
+    for (const [cod, slots] of slotsPorSubcodigo.entries()) {
+      const b = getBlockCourseBaseCode(cod);
+      slotsPorBase.set(b, (slotsPorBase.get(b) ?? 0) + slots);
+    }
+
+    for (const [b, slots] of slotsPorBase.entries()) {
+      if (!m.has(b) && slots > 0) {
+        m.set(b, slots * 17);
+      }
+    }
+
     return m;
-  }, [plannerCourses, myCourses, coursesIndex]);
-  const cargaDe = (base: string) => cargaPorBase.get(base) ?? 0;
+  }, [courses, plannerCourses, myCourses, allSections]);
+
+  const cargaDe = (base: string) => {
+    if (!base) return 0;
+    const c = cargaPorBase.get(base);
+    if (typeof c === 'number' && c > 0) return c;
+    // Tenta encontrar nas turmas da grade atual (mySections)
+    const secoes = mySections.filter((s) => getBlockCourseBaseCode(codigoDaTurma(s)) === base);
+    if (secoes.length > 0) {
+      const slots = secoes.reduce((acc, s) => {
+        const tc = Array.isArray(s.time_codes) ? s.time_codes : [];
+        return acc + parseTimeCodes(tc).length;
+      }, 0);
+      if (slots > 0) return slots * 17;
+    }
+    return 68;
+  };
   const basesDaGrade = Array.from(new Set(mySections.map((t) => getBlockCourseBaseCode(codigoDaTurma(t))).filter(Boolean)));
   const cargaDaGrade = basesDaGrade.reduce((t, b) => t + cargaDe(b), 0);
   const nChoques = useMemo(() => encontrarChoques(mySections).length, [mySections]);
@@ -1628,34 +1678,34 @@ const Planejador = () => {
 
   return (
     <MainLayout>
-      <div className="px-5 pt-4 sm:px-[clamp(20px,4vw,56px)] sm:pt-8 animate-fade-in">
+      <div className="px-5 pt-3 sm:px-[clamp(16px,3vw,48px)] sm:pt-4 lg:pt-6 animate-fade-in">
         {pendingTransition && (
-          <div className="mb-5 rounded-2xl bg-dende-claro p-4 text-[13px] font-medium text-dende-ink">
+          <div className="mb-4 rounded-2xl bg-dende-claro p-3.5 text-[13px] font-medium text-dende-ink">
             <strong>Novo semestre {currentTerm}.</strong> Finalize a grade do semestre {planningTerm} na{' '}
             <a href="/" className="underline font-medium">tela inicial</a> antes de planejar novas disciplinas.
           </div>
         )}
         {/* Cabeçalho */}
-        <section className="flex flex-col gap-5 pb-6 lg:flex-row lg:flex-wrap lg:items-end lg:justify-between">
-          <div className="flex min-w-0 flex-col gap-3.5">
+        <section className="flex flex-col gap-3 pb-4 lg:flex-row lg:flex-wrap lg:items-end lg:justify-between lg:pb-5">
+          <div className="flex min-w-0 flex-col gap-2">
             <span className="rotulo !text-foreground">
               {myPrograms.length > 0 ? tituloCurso(myPrograms[0]?.title) : 'Planejador'}
               {currentTerm ? ` · Ofertas ${currentTerm}` : ''}
             </span>
-            <h1 className="text-[30px] font-black leading-[1.05] tracking-[-0.04em] text-foreground sm:text-[clamp(30px,2.8vw,40px)]">
+            <h1 className="text-[26px] font-black leading-[1.05] tracking-[-0.04em] text-foreground sm:text-[clamp(26px,2.2vw,36px)]">
               Planejador de grade
             </h1>
           </div>
-          <div className="flex flex-col gap-2.5 lg:items-end">
+          <div className="flex flex-col gap-2 lg:items-end">
             {telaLarga && seletorOfertas}
             {telaLarga && <SigaaAcoesPlanejador painel={painelSigaa} onPainel={setPainelSigaa} />}
           </div>
         </section>
 
         {telaLarga ? (
-          <div className="grid grid-cols-[minmax(340px,440px)_minmax(0,1fr)] border-t-2 border-foreground pt-6">
+          <div className="grid grid-cols-[minmax(330px,420px)_minmax(0,1fr)] border-t-2 border-foreground pt-4 lg:pt-5">
             {colunaDisciplinas}
-            <div className="sticky top-20 self-start pl-8 max-h-[calc(100vh-5.5rem)] overflow-y-auto overscroll-contain pr-2 pb-8 [scrollbar-width:thin]">{colunaGrade}</div>
+            <div className="sticky top-16 self-start pl-6 lg:pl-8 max-h-[calc(100vh-4.8rem)] overflow-y-auto overscroll-contain pr-2 pb-6 [scrollbar-width:thin]">{colunaGrade}</div>
           </div>
         ) : (
           <>
